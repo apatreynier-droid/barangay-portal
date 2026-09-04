@@ -1,0 +1,145 @@
+button,
+.welcome-card,
+.content-card,
+.stat-card,
+.pickup-card,
+.request-stat-card,
+.request-card,
+.history-card,
+.notifications-card,
+.request-document-card,
+.login-card,
+.create-account-card {
+  transition:
+    transform 180ms ease,
+    box-shadow 180ms ease;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  button:not(:disabled):hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 20px rgba(79, 70, 229, 0.18);
+  }
+
+  .welcome-card:hover,
+  .content-card:hover,
+  .stat-card:hover,
+  .pickup-card:hover,
+  .request-stat-card:hover,
+  .request-card:hover,
+  .history-card:hover,
+  .notifications-card:hover,
+  .request-document-card:hover,
+  .login-card:hover,
+  .create-account-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 14px 28px rgba(79, 70, 229, 0.13);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  button,
+  .welcome-card,
+  .content-card,
+  .stat-card,
+  .pickup-card,
+  .request-stat-card,
+  .request-card,
+  .history-card,
+  .notifications-card,
+  .request-document-card,
+  .login-card,
+  .create-account-card {
+    transition: none;
+  }
+}
+
+@keyframes page-fade-slide-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes card-scale-in {
+  from {
+    opacity: 0;
+    transform: scale(0.98);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.dashboard-main > *,
+.requests-main > *,
+.request-history-page > *,
+.notifications-page > *,
+.request-document-page > * {
+  animation: page-fade-slide-in 420ms ease-out both;
+}
+
+.dashboard-main > :nth-child(2),
+.requests-main > :nth-child(2),
+.request-history-page > :nth-child(2),
+.notifications-page > :nth-child(2),
+.request-document-page > :nth-child(2) {
+  animation-delay: 70ms;
+}
+
+.dashboard-main > :nth-child(3),
+.requests-main > :nth-child(3) {
+  animation-delay: 140ms;
+}
+
+.dashboard-grid > .content-card,
+.request-stats > .request-stat-card,
+.requests-container > .request-card,
+.notifications-list > .notification-item,
+.history-table tbody tr {
+  animation: card-scale-in 360ms ease-out both;
+}
+
+.dashboard-grid > .content-card:nth-child(2),
+.request-stats > .request-stat-card:nth-child(2),
+.requests-container > .request-card:nth-child(2),
+.notifications-list > .notification-item:nth-child(2),
+.history-table tbody tr:nth-child(2) {
+  animation-delay: 70ms;
+}
+
+.request-stats > .request-stat-card:nth-child(3),
+.requests-container > .request-card:nth-child(3),
+.notifications-list > .notification-item:nth-child(3),
+.history-table tbody tr:nth-child(3) {
+  animation-delay: 140ms;
+}
+
+.request-stats > .request-stat-card:nth-child(4),
+.requests-container > .request-card:nth-child(4),
+.notifications-list > .notification-item:nth-child(4),
+.history-table tbody tr:nth-child(4) {
+  animation-delay: 210ms;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dashboard-main > *,
+  .requests-main > *,
+  .request-history-page > *,
+  .notifications-page > *,
+  .request-document-page > *,
+  .dashboard-grid > .content-card,
+  .request-stats > .request-stat-card,
+  .requests-container > .request-card,
+  .notifications-list > .notification-item,
+  .history-table tbody tr {
+    animation: none;
+  }
+}

@@ -1,0 +1,211 @@
+@import url("https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700;800&family=Poppins:wght@400;500;600;700&display=swap");
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html,
+body {
+  width: 100%;
+  min-height: 100%;
+  font-family:
+    "Poppins", -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto",
+    "Oxygen", "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans",
+    "Helvetica Neue", sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ============ Wizard page ============ */
+
+.create-account-page {
+  min-height: 100vh;
+  background: #0d1a30;
+}
+
+.registration-main {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  width: 100%;
+  padding: 44px 20px 36px;
+}
+
+.registration-footer-note {
+  font-size: 12.5px;
+  color: rgba(255, 255, 255, 0.4);
+  text-align: center;
+}
+
+/* Back to login */
+.registration-back-row {
+  display: flex;
+  width: 100%;
+  max-width: 760px;
+}
+
+.back-to-login {
+  padding: 8px 16px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  color: #c7d2f0;
+  cursor: pointer;
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease,
+    color 0.2s ease;
+}
+
+.registration-main .back-to-login:hover {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.32);
+  color: #ffffff;
+  transform: none;
+  box-shadow: none;
+}
+
+.back-to-login:focus-visible {
+  outline: 2px solid #d9a521;
+  outline-offset: 2px;
+}
+
+/* ============ Success screen ============ */
+
+.create-account-page--success {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+}
+
+.registration-success-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  max-width: 380px;
+  padding: 44px 40px 40px;
+  background: #ffffff;
+  border-radius: 16px;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.4);
+  text-align: center;
+  animation: successCardIn 0.45s ease-out;
+}
+
+@keyframes successCardIn {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.success-check {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 64px;
+  height: 64px;
+  margin-bottom: 24px;
+  border-radius: 50%;
+  background: #e6f4ea;
+}
+
+.success-title {
+  margin: 0 0 14px;
+  font-family: "Playfair Display", Georgia, "Times New Roman", serif;
+  font-size: 22px;
+  font-weight: 700;
+  color: #14204d;
+}
+
+.success-reference-label {
+  margin: 0 0 4px;
+  font-size: 12px;
+  color: #8a93a8;
+}
+
+.success-reference-value {
+  margin: 0 0 18px;
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  color: #d9a521;
+}
+
+.success-note {
+  max-width: 300px;
+  margin: 0 0 26px;
+  font-size: 13px;
+  line-height: 1.7;
+  color: #7d87a3;
+}
+
+.success-primary-button {
+  width: 100%;
+  padding: 12px 20px;
+  background: #0d1a30;
+  border: none;
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 13.5px;
+  font-weight: 700;
+  color: #ffffff;
+  cursor: pointer;
+  transition:
+    background 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.success-primary-button:hover {
+  background: #1d3468;
+  box-shadow: 0 8px 18px rgba(13, 26, 48, 0.28);
+}
+
+.success-secondary-link {
+  margin-top: 16px;
+  padding: 0;
+  background: none;
+  border: none;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  color: #1d3468;
+  cursor: pointer;
+}
+
+.success-secondary-link:hover {
+  text-decoration: underline;
+}
+
+/* ============ Responsive ============ */
+
+@media (max-width: 640px) {
+  .registration-main {
+    padding: 28px 14px 28px;
+  }
+
+  .registration-success-card {
+    padding: 36px 24px 32px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

@@ -1,0 +1,164 @@
+.request-document-layout {
+  min-height: 100vh;
+  background: #f5f7fb;
+}
+
+.request-document-page {
+  width: calc(100% - 250px);
+  min-height: 100vh;
+  margin-left: 250px;
+  padding: 30px 40px 48px;
+  background: #f5f7fb;
+  color: #1f2937;
+}
+
+.request-document-header {
+  margin-bottom: 28px;
+}
+
+.request-document-header h1,
+.request-document-card h2 {
+  margin: 0;
+  color: #111827;
+}
+
+.request-document-header h1 {
+  margin-bottom: 8px;
+  font-size: 30px;
+}
+
+.request-document-header p:not(.page-label),
+.request-document-card-header p {
+  margin: 0;
+  color: #6b7280;
+  font-size: 14px;
+}
+
+.request-document-card {
+  max-width: 760px;
+  overflow: hidden;
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
+  background: #ffffff;
+}
+
+.request-document-card-header {
+  padding: 22px 24px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.request-document-card h2 {
+  font-size: 18px;
+}
+
+.request-document-card-header p {
+  margin-top: 6px;
+}
+
+.request-document-form {
+  display: grid;
+  gap: 10px;
+  padding: 24px;
+}
+
+.request-document-form label {
+  color: #374151;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.request-document-form select,
+.request-document-form textarea {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid #d1d5db;
+  border-radius: 9px;
+  padding: 11px 12px;
+  color: #1f2937;
+  font: inherit;
+  font-size: 14px;
+  outline: none;
+}
+
+.request-document-form select:focus,
+.request-document-form textarea:focus {
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px #eef2ff;
+}
+
+.request-document-form textarea {
+  resize: vertical;
+}
+
+.request-document-error {
+  margin: 0;
+  color: #dc2626;
+  font-size: 13px;
+}
+
+.request-document-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.request-document-actions button {
+  border-radius: 9px;
+  padding: 10px 14px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.request-document-cancel {
+  border: 1px solid #d1d5db;
+  background: #ffffff;
+  color: #4b5563;
+}
+
+.request-document-submit {
+  border: 1px solid #667eea;
+  background: #667eea;
+  color: #ffffff;
+}
+
+@media (max-width: 800px) {
+  .request-document-page {
+    width: calc(100% - 80px);
+    margin-left: 80px;
+    padding: 24px;
+  }
+}
+
+@media (max-width: 600px) {
+  .request-document-page {
+    padding: 20px 16px 32px;
+  }
+
+  .request-document-header h1 {
+    font-size: 26px;
+  }
+}
+
+@media (max-width: 420px) {
+  .request-document-page {
+    width: calc(100% - 64px);
+    margin-left: 64px;
+    padding: 14px;
+  }
+
+  .request-document-card-header,
+  .request-document-form {
+    padding: 18px;
+  }
+
+  .request-document-actions {
+    flex-direction: column-reverse;
+  }
+
+  .request-document-actions button {
+    width: 100%;
+  }
+}
