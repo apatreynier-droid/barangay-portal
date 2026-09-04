@@ -7,6 +7,10 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
+# Backend test files
+backend/scripts/_login_*.json
+backend/scripts/_e2e_*.json
+
 node_modules
 dist
 dist-ssr
