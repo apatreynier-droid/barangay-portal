@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import LoginPage from "./Pages/Login/LoginPage";
 import CreateAccount from "./Pages/CreateAccount/CreateAccount";
 import Dashboard from "./Pages/Dashboard/Dashboard";
+import AdminDashboard from "./Pages/AdminDashboard/AdminDashboard";
 import MyRequests from "./Pages/MyRequests/MyRequests";
 import RequestHistory from "./Pages/RequestHistory/RequestHistory";
 import NotificationPage from "./Pages/Notification/NotificationPage";
@@ -93,6 +94,22 @@ function App() {
       <LoginPage
         onLoginSuccess={() => setUser(getSessionUser())}
         onCreateAccount={() => setShowCreateAccount(true)}
+      />
+    );
+  }
+
+  const unreadCount = notifications.filter(
+    (notification) => !notification.is_read,
+  ).length;
+  const isAdmin = user.role === "admin";
+
+  if (page === "dashboard" && isAdmin) {
+    return (
+      <AdminDashboard
+        user={user}
+        unreadNotifications={unreadCount}
+        onNotifications={() => setPage("notifications")}
+        onLogout={handleLogout}
       />
     );
   }

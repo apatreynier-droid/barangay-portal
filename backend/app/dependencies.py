@@ -48,3 +48,15 @@ def get_current_user(
         )
 
     return user
+
+
+def get_current_admin_user(
+    current_user: dict[str, object] = Depends(get_current_user),
+) -> dict[str, object]:
+    if current_user.get("role") != "admin":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Administrator access is required.",
+        )
+
+    return current_user

@@ -117,3 +117,52 @@ class DashboardSummaryResponse(BaseModel):
     pending: int
     processing: int
     ready_for_pickup: int
+
+
+class AdminStatusStats(BaseModel):
+    total_residents: int
+    new_residents_this_month: int
+    pending: int
+    approved: int
+    processing: int
+    completed: int
+    rejected: int
+
+
+class AdminMonthlyDataPoint(BaseModel):
+    month: str
+    submitted: int
+    completed: int
+    rejected: int
+
+
+class AdminDocumentTypeCount(BaseModel):
+    document_name: str
+    count: int
+
+
+class AdminRecentRequest(BaseModel):
+    request_number: str
+    resident_name: str
+    document: str
+    status: str
+    submitted_at: datetime
+
+
+class AdminRecentRegistration(BaseModel):
+    resident_name: str
+    created_at: datetime
+
+
+class AdminActivityEntry(BaseModel):
+    title: str
+    created_at: datetime
+
+
+class AdminDashboardResponse(BaseModel):
+    stats: AdminStatusStats
+    monthly: list[AdminMonthlyDataPoint]
+    document_types: list[AdminDocumentTypeCount]
+    recent_requests: list[AdminRecentRequest]
+    recent_registrations: list[AdminRecentRegistration]
+    recent_activity: list[AdminActivityEntry]

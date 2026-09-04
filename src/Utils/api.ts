@@ -1,4 +1,5 @@
 import type { Request, RequestStatus } from "../Types/DashboardType";
+import type { AdminDashboardData } from "../Types/AdminDashboardType";
 
 const API_BASE_URL = "http://127.0.0.1:8000";
 
@@ -296,6 +297,20 @@ export const fetchDashboardSummary = async (): Promise<DashboardSummary> => {
   }
 
   return body as DashboardSummary;
+};
+
+export const fetchAdminDashboard = async (): Promise<AdminDashboardData> => {
+  const response = await authedFetch("/api/admin/dashboard");
+  const body: unknown = await response.json().catch(() => null);
+
+  if (!response.ok) {
+    throw new ApiError(
+      response.status,
+      parseErrorMessage(body, "Could not load the admin dashboard."),
+    );
+  }
+
+  return body as AdminDashboardData;
 };
 
 export const fetchRequests = async (): Promise<ApiRequest[]> => {

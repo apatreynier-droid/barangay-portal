@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from datetime import datetime, timedelta, timezone
+import calendar
+from datetime import date, datetime, timedelta, timezone
 
 import mysql.connector
 import secrets
@@ -11,8 +12,15 @@ from mysql.connector import MySQLConnection
 
 from .config import settings
 from .database import create_connection, get_db
-from .dependencies import get_current_user
+from .dependencies import get_current_admin_user, get_current_user
 from .schemas import (
+    AdminActivityEntry,
+    AdminDashboardResponse,
+    AdminDocumentTypeCount,
+    AdminMonthlyDataPoint,
+    AdminRecentRegistration,
+    AdminRecentRequest,
+    AdminStatusStats,
     AuthResponse,
     CreateRequestInput,
     DashboardSummaryResponse,
@@ -538,6 +546,178 @@ def dashboard_summary(
     summary = cursor.fetchone()
     cursor.close()
     return DashboardSummaryResponse(**summary)
+
+
+@app.get("/api/admin/dashboard", response_model=AdminDashboardResponse)
+def admin_dashboard(
+    connection: MySQLConnection = Depends(get_db),
+    current_user: dict[str, object] = Depends(get_current_admin_user),
+) -> AdminDashboardResponse:
+    cursor = connection.cursor(dictionary=True)
+
+    cursor.execute(
+        """
+        SELECT COUNT(*) AS total_residents,
+               COALESCE(SUM(users.created_at
+                            >= CURDATE() - INTERVAL (DAY(CURDATE()) - 1) DAY), 0)
+                   AS new_residents_this_month
+        FROM users
+        WHERE users.role = 'resident'
+        """
+    )
+    resident_stats = cursor.fetchone()
+
+    cursor.execute(
+        """
+        SELECT COALESCE(SUM(status = 'Pending'), 0) AS pending,
+               COALESCE(SUM(status = 'Ready for Pickup'), 0) AS approved,
+               COALESCE(SUM(status = 'Processing'), 0) AS processing,
+               COALESCE(SUM(status = 'Completed'
+                            AND COALESCE(completed_at, last_updated)
+                                >= CURDATE() - INTERVAL (DAY(CURDATE()) - 1) DAY), 0)
+                   AS completed,
+               COALESCE(SUM(status = 'Rejected'
+                            AND last_updated
+                                >= CURDATE() - INTERVAL (DAY(CURDATE()) - 1) DAY), 0)
+                   AS rejected
+        FROM requests
+        """
+    )
+    request_stats = cursor.fetchone()
+
+    # Monthly overview (submitted vs completed vs rejected) for the last 7 months.
+    cursor.execute(
+        """
+        SELECT YEAR(submitted_at) AS yr, MONTH(submitted_at) AS mo,
+               COUNT(*) AS submitted,
+               COALESCE(SUM(status = 'Completed'), 0) AS completed,
+               COALESCE(SUM(status = 'Rejected'), 0) AS rejected
+        FROM requests
+        WHERE submitted_at
+              >= SUBDATE(CURDATE() - INTERVAL (DAY(CURDATE()) - 1) DAY, INTERVAL 6 MONTH)
+        GROUP BY yr, mo
+        """
+    )
+    monthly_rows = {
+        (row["yr"], row["mo"]): row for row in cursor.fetchall()
+    }
+
+    today = date.today()
+    month_keys: list[tuple[int, int]] = []
+    year, month = today.year, today.month
+    for _ in range(7):
+        month_keys.append((year, month))
+        month -= 1
+        if month == 0:
+            month = 12
+            year -= 1
+    month_keys.reverse()
+
+    monthly: list[AdminMonthlyDataPoint] = []
+    for row_year, row_month in month_keys:
+        row = monthly_rows.get((row_year, row_month))
+        monthly.append(
+            AdminMonthlyDataPoint(
+                month=calendar.month_abbr[row_month],
+                submitted=row["submitted"] if row else 0,
+                completed=row["completed"] if row else 0,
+                rejected=row["rejected"] if row else 0,
+            )
+        )
+
+    cursor.execute(
+        """
+        SELECT document_types.document_name, COUNT(requests.id) AS total
+        FROM document_types
+        JOIN requests ON requests.document_type_id = document_types.id
+        GROUP BY document_types.id, document_types.document_name
+        ORDER BY total DESC
+        LIMIT 5
+        """
+    )
+    document_types = [
+        AdminDocumentTypeCount(document_name=row["document_name"], count=row["total"])
+        for row in cursor.fetchall()
+    ]
+
+    cursor.execute(
+        """
+        SELECT requests.request_number,
+               CONCAT(resident_profiles.first_name, ' ', resident_profiles.last_name)
+                   AS resident_name,
+               document_types.document_name AS document,
+               requests.status,
+               requests.submitted_at
+        FROM requests
+        JOIN users ON users.id = requests.user_id
+        JOIN resident_profiles ON resident_profiles.user_id = users.id
+        JOIN document_types ON document_types.id = requests.document_type_id
+        ORDER BY requests.submitted_at DESC, requests.id DESC
+        LIMIT 5
+        """
+    )
+    recent_requests = [
+        AdminRecentRequest(
+            request_number=row["request_number"],
+            resident_name=row["resident_name"],
+            document=row["document"],
+            status=row["status"],
+            submitted_at=row["submitted_at"],
+        )
+        for row in cursor.fetchall()
+    ]
+
+    cursor.execute(
+        """
+        SELECT CONCAT(resident_profiles.first_name, ' ', resident_profiles.last_name)
+                   AS resident_name,
+               resident_profiles.created_at
+        FROM resident_profiles
+        JOIN users ON users.id = resident_profiles.user_id
+        WHERE users.role = 'resident'
+        ORDER BY resident_profiles.created_at DESC, resident_profiles.id DESC
+        LIMIT 4
+        """
+    )
+    recent_registrations = [
+        AdminRecentRegistration(
+            resident_name=row["resident_name"],
+            created_at=row["created_at"],
+        )
+        for row in cursor.fetchall()
+    ]
+
+    cursor.execute(
+        """
+        SELECT 'New Document Request' AS title, requests.submitted_at AS created_at
+        FROM requests
+        ORDER BY requests.submitted_at DESC, requests.id DESC
+        LIMIT 3
+        """
+    )
+    recent_activity = [
+        AdminActivityEntry(title=row["title"], created_at=row["created_at"])
+        for row in cursor.fetchall()
+    ]
+
+    cursor.close()
+
+    return AdminDashboardResponse(
+        stats=AdminStatusStats(
+            total_residents=resident_stats["total_residents"],
+            new_residents_this_month=resident_stats["new_residents_this_month"],
+            pending=request_stats["pending"],
+            approved=request_stats["approved"],
+            processing=request_stats["processing"],
+            completed=request_stats["completed"],
+            rejected=request_stats["rejected"],
+        ),
+        monthly=monthly,
+        document_types=document_types,
+        recent_requests=recent_requests,
+        recent_registrations=recent_registrations,
+        recent_activity=recent_activity,
+    )
 
 
 @app.get("/api/notifications", response_model=list[NotificationResponse])
