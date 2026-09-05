@@ -19,7 +19,7 @@ const CreateAccountHeader = ({ currentStep }: CreateAccountHeaderProps) => {
           <span className="registration-eyebrow">Republika ng Pilipinas</span>
           <h1 className="registration-heading">Barangay Registration Form</h1>
           <p className="registration-subheading">
-            Barangay San Jose • Municipality of Caloocan • Metro Manila
+            Barangay Lagab • Compostela • Davao De Oro
           </p>
         </div>
       </div>

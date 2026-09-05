@@ -3,6 +3,7 @@ import LoginPage from "./Pages/Login/LoginPage";
 import CreateAccount from "./Pages/CreateAccount/CreateAccount";
 import Dashboard from "./Pages/Dashboard/Dashboard";
 import AdminDashboard from "./Pages/AdminDashboard/AdminDashboard";
+import AdminResidents from "./Pages/AdminResidents/AdminResidents";
 import MyRequests from "./Pages/MyRequests/MyRequests";
 import RequestHistory from "./Pages/RequestHistory/RequestHistory";
 import NotificationPage from "./Pages/Notification/NotificationPage";
@@ -21,6 +22,7 @@ import type { Request } from "./Types/DashboardType";
 
 type Page =
   | "dashboard"
+  | "residents"
   | "my-requests"
   | "request-history"
   | "notifications"
@@ -108,6 +110,19 @@ function App() {
       <AdminDashboard
         user={user}
         unreadNotifications={unreadCount}
+        onNotifications={() => setPage("notifications")}
+        onResidents={() => setPage("residents")}
+        onLogout={handleLogout}
+      />
+    );
+  }
+
+  if (page === "residents" && isAdmin) {
+    return (
+      <AdminResidents
+        user={user}
+        unreadNotifications={unreadCount}
+        onDashboard={() => setPage("dashboard")}
         onNotifications={() => setPage("notifications")}
         onLogout={handleLogout}
       />

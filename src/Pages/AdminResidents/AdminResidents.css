@@ -1,0 +1,456 @@
+/* ---------------------------------- Toolbar ---------------------------------- */
+
+.residents-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.residents-search {
+  flex: 1;
+  min-width: 0;
+  padding: 11px 16px;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  background: #ffffff;
+  color: #0f172a;
+  font-size: 13px;
+  font-family: inherit;
+}
+
+.residents-search::placeholder {
+  color: #94a3b8;
+}
+
+.residents-search:focus {
+  outline: 2px solid #bfdbfe;
+  border-color: #2563eb;
+}
+
+.residents-select {
+  flex-shrink: 0;
+  min-width: 120px;
+  padding: 11px 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  background: #ffffff;
+  color: #0f172a;
+  font-size: 13px;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.residents-select:focus {
+  outline: 2px solid #bfdbfe;
+  border-color: #2563eb;
+}
+
+.residents-count {
+  flex-shrink: 0;
+  color: #64748b;
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+/* ------------------------------- Residents card ------------------------------ */
+
+.residents-card {
+  overflow-x: auto;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  background: #ffffff;
+}
+
+.residents-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.residents-table th {
+  padding: 14px 16px;
+  border-bottom: 1px solid #e2e8f0;
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 600;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.residents-table td {
+  padding: 14px 16px;
+  border-bottom: 1px solid #f1f5f9;
+  color: #334155;
+  vertical-align: middle;
+}
+
+.residents-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.residents-table tbody tr:hover {
+  background: #f8fafc;
+}
+
+.residents-empty {
+  padding: 32px 16px !important;
+  color: #94a3b8;
+  text-align: center;
+}
+
+.residents-resident-cell {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 220px;
+}
+
+.residents-avatar {
+  width: 34px;
+  height: 34px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.residents-avatar-1 {
+  background: #2563eb;
+}
+
+.residents-avatar-2 {
+  background: #8b5cf6;
+}
+
+.residents-avatar-3 {
+  background: #059669;
+}
+
+.residents-avatar-4 {
+  background: #dc2626;
+}
+
+.residents-avatar-5 {
+  background: #ea580c;
+}
+
+.residents-resident-info {
+  min-width: 0;
+}
+
+.residents-resident-info strong {
+  display: block;
+  color: #0f172a;
+  font-weight: 600;
+}
+
+.residents-resident-info span {
+  display: block;
+  margin-top: 1px;
+  color: #94a3b8;
+  font-size: 12px;
+}
+
+.residents-code {
+  color: #2563eb;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.residents-status {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.residents-status.status-active {
+  background: #dcfce7;
+  color: #16a34a;
+}
+
+.residents-status.status-inactive {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+.residents-status.status-suspended {
+  background: #fef3c7;
+  color: #b45309;
+}
+
+.residents-view-button {
+  padding: 7px 18px;
+  border: 1px solid #bfdbfe;
+  border-radius: 8px;
+  background: #eff6ff;
+  color: #2563eb;
+  font-size: 12px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.residents-view-button:hover {
+  background: #dbeafe;
+}
+
+/* ------------------------------ Details view -------------------------------- */
+
+.residents-back-link {
+  display: inline-block;
+  margin-bottom: 18px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #2563eb;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.residents-back-link:hover {
+  text-decoration: underline;
+}
+
+.residents-detail-grid {
+  display: grid;
+  grid-template-columns: 300px minmax(0, 1fr);
+  gap: 18px;
+  align-items: start;
+}
+
+.residents-detail-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  min-width: 0;
+}
+
+/* Profile card */
+
+.residents-profile-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 28px 24px;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  background: #ffffff;
+  text-align: center;
+}
+
+.residents-profile-avatar {
+  width: 64px;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: #2563eb;
+  color: #ffffff;
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.residents-profile-card h2 {
+  margin: 14px 0 0;
+  color: #0f172a;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.residents-profile-code {
+  margin-top: 4px;
+  color: #2563eb;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.residents-profile-card .residents-status {
+  margin-top: 8px;
+}
+
+.residents-edit-button {
+  width: 100%;
+  margin-top: 22px;
+  padding: 10px 16px;
+  border: 0;
+  border-radius: 999px;
+  background: #2563eb;
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.residents-edit-button:hover:not(:disabled) {
+  background: #1d4ed8;
+}
+
+.residents-deactivate-button {
+  width: 100%;
+  margin-top: 10px;
+  padding: 10px 16px;
+  border: 1px solid #fecaca;
+  border-radius: 999px;
+  background: #ffffff;
+  color: #dc2626;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.residents-deactivate-button:hover:not(:disabled) {
+  background: #fef2f2;
+}
+
+.residents-edit-button:disabled,
+.residents-deactivate-button:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+/* Personal information card */
+
+.residents-info-card,
+.residents-history-card {
+  padding: 20px 24px 24px;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  background: #ffffff;
+}
+
+.residents-info-card h3,
+.residents-history-card h3 {
+  margin: 0 0 18px;
+  color: #0f172a;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.residents-info-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px 32px;
+  margin: 0;
+}
+
+.residents-info-item dt {
+  margin-bottom: 4px;
+  color: #94a3b8;
+  font-size: 11px;
+}
+
+.residents-info-item dd {
+  margin: 0;
+  color: #1f2937;
+  font-size: 13px;
+  font-weight: 500;
+  word-break: break-word;
+}
+
+/* Request history card */
+
+.residents-history-card {
+  padding-bottom: 12px;
+}
+
+.residents-history-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+.residents-history-table th {
+  padding: 8px 12px;
+  color: #94a3b8;
+  font-size: 11px;
+  font-weight: 500;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.residents-history-table td {
+  padding: 10px 12px;
+  border-top: 1px solid #f1f5f9;
+  color: #334155;
+}
+
+.residents-history-code {
+  color: #2563eb;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.residents-history-empty {
+  margin: 0;
+  padding: 8px 0 12px;
+  color: #94a3b8;
+  font-size: 12px;
+}
+
+/* Request status pills */
+
+.residents-status.status-pending {
+  background: #dbeafe;
+  color: #2563eb;
+}
+
+.residents-status.status-processing {
+  background: #fef3c7;
+  color: #b45309;
+}
+
+.residents-status.status-ready {
+  background: #ede9fe;
+  color: #7c3aed;
+}
+
+.residents-status.status-completed {
+  background: #dcfce7;
+  color: #16a34a;
+}
+
+.residents-status.status-rejected {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+/* -------------------------------- Responsive -------------------------------- */
+
+@media (max-width: 900px) {
+  .residents-toolbar {
+    flex-wrap: wrap;
+  }
+
+  .residents-search {
+    flex-basis: 100%;
+  }
+
+  .residents-count {
+    margin-left: auto;
+  }
+
+  .residents-detail-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 600px) {
+  .residents-info-grid {
+    grid-template-columns: 1fr;
+  }
+}
