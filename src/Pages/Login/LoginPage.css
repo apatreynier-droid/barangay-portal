@@ -63,22 +63,14 @@ body {
   padding: 56px 64px;
   overflow: hidden;
   color: #ffffff;
-  background: linear-gradient(
-    168deg,
-    var(--navy-panel-top) 0%,
-    var(--navy-panel-mid) 45%,
-    var(--navy-panel-bottom) 100%
-  );
-}
-
-/* Plus-sign pattern */
-.brand-panel::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='72' height='72' viewBox='0 0 72 72'%3E%3Cpath d='M36 31v10M31 36h10' stroke='%23ffffff' stroke-opacity='0.08' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E");
-  background-size: 72px 72px;
-  pointer-events: none;
+  background:
+    url("../../assets/lagab.jpg") center / cover no-repeat,
+    linear-gradient(
+      168deg,
+      var(--navy-panel-top) 0%,
+      var(--navy-panel-mid) 45%,
+      var(--navy-panel-bottom) 100%
+    );
 }
 
 .brand-inner {
