@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import date, datetime
+from typing import Literal
 
 from pydantic import BaseModel, Field
 
@@ -157,6 +158,67 @@ class AdminRecentRegistration(BaseModel):
 class AdminActivityEntry(BaseModel):
     title: str
     created_at: datetime
+
+
+class AdminResidentResponse(BaseModel):
+    id: int
+    resident_code: str
+    name: str
+    email: str
+    purok: str | None
+    contact_number: str | None
+    status: str
+    registered_at: datetime
+
+
+class AdminResidentRequestEntry(BaseModel):
+    request_number: str
+    document: str
+    status: str
+    submitted_at: datetime
+
+
+class AdminResidentDetailResponse(BaseModel):
+    id: int
+    resident_code: str
+    name: str
+    first_name: str
+    middle_name: str | None
+    last_name: str
+    suffix: str | None
+    email: str
+    purok: str | None
+    contact_number: str | None
+    address: str | None
+    birthday: date | None
+    gender: str | None
+    civil_status: str | None
+    occupation: str | None
+    status: str
+    requests: list[AdminResidentRequestEntry]
+
+
+class AdminResidentUpdateInput(BaseModel):
+    first_name: str = Field(min_length=1, max_length=100)
+    middle_name: str | None = Field(default=None, max_length=100)
+    last_name: str = Field(min_length=1, max_length=100)
+    suffix: str | None = Field(default=None, max_length=20)
+    email: str = Field(min_length=3, max_length=255)
+    date_of_birth: date | None = None
+    sex: Literal["Male", "Female"] | None = None
+    civil_status: (
+        Literal["Single", "Married", "Widowed", "Separated", "Annulled"] | None
+    ) = None
+    occupation: str | None = Field(default=None, max_length=100)
+    house_no: str | None = Field(default=None, max_length=20)
+    street: str | None = Field(default=None, max_length=150)
+    purok: str | None = Field(default=None, max_length=50)
+    address: str | None = Field(default=None, max_length=255)
+    contact_number: str | None = Field(default=None, max_length=20)
+
+
+class AdminResidentStatusInput(BaseModel):
+    account_status: Literal["active", "inactive"]
 
 
 class AdminDashboardResponse(BaseModel):

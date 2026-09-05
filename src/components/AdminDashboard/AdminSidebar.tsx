@@ -16,6 +16,9 @@ type AdminSidebarProps = {
   firstName: string;
   lastName: string;
   role: string;
+  activeItem?: string;
+  onDashboard?: () => void;
+  onResidents?: () => void;
   onNotifications: () => void;
   onLogout: () => void;
 };
@@ -27,6 +30,9 @@ const AdminSidebar = ({
   firstName,
   lastName,
   role,
+  activeItem = "dashboard",
+  onDashboard,
+  onResidents,
   onNotifications,
   onLogout,
 }: AdminSidebarProps) => {
@@ -34,8 +40,8 @@ const AdminSidebar = ({
     useState(false);
 
   const navItems: AdminNavItem[] = [
-    { key: "dashboard", label: "Dashboard", icon: "▦" },
-    { key: "residents", label: "Residents", icon: "👥" },
+    { key: "dashboard", label: "Dashboard", icon: "▦", onClick: onDashboard },
+    { key: "residents", label: "Residents", icon: "👥", onClick: onResidents },
     {
       key: "document-requests",
       label: "Document Requests",
@@ -80,9 +86,9 @@ const AdminSidebar = ({
         </div>
 
         <nav className="admin-nav">
-          {navItems.map((item, index) => {
+          {navItems.map((item) => {
             const className = `admin-nav-item${
-              index === 0 ? " active" : ""
+              item.key === activeItem ? " active" : ""
             }`;
 
             if (item.onClick) {
@@ -109,8 +115,8 @@ const AdminSidebar = ({
                 key={item.key}
                 type="button"
                 className={className}
-                disabled={index !== 0}
-                title={index === 0 ? undefined : "Coming soon"}
+                disabled
+                title="Coming soon"
               >
                 <span className="admin-nav-icon" aria-hidden="true">
                   {item.icon}

@@ -86,8 +86,8 @@ const CreateAccount = ({ onBackToLogin }: CreateAccountProps) => {
         />
 
         <p className="registration-footer-note">
-          Barangay San Jose • For inquiries, visit the Barangay Hall or call
-          (02) 8-XXX-XXXX
+          Barangay Lagab • For inquiries, visit the Barangay Hall or call (02)
+          8-XXX-XXXX
         </p>
       </main>
     </div>

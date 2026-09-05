@@ -3,6 +3,8 @@ type AdminTopbarProps = {
   role: string;
   unreadCount: number;
   onNotifications: () => void;
+  title?: string;
+  subtitle?: string;
 };
 
 const AdminTopbar = ({
@@ -10,12 +12,17 @@ const AdminTopbar = ({
   role,
   unreadCount,
   onNotifications,
+  title = "Dashboard",
+  subtitle,
 }: AdminTopbarProps) => {
+  const heading =
+    subtitle ?? `Welcome back, ${fullName}. Here's what's happening today.`;
+
   return (
     <header className="admin-topbar">
       <div className="admin-topbar-heading">
-        <h1>Dashboard</h1>
-        <p>Welcome back, {fullName}. Here&apos;s what&apos;s happening today.</p>
+        <h1>{title}</h1>
+        <p>{heading}</p>
       </div>
 
       <div className="admin-topbar-actions">
