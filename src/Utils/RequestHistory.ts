@@ -7,6 +7,7 @@ import type {
 
 export const STATUS_META: Record<RequestStatus, StatusMeta> = {
   pending: { label: "Pending", className: "status-pending" },
+  approved: { label: "Approved", className: "status-approved" },
   processing: { label: "Processing", className: "status-processing" },
   ready: { label: "Ready for pickup", className: "status-ready" },
   completed: { label: "Completed", className: "status-completed" },
@@ -14,7 +15,9 @@ export const STATUS_META: Record<RequestStatus, StatusMeta> = {
 };
 
 export function getStatusMeta(status: RequestStatus): StatusMeta {
-  return STATUS_META[status];
+  return (
+    STATUS_META[status] ?? { label: status, className: "status-pending" }
+  );
 }
 
 export function formatDate(dateString: string): string {

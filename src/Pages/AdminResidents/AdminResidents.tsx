@@ -19,6 +19,7 @@ type AdminResidentsProps = {
   user: AuthUser;
   unreadNotifications: number;
   onDashboard: () => void;
+  onDocumentRequests: () => void;
   onNotifications: () => void;
   onLogout: () => void;
 };
@@ -27,6 +28,7 @@ const AdminResidents = ({
   user,
   unreadNotifications,
   onDashboard,
+  onDocumentRequests,
   onNotifications,
   onLogout,
 }: AdminResidentsProps) => {
@@ -100,6 +102,7 @@ const AdminResidents = ({
         activeItem="residents"
         onDashboard={onDashboard}
         onResidents={() => undefined}
+        onDocumentRequests={onDocumentRequests}
         onNotifications={onNotifications}
         onLogout={onLogout}
       />

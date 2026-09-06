@@ -1,5 +1,16 @@
 import { useState } from "react";
 import LogoutConfirmation from "../LogoutConfirmation/LogoutConfirmation";
+import dashboardIcon from "../../assets/icons/ADash.png";
+import residentsIcon from "../../assets/icons/Residents.png";
+import documentRequestsIcon from "../../assets/icons/DR.png";
+import requestHistoryIcon from "../../assets/icons/RH.png";
+import approvalsIcon from "../../assets/icons/AP.png";
+import documentManagementIcon from "../../assets/icons/Dm.png";
+import reportsIcon from "../../assets/icons/Reports.png";
+import notificationsIcon from "../../assets/icons/notification-bell.png";
+import announcementsIcon from "../../assets/icons/announcement.png";
+import userManagementIcon from "../../assets/icons/UM.png";
+import activityLogsIcon from "../../assets/icons/Logs.png";
 
 type AdminNavItem = {
   key: string;
@@ -19,6 +30,7 @@ type AdminSidebarProps = {
   activeItem?: string;
   onDashboard?: () => void;
   onResidents?: () => void;
+  onDocumentRequests?: () => void;
   onNotifications: () => void;
   onLogout: () => void;
 };
@@ -33,6 +45,7 @@ const AdminSidebar = ({
   activeItem = "dashboard",
   onDashboard,
   onResidents,
+  onDocumentRequests,
   onNotifications,
   onLogout,
 }: AdminSidebarProps) => {
@@ -40,33 +53,48 @@ const AdminSidebar = ({
     useState(false);
 
   const navItems: AdminNavItem[] = [
-    { key: "dashboard", label: "Dashboard", icon: "▦", onClick: onDashboard },
-    { key: "residents", label: "Residents", icon: "👥", onClick: onResidents },
+    {
+      key: "dashboard",
+      label: "Dashboard",
+      icon: dashboardIcon,
+      onClick: onDashboard,
+    },
+    {
+      key: "residents",
+      label: "Residents",
+      icon: residentsIcon,
+      onClick: onResidents,
+    },
     {
       key: "document-requests",
       label: "Document Requests",
-      icon: "📄",
+      icon: documentRequestsIcon,
       badge: pendingRequests,
+      onClick: onDocumentRequests,
     },
-    { key: "request-history", label: "Request History", icon: "🕘" },
+    { key: "request-history", label: "Request History", icon: requestHistoryIcon },
     {
       key: "approvals",
       label: "Approvals",
-      icon: "✅",
+      icon: approvalsIcon,
       badge: pendingApprovals,
     },
-    { key: "document-management", label: "Document Management", icon: "🗂️" },
-    { key: "reports", label: "Reports", icon: "📊" },
+    {
+      key: "document-management",
+      label: "Document Management",
+      icon: documentManagementIcon,
+    },
+    { key: "reports", label: "Reports", icon: reportsIcon },
     {
       key: "notifications",
       label: "Notifications",
-      icon: "🔔",
+      icon: notificationsIcon,
       badge: unreadNotifications,
       onClick: onNotifications,
     },
-    { key: "announcements", label: "Announcements", icon: "📢" },
-    { key: "user-management", label: "User Management", icon: "👤" },
-    { key: "activity-logs", label: "Activity Logs", icon: "📋" },
+    { key: "announcements", label: "Announcements", icon: announcementsIcon },
+    { key: "user-management", label: "User Management", icon: userManagementIcon },
+    { key: "activity-logs", label: "Activity Logs", icon: activityLogsIcon },
   ];
 
   return (
@@ -100,7 +128,7 @@ const AdminSidebar = ({
                   onClick={item.onClick}
                 >
                   <span className="admin-nav-icon" aria-hidden="true">
-                    {item.icon}
+                    <img src={item.icon} alt="" />
                   </span>
                   <span className="admin-nav-label">{item.label}</span>
                   {item.badge !== undefined && item.badge > 0 && (
@@ -119,7 +147,7 @@ const AdminSidebar = ({
                 title="Coming soon"
               >
                 <span className="admin-nav-icon" aria-hidden="true">
-                  {item.icon}
+                  <img src={item.icon} alt="" />
                 </span>
                 <span className="admin-nav-label">{item.label}</span>
                 {item.badge !== undefined && item.badge > 0 && (

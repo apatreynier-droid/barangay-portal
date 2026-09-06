@@ -419,6 +419,11 @@
   color: #7c3aed;
 }
 
+.residents-status.status-approved {
+  background: #dbeafe;
+  color: #2563eb;
+}
+
 .residents-status.status-completed {
   background: #dcfce7;
   color: #16a34a;

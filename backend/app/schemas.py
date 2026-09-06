@@ -221,6 +221,47 @@ class AdminResidentStatusInput(BaseModel):
     account_status: Literal["active", "inactive"]
 
 
+class AdminDocumentRequestResponse(BaseModel):
+    id: int
+    request_number: str
+    resident_name: str
+    document: str
+    status: str
+    submitted_at: datetime
+    fee: float
+
+
+class AdminDocumentRequestDetailResponse(BaseModel):
+    id: int
+    request_number: str
+    resident_name: str
+    email: str
+    document: str
+    purpose: str
+    status: str
+    admin_remarks: str | None
+    submitted_at: datetime
+    last_updated: datetime
+    pickup_date: date | None
+    fee: float
+    processed_by: str | None
+
+
+class AdminRequestActionInput(BaseModel):
+    status: (
+        Literal[
+            "Approved",
+            "Rejected",
+            "Processing",
+            "Ready for Pickup",
+            "Completed",
+        ]
+        | None
+    ) = None
+    admin_remarks: str | None = Field(default=None, max_length=2000)
+    pickup_date: date | None = None
+
+
 class AdminDashboardResponse(BaseModel):
     stats: AdminStatusStats
     monthly: list[AdminMonthlyDataPoint]

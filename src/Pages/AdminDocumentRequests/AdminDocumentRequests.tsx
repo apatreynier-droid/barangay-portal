@@ -1,0 +1,177 @@
+import "../AdminDashboard/AdminDashboard.css";
+import "../AdminResidents/AdminResidents.css";
+import "./AdminDocumentRequests.css";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import type { AuthUser } from "../../Utils/api";
+import {
+  fetchAdminDashboard,
+  fetchAdminDocumentRequests,
+} from "../../Utils/api";
+import type { AdminDocumentRequest } from "../../Types/AdminDocumentRequestsType";
+import AdminSidebar from "../../components/AdminDashboard/AdminSidebar";
+import AdminTopbar from "../../components/AdminDashboard/AdminTopbar";
+import DocumentRequestsToolbar from "../../components/AdminDocumentRequests/DocumentRequestsToolbar";
+import DocumentRequestsTable from "../../components/AdminDocumentRequests/DocumentRequestsTable";
+import RequestDetailsView from "../../components/AdminDocumentRequests/RequestDetailsView";
+import {
+  DEFAULT_DOCUMENT_REQUESTS_FILTERS,
+  filterDocumentRequests,
+} from "../../Utils/AdminDocumentRequestsLogic";
+import type { DocumentRequestsFiltersState } from "../../Utils/AdminDocumentRequestsLogic";
+
+type AdminDocumentRequestsProps = {
+  user: AuthUser;
+  unreadNotifications: number;
+  onDashboard: () => void;
+  onResidents: () => void;
+  onNotifications: () => void;
+  onLogout: () => void;
+};
+
+const AdminDocumentRequests = ({
+  user,
+  unreadNotifications,
+  onDashboard,
+  onResidents,
+  onNotifications,
+  onLogout,
+}: AdminDocumentRequestsProps) => {
+  const [requests, setRequests] = useState<AdminDocumentRequest[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [filters, setFilters] = useState<DocumentRequestsFiltersState>(
+    DEFAULT_DOCUMENT_REQUESTS_FILTERS,
+  );
+  const [selectedRequestId, setSelectedRequestId] = useState<number | null>(
+    null,
+  );
+  const [sidebarStats, setSidebarStats] = useState({ pending: 0, approved: 0 });
+
+  const loadRequests = useCallback(async () => {
+    setIsLoading(true);
+    setError("");
+
+    try {
+      setRequests(await fetchAdminDocumentRequests());
+    } catch {
+      setError("Could not load the document requests. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void loadRequests();
+  }, [loadRequests]);
+
+  // Sidebar badges stay consistent with the dashboard without blocking the page.
+  useEffect(() => {
+    let cancelled = false;
+
+    fetchAdminDashboard()
+      .then((data) => {
+        if (!cancelled) {
+          setSidebarStats({
+            pending: data.stats.pending,
+            approved: data.stats.approved,
+          });
+        }
+      })
+      .catch(() => {
+        // Badges are optional here; the requests list still loads.
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const filteredRequests = useMemo(
+    () => filterDocumentRequests(requests, filters),
+    [requests, filters],
+  );
+
+  const fullName = `${user.first_name} ${user.last_name}`.trim();
+  const roleLabel = "Brgy. Administrator";
+
+  return (
+    <div className="admin-dashboard">
+      <AdminSidebar
+        pendingRequests={sidebarStats.pending}
+        pendingApprovals={sidebarStats.approved}
+        unreadNotifications={unreadNotifications}
+        firstName={user.first_name}
+        lastName={user.last_name}
+        role={roleLabel}
+        activeItem="document-requests"
+        onDashboard={onDashboard}
+        onResidents={onResidents}
+        onDocumentRequests={() => undefined}
+        onNotifications={onNotifications}
+        onLogout={onLogout}
+      />
+
+      <main className="admin-main">
+        <AdminTopbar
+          fullName={fullName || "Administrator"}
+          role={roleLabel}
+          unreadCount={unreadNotifications}
+          onNotifications={onNotifications}
+          title="Document Requests"
+          subtitle="Review and process document requests."
+        />
+
+        {error && (
+          <div className="admin-error-banner" role="alert">
+            <span>{error}</span>
+            <button type="button" onClick={() => void loadRequests()}>
+              Retry
+            </button>
+          </div>
+        )}
+
+        {selectedRequestId !== null ? (
+          <RequestDetailsView
+            requestId={selectedRequestId}
+            onBack={() => setSelectedRequestId(null)}
+            onChanged={() => void loadRequests()}
+          />
+        ) : (
+          <>
+            <DocumentRequestsToolbar
+              requests={requests}
+              search={filters.search}
+              status={filters.status}
+              document={filters.document}
+              resultCount={filteredRequests.length}
+              totalCount={requests.length}
+              onSearchChange={(search) =>
+                setFilters((previous) => ({ ...previous, search }))
+              }
+              onStatusChange={(status) =>
+                setFilters((previous) => ({ ...previous, status }))
+              }
+              onDocumentChange={(document) =>
+                setFilters((previous) => ({ ...previous, document }))
+              }
+            />
+
+            {isLoading && requests.length === 0 ? (
+              <p className="admin-loading-state">
+                Loading the document requests…
+              </p>
+            ) : (
+              <DocumentRequestsTable
+                requests={filteredRequests}
+                onView={(request) => setSelectedRequestId(request.id)}
+              />
+            )}
+          </>
+        )}
+      </main>
+    </div>
+  );
+};
+
+export default AdminDocumentRequests;
+

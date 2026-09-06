@@ -1,0 +1,221 @@
+/* ------------------------- Document requests page ---------------------------- */
+
+.docreq-submitted {
+  color: #64748b;
+  white-space: nowrap;
+}
+
+.docreq-fee {
+  color: #0f172a;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.docreq-modal-fee {
+  flex-shrink: 0;
+  padding: 6px 16px;
+  border-radius: 999px;
+  background: #f1f5f9;
+  color: #0f172a;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.docreq-modal-error {
+  margin: 0;
+  padding: 20px 26px;
+  color: #b91c1c;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+/* ------------------------- Request details view ------------------------------ */
+
+.docreq-detail-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+  align-items: start;
+}
+
+.docreq-details-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
+.docreq-details-header h3 {
+  margin: 0;
+}
+
+.docreq-details-header .residents-status {
+  flex-shrink: 0;
+}
+
+/* Admin actions card */
+
+.docreq-actions-card {
+  display: flex;
+  flex-direction: column;
+}
+
+.docreq-actions-label {
+  margin: 0 0 8px;
+  color: #94a3b8;
+  font-size: 11px;
+}
+
+.docreq-status-flow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 18px;
+}
+
+.docreq-flow-step-wrapper {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.docreq-flow-arrow {
+  color: #cbd5e1;
+  font-size: 12px;
+}
+
+.docreq-flow-step {
+  padding: 4px 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 999px;
+  background: #f8fafc;
+  color: #94a3b8;
+  font-size: 11px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition:
+    background 0.2s ease,
+    color 0.2s ease;
+}
+
+.docreq-flow-step:hover:not(:disabled) {
+  background: #eff6ff;
+  color: #2563eb;
+  border-color: #bfdbfe;
+}
+
+.docreq-flow-step.current {
+  background: #fef3c7;
+  color: #b45309;
+  border-color: #fde68a;
+  cursor: default;
+}
+
+.docreq-flow-step.done {
+  background: #ecfdf5;
+  color: #059669;
+}
+
+.docreq-flow-step:disabled {
+  cursor: default;
+}
+
+.docreq-actions-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 16px;
+}
+
+.docreq-actions-field span {
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.docreq-actions-field textarea,
+.docreq-actions-field input {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 9px;
+  background: #ffffff;
+  color: #0f172a;
+  font-size: 13px;
+  font-family: inherit;
+  resize: vertical;
+}
+
+.docreq-actions-field textarea:focus,
+.docreq-actions-field input:focus {
+  outline: 2px solid #bfdbfe;
+  border-color: #2563eb;
+}
+
+.docreq-actions-error {
+  margin: 0 0 12px;
+  padding: 8px 12px;
+  border-radius: 9px;
+  background: #fef2f2;
+  color: #b91c1c;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.docreq-actions-buttons {
+  display: flex;
+  gap: 10px;
+  margin-top: auto;
+}
+
+.docreq-approve-button {
+  padding: 9px 26px;
+  border: 0;
+  border-radius: 9px;
+  background: #2563eb;
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.docreq-approve-button:hover:not(:disabled) {
+  background: #1d4ed8;
+}
+
+.docreq-reject-button {
+  padding: 9px 26px;
+  border: 0;
+  border-radius: 9px;
+  background: #dc2626;
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.docreq-reject-button:hover:not(:disabled) {
+  background: #b91c1c;
+}
+
+.docreq-approve-button:disabled,
+.docreq-reject-button:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+/* -------------------------------- Responsive -------------------------------- */
+
+@media (max-width: 900px) {
+  .docreq-detail-grid {
+    grid-template-columns: 1fr;
+  }
+}
+

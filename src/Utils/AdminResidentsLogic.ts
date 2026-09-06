@@ -21,6 +21,7 @@ const STATUS_META: Record<string, ResidentStatusMeta> = {
   active: { label: "Active", className: "status-active" },
   inactive: { label: "Inactive", className: "status-inactive" },
   suspended: { label: "Suspended", className: "status-suspended" },
+  approved: { label: "Approved", className: "status-approved" },
 };
 
 export function getResidentStatusMeta(status: string): ResidentStatusMeta {

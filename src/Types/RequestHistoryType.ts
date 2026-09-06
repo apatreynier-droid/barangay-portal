@@ -1,5 +1,6 @@
 export type RequestStatus =
   | "pending"
+  | "approved"
   | "processing"
   | "ready"
   | "completed"

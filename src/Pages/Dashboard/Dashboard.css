@@ -504,6 +504,11 @@
   color: #ea580c;
 }
 
+.status-approved {
+  background: #eff6ff;
+  color: #2563eb;
+}
+
 .status-processing {
   background: #eff6ff;
   color: #2563eb;

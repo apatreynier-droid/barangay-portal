@@ -4,6 +4,7 @@ import CreateAccount from "./Pages/CreateAccount/CreateAccount";
 import Dashboard from "./Pages/Dashboard/Dashboard";
 import AdminDashboard from "./Pages/AdminDashboard/AdminDashboard";
 import AdminResidents from "./Pages/AdminResidents/AdminResidents";
+import AdminDocumentRequests from "./Pages/AdminDocumentRequests/AdminDocumentRequests";
 import MyRequests from "./Pages/MyRequests/MyRequests";
 import RequestHistory from "./Pages/RequestHistory/RequestHistory";
 import NotificationPage from "./Pages/Notification/NotificationPage";
@@ -23,6 +24,7 @@ import type { Request } from "./Types/DashboardType";
 type Page =
   | "dashboard"
   | "residents"
+  | "document-requests"
   | "my-requests"
   | "request-history"
   | "notifications"
@@ -112,6 +114,7 @@ function App() {
         unreadNotifications={unreadCount}
         onNotifications={() => setPage("notifications")}
         onResidents={() => setPage("residents")}
+        onDocumentRequests={() => setPage("document-requests")}
         onLogout={handleLogout}
       />
     );
@@ -123,6 +126,20 @@ function App() {
         user={user}
         unreadNotifications={unreadCount}
         onDashboard={() => setPage("dashboard")}
+        onDocumentRequests={() => setPage("document-requests")}
+        onNotifications={() => setPage("notifications")}
+        onLogout={handleLogout}
+      />
+    );
+  }
+
+  if (page === "document-requests" && isAdmin) {
+    return (
+      <AdminDocumentRequests
+        user={user}
+        unreadNotifications={unreadCount}
+        onDashboard={() => setPage("dashboard")}
+        onResidents={() => setPage("residents")}
         onNotifications={() => setPage("notifications")}
         onLogout={handleLogout}
       />

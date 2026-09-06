@@ -16,6 +16,9 @@ from .dependencies import get_current_admin_user, get_current_user
 from .schemas import (
     AdminActivityEntry,
     AdminDashboardResponse,
+    AdminDocumentRequestDetailResponse,
+    AdminDocumentRequestResponse,
+    AdminRequestActionInput,
     AdminDocumentTypeCount,
     AdminMonthlyDataPoint,
     AdminRecentRegistration,
@@ -991,6 +994,203 @@ def set_resident_status(
         cursor.close()
 
     return load_resident_detail(connection, resident_id)
+
+
+@app.get("/api/admin/document-requests", response_model=list[AdminDocumentRequestResponse])
+def list_document_requests(
+    connection: MySQLConnection = Depends(get_db),
+    current_user: dict[str, object] = Depends(get_current_admin_user),
+) -> list[AdminDocumentRequestResponse]:
+    cursor = connection.cursor(dictionary=True)
+    cursor.execute(
+        """
+        SELECT requests.id, requests.request_number,
+               CONCAT(resident_profiles.first_name, ' ',
+                      resident_profiles.last_name) AS resident_name,
+               document_types.document_name AS document,
+               requests.status, requests.submitted_at, document_types.fee
+        FROM requests
+        JOIN users ON users.id = requests.user_id
+        JOIN resident_profiles ON resident_profiles.user_id = users.id
+        JOIN document_types ON document_types.id = requests.document_type_id
+        ORDER BY requests.submitted_at DESC, requests.id DESC
+        """
+    )
+    document_requests = [
+        AdminDocumentRequestResponse(
+            id=row["id"],
+            request_number=row["request_number"],
+            resident_name=row["resident_name"],
+            document=row["document"],
+            status=row["status"],
+            submitted_at=row["submitted_at"],
+            fee=float(row["fee"]),
+        )
+        for row in cursor.fetchall()
+    ]
+    cursor.close()
+    return document_requests
+
+
+def load_document_request_detail(
+    connection: MySQLConnection, request_id: int
+) -> AdminDocumentRequestDetailResponse:
+    cursor = connection.cursor(dictionary=True)
+    cursor.execute(
+        """
+        SELECT requests.id, requests.user_id, requests.request_number,
+               requests.purpose,
+               requests.status, requests.admin_remarks, requests.submitted_at,
+               requests.last_updated, requests.pickup_date,
+               document_types.document_name AS document, document_types.fee,
+               CONCAT(resident_profiles.first_name, ' ',
+                      resident_profiles.last_name) AS resident_name,
+               users.email,
+               (SELECT CONCAT(admin_profile.first_name, ' ',
+                              admin_profile.last_name)
+                FROM request_status_history history
+                JOIN resident_profiles admin_profile
+                     ON admin_profile.user_id = history.changed_by
+                WHERE history.request_id = requests.id
+                  AND history.changed_by IS NOT NULL
+                ORDER BY history.changed_at DESC, history.id DESC
+                LIMIT 1) AS processed_by
+        FROM requests
+        JOIN users ON users.id = requests.user_id
+        JOIN resident_profiles ON resident_profiles.user_id = users.id
+        JOIN document_types ON document_types.id = requests.document_type_id
+        WHERE requests.id = %s
+        """,
+        (request_id,),
+    )
+    request = cursor.fetchone()
+    cursor.close()
+
+    if request is None:
+        raise HTTPException(status_code=404, detail="Request was not found.")
+
+    return AdminDocumentRequestDetailResponse(
+        id=request["id"],
+        request_number=request["request_number"],
+        resident_name=request["resident_name"],
+        email=request["email"],
+        document=request["document"],
+        purpose=request["purpose"],
+        status=request["status"],
+        admin_remarks=request["admin_remarks"],
+        submitted_at=request["submitted_at"],
+        last_updated=request["last_updated"],
+        pickup_date=request["pickup_date"],
+        fee=float(request["fee"]),
+        processed_by=request["processed_by"],
+    )
+
+
+@app.get(
+    "/api/admin/document-requests/{request_id}",
+    response_model=AdminDocumentRequestDetailResponse,
+)
+def get_document_request_detail(
+    request_id: int,
+    connection: MySQLConnection = Depends(get_db),
+    current_user: dict[str, object] = Depends(get_current_admin_user),
+) -> AdminDocumentRequestDetailResponse:
+    return load_document_request_detail(connection, request_id)
+
+
+@app.patch(
+    "/api/admin/document-requests/{request_id}",
+    response_model=AdminDocumentRequestDetailResponse,
+)
+def update_document_request(
+    request_id: int,
+    payload: AdminRequestActionInput,
+    connection: MySQLConnection = Depends(get_db),
+    current_user: dict[str, object] = Depends(get_current_admin_user),
+) -> AdminDocumentRequestDetailResponse:
+    if payload.status is None and payload.admin_remarks is None and payload.pickup_date is None:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Provide a status, remarks, or a pickup date.",
+        )
+
+    cursor = connection.cursor(dictionary=True)
+    cursor.execute(
+        """
+        SELECT requests.id, requests.user_id, requests.request_number,
+               requests.status
+        FROM requests
+        WHERE requests.id = %s
+        """,
+        (request_id,),
+    )
+    request = cursor.fetchone()
+    if request is None:
+        cursor.close()
+        raise HTTPException(status_code=404, detail="Request was not found.")
+
+    try:
+        cursor.execute(
+            """
+            UPDATE requests
+            SET status = COALESCE(%s, status),
+                admin_remarks = COALESCE(%s, admin_remarks),
+                pickup_date = COALESCE(%s, pickup_date)
+            WHERE id = %s
+            """,
+            (
+                payload.status,
+                clean_optional(payload.admin_remarks),
+                payload.pickup_date,
+                request_id,
+            ),
+        )
+
+        if payload.status is not None and payload.status != request["status"]:
+            cursor.execute(
+                """
+                INSERT INTO request_status_history
+                  (request_id, old_status, new_status, changed_by, remarks)
+                VALUES (%s, %s, %s, %s, %s)
+                """,
+                (
+                    request_id,
+                    request["status"],
+                    payload.status,
+                    current_user["id"],
+                    clean_optional(payload.admin_remarks),
+                ),
+            )
+
+            cursor.execute(
+                """
+                INSERT INTO notifications
+                  (user_id, title, message, notification_type,
+                   related_request_id)
+                VALUES (%s, %s, %s, 'request', %s)
+                """,
+                (
+                    request["user_id"],
+                    f"Request {payload.status}",
+                    (
+                        f"Your document request {request['request_number']} "
+                        f"is now {payload.status}."
+                    ),
+                    request_id,
+                ),
+            )
+
+        connection.commit()
+    except mysql.connector.Error as error:
+        connection.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Could not update the document request.",
+        ) from error
+    finally:
+        cursor.close()
+
+    return load_document_request_detail(connection, request_id)
 
 
 @app.get("/api/notifications", response_model=list[NotificationResponse])

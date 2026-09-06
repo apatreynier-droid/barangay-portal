@@ -9,6 +9,9 @@ export const getStatusClass = (status: RequestStatus): string => {
     case "Pending":
       return "status-pending";
 
+    case "Approved":
+      return "status-approved";
+
     case "Processing":
       return "status-processing";
 
@@ -30,6 +33,9 @@ export const getStatusIcon = (status: RequestStatus): string => {
   switch (status) {
     case "Pending":
       return "⏳";
+
+    case "Approved":
+      return "✓";
 
     case "Processing":
       return "⚙";

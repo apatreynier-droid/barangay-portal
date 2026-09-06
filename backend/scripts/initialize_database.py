@@ -21,25 +21,36 @@ SCHEMA_PATH = (
 )
 
 
+def is_comment_only(statement: str) -> bool:
+    """Return True when a statement contains only comments and whitespace."""
+    for line in statement.splitlines():
+        stripped = line.strip()
+        if stripped and not stripped.startswith("--"):
+            return False
+    return True
+
+
 def main() -> None:
-    schema = SCHEMA_PATH.read_text(encoding="utf-8")
+    schema = SCHEMA_PATH.read_text(encoding="utf-8-sig")
     connection = create_connection(include_database=False)
     cursor = connection.cursor()
 
     try:
         for statement in schema.split(";"):
-            if statement.strip():
-                try:
-                    cursor.execute(statement)
-                except mysql.connector.Error as error:
-                    if error.errno == 1050:  # Table already exists
-                        table_name = error.msg.split("'")[1] if "'" in error.msg else "a table"
-                        print(
-                            f"Database already initialized (table '{table_name}' already exists). "
-                            "Use a fresh database or drop the existing tables to reinitialize."
-                        )
-                        return
-                    raise
+            if not statement.strip() or is_comment_only(statement):
+                continue
+
+            try:
+                cursor.execute(statement)
+            except mysql.connector.Error as error:
+                if error.errno == 1050:  # Table already exists
+                    table_name = error.msg.split("'")[1] if "'" in error.msg else "a table"
+                    print(
+                        f"Database already initialized (table '{table_name}' already exists). "
+                        "Use a fresh database or drop the existing tables to reinitialize."
+                    )
+                    return
+                raise
         connection.commit()
     finally:
         cursor.close()
