@@ -227,6 +227,11 @@
   color: #ea580c;
 }
 
+.status-approved {
+  background: #eff6ff;
+  color: #2563eb;
+}
+
 .status-processing {
   background: #eff6ff;
   color: #2563eb;
@@ -304,6 +309,11 @@
 .progress-fill.status-pending {
   width: 25%;
   background: #f59e0b;
+}
+
+.progress-fill.status-approved {
+  width: 42%;
+  background: #3b82f6;
 }
 
 .progress-fill.status-processing {
@@ -489,6 +499,11 @@
 .my-request-status.status-pending {
   background: #fff7ed;
   color: #ea580c;
+}
+
+.my-request-status.status-approved {
+  background: #eff6ff;
+  color: #2563eb;
 }
 
 .my-request-status.status-processing {

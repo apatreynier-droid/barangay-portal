@@ -37,6 +37,7 @@ CREATE TABLE `document_types` (
   `id` int(11) NOT NULL,
   `document_name` varchar(150) NOT NULL,
   `description` text DEFAULT NULL,
+  `fee` decimal(10,2) NOT NULL DEFAULT 50.00,
   `is_active` tinyint(1) NOT NULL DEFAULT 1,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
@@ -85,7 +86,7 @@ CREATE TABLE `requests` (
   `user_id` int(11) NOT NULL,
   `document_type_id` int(11) NOT NULL,
   `purpose` text NOT NULL,
-  `status` enum('Pending','Processing','Ready for Pickup','Completed','Rejected') NOT NULL DEFAULT 'Pending',
+  `status` enum('Pending','Approved','Processing','Ready for Pickup','Completed','Rejected') NOT NULL DEFAULT 'Pending',
   `admin_remarks` text DEFAULT NULL,
   `submitted_at` timestamp NOT NULL DEFAULT current_timestamp(),
   `last_updated` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
@@ -102,8 +103,8 @@ CREATE TABLE `requests` (
 CREATE TABLE `request_status_history` (
   `id` int(11) NOT NULL,
   `request_id` int(11) NOT NULL,
-  `old_status` enum('Pending','Processing','Ready for Pickup','Completed','Rejected') DEFAULT NULL,
-  `new_status` enum('Pending','Processing','Ready for Pickup','Completed','Rejected') NOT NULL,
+  `old_status` enum('Pending','Approved','Processing','Ready for Pickup','Completed','Rejected') DEFAULT NULL,
+  `new_status` enum('Pending','Approved','Processing','Ready for Pickup','Completed','Rejected') NOT NULL,
   `changed_by` int(11) DEFAULT NULL,
   `remarks` text DEFAULT NULL,
   `changed_at` timestamp NOT NULL DEFAULT current_timestamp()

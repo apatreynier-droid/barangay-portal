@@ -9,6 +9,9 @@ export const getStatusClass = (status: RequestStatus): string => {
     case "Pending":
       return "status-pending";
 
+    case "Approved":
+      return "status-approved";
+
     case "Processing":
       return "status-processing";
 

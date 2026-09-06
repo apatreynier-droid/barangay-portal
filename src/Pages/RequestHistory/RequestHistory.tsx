@@ -23,6 +23,7 @@ type HistoryFilter = "All" | Request["status"];
 const HISTORY_FILTERS: HistoryFilter[] = [
   "All",
   "Pending",
+  "Approved",
   "Processing",
   "Ready for Pickup",
   "Completed",

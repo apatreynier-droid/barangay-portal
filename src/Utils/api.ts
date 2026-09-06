@@ -6,6 +6,11 @@ import type {
   AdminResidentDetail,
   AdminResidentUpdatePayload,
 } from "../Types/AdminResidentsType";
+import type {
+  AdminDocumentRequest,
+  AdminDocumentRequestActionPayload,
+  AdminDocumentRequestDetail,
+} from "../Types/AdminDocumentRequestsType";
 
 const API_BASE_URL = "http://127.0.0.1:8000";
 
@@ -392,6 +397,58 @@ export const updateResidentStatus = async (
   }
 
   return body as AdminResidentDetail;
+};
+
+export const fetchAdminDocumentRequests =
+  async (): Promise<AdminDocumentRequest[]> => {
+    const response = await authedFetch("/api/admin/document-requests");
+    const body: unknown = await response.json().catch(() => null);
+
+    if (!response.ok) {
+      throw new ApiError(
+        response.status,
+        parseErrorMessage(body, "Could not load the document requests."),
+      );
+    }
+
+    return (body as AdminDocumentRequest[]) ?? [];
+  };
+
+export const fetchAdminDocumentRequestDetail = async (
+  requestId: number,
+): Promise<AdminDocumentRequestDetail> => {
+  const response = await authedFetch(`/api/admin/document-requests/${requestId}`);
+  const body: unknown = await response.json().catch(() => null);
+
+  if (!response.ok) {
+    throw new ApiError(
+      response.status,
+      parseErrorMessage(body, "Could not load the request details."),
+    );
+  }
+
+  return body as AdminDocumentRequestDetail;
+};
+
+export const updateAdminDocumentRequest = async (
+  requestId: number,
+  payload: AdminDocumentRequestActionPayload,
+): Promise<AdminDocumentRequestDetail> => {
+  const response = await authedFetch(`/api/admin/document-requests/${requestId}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  const body: unknown = await response.json().catch(() => null);
+
+  if (!response.ok) {
+    throw new ApiError(
+      response.status,
+      parseErrorMessage(body, "Could not update the document request."),
+    );
+  }
+
+  return body as AdminDocumentRequestDetail;
 };
 
 export const fetchRequests = async (): Promise<ApiRequest[]> => {
