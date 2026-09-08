@@ -12,9 +12,11 @@ if str(BACKEND_DIR) not in sys.path:
 from app.database import create_connection  # noqa: E402
 
 
+# The backend folder lives next to the frontend's `src/` folder inside
+# barangay_portal_system, so the schema is resolved relative to BACKEND_DIR.
+# This works regardless of where barangay_portal_system itself is located.
 SCHEMA_PATH = (
-    Path(__file__).resolve().parents[2]
-    / "barangay_portal_system"
+    BACKEND_DIR.parent
     / "src"
     / "db"
     / "barangay_portal.sql"
