@@ -45,13 +45,8 @@ const CIVIL_STATUS_OPTIONS = [
 ];
 const VOTER_STATUS_OPTIONS = ["Registered Voter", "Not Yet Registered"];
 const PUROK_OPTIONS = [
-  "Purok 1",
-  "Purok 2",
-  "Purok 3",
-  "Purok 4",
-  "Purok 5",
-  "Purok 6",
-  "Purok 7",
+  "Purok - 3 Lagab",
+  "Purok - 3 Lagab Curvada",
 ];
 const RELATIONSHIP_OPTIONS = [
   "Spouse",
