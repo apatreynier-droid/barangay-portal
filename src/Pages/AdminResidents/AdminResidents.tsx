@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import type { AuthUser } from "../../Utils/api";
 import { fetchAdminDashboard, fetchResidents } from "../../Utils/api";
 import type { AdminResident } from "../../Types/AdminResidentsType";
+import { ADMIN_DISPLAY_NAME } from "../../Utils/AdminDisplay";
 import AdminSidebar from "../../components/AdminDashboard/AdminSidebar";
 import AdminTopbar from "../../components/AdminDashboard/AdminTopbar";
 import ResidentsToolbar from "../../components/AdminResidents/ResidentsToolbar";
@@ -25,7 +26,6 @@ type AdminResidentsProps = {
 };
 
 const AdminResidents = ({
-  user,
   unreadNotifications,
   onDashboard,
   onDocumentRequests,
@@ -87,7 +87,7 @@ const AdminResidents = ({
     [residents, filters],
   );
 
-  const fullName = `${user.first_name} ${user.last_name}`.trim();
+  const fullName = ADMIN_DISPLAY_NAME;
   const roleLabel = "Brgy. Administrator";
 
   return (
@@ -96,8 +96,8 @@ const AdminResidents = ({
         pendingRequests={sidebarStats.pending}
         pendingApprovals={sidebarStats.approved}
         unreadNotifications={unreadNotifications}
-        firstName={user.first_name}
-        lastName={user.last_name}
+        firstName={ADMIN_DISPLAY_NAME}
+        lastName=""
         role={roleLabel}
         activeItem="residents"
         onDashboard={onDashboard}

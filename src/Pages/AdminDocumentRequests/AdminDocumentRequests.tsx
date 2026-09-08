@@ -8,6 +8,7 @@ import {
   fetchAdminDocumentRequests,
 } from "../../Utils/api";
 import type { AdminDocumentRequest } from "../../Types/AdminDocumentRequestsType";
+import { ADMIN_DISPLAY_NAME } from "../../Utils/AdminDisplay";
 import AdminSidebar from "../../components/AdminDashboard/AdminSidebar";
 import AdminTopbar from "../../components/AdminDashboard/AdminTopbar";
 import DocumentRequestsToolbar from "../../components/AdminDocumentRequests/DocumentRequestsToolbar";
@@ -29,7 +30,6 @@ type AdminDocumentRequestsProps = {
 };
 
 const AdminDocumentRequests = ({
-  user,
   unreadNotifications,
   onDashboard,
   onResidents,
@@ -91,7 +91,7 @@ const AdminDocumentRequests = ({
     [requests, filters],
   );
 
-  const fullName = `${user.first_name} ${user.last_name}`.trim();
+  const fullName = ADMIN_DISPLAY_NAME;
   const roleLabel = "Brgy. Administrator";
 
   return (
@@ -100,8 +100,8 @@ const AdminDocumentRequests = ({
         pendingRequests={sidebarStats.pending}
         pendingApprovals={sidebarStats.approved}
         unreadNotifications={unreadNotifications}
-        firstName={user.first_name}
-        lastName={user.last_name}
+        firstName={ADMIN_DISPLAY_NAME}
+        lastName=""
         role={roleLabel}
         activeItem="document-requests"
         onDashboard={onDashboard}

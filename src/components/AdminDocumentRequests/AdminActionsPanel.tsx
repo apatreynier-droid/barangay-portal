@@ -28,13 +28,22 @@ const AdminActionsPanel = ({
   );
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
 
-  const applyAction = async (payload: AdminDocumentRequestActionPayload) => {
+  const applyAction = async (
+    payload: AdminDocumentRequestActionPayload,
+    successMessage = "",
+  ) => {
     setIsSaving(true);
     setError("");
+    setNotice("");
 
     try {
       onUpdated(await updateAdminDocumentRequest(request.id, payload));
+
+      if (successMessage) {
+        setNotice(successMessage);
+      }
     } catch (actionError) {
       setError(
         actionError instanceof Error
@@ -46,15 +55,30 @@ const AdminActionsPanel = ({
     }
   };
 
-  const applyStatus = (status: string) => {
-    void applyAction({
-      status,
-      admin_remarks: remarks.trim() || undefined,
-      pickup_date: pickupDate || undefined,
-    });
+  const applyStatus = (newStatus: string) => {
+    void applyAction({ status: newStatus });
+  };
+
+  const saveRemarks = () => {
+    void applyAction(
+      { admin_remarks: remarks.trim() || undefined },
+      "Remarks saved.",
+    );
+  };
+
+  const savePickupDate = () => {
+    void applyAction(
+      { pickup_date: pickupDate || undefined },
+      "Pickup date saved.",
+    );
   };
 
   const currentIndex = STATUS_FLOW.indexOf(request.status);
+  const status = request.status;
+  const remarksChanged =
+    remarks.trim() !== (request.admin_remarks ?? "").trim();
+  const pickupDateChanged =
+    pickupDate !== (request.pickup_date ?? "").slice(0, 10);
 
   return (
     <section className="residents-info-card docreq-actions-card">
@@ -69,48 +93,65 @@ const AdminActionsPanel = ({
                 →
               </span>
             )}
-            <button
-              type="button"
+            <span
               className={`docreq-flow-step${
                 index === currentIndex ? " current" : ""
               }${index < currentIndex ? " done" : ""}`}
-              onClick={() => {
-                if (index !== currentIndex) applyStatus(step);
-              }}
-              disabled={isSaving || index === currentIndex}
               title={
-                index === currentIndex
-                  ? "Current status"
-                  : `Set status to ${step}`
+                index === currentIndex ? "Current status" : `Goes to ${step}`
               }
             >
               {step}
-            </button>
+            </span>
           </span>
         ))}
       </div>
 
-      <label className="docreq-actions-field">
-        <span>Remarks / Notes</span>
-        <textarea
-          rows={3}
-          placeholder="Add remarks or notes..."
-          value={remarks}
-          onChange={(event) => setRemarks(event.target.value)}
-          maxLength={2000}
-          disabled={isSaving}
-        />
-      </label>
+      {status === "Processing" && (
+        <label className="docreq-actions-field">
+          <span>Remarks / Notes</span>
+          <textarea
+            rows={3}
+            placeholder="Add remarks or notes..."
+            value={remarks}
+            onChange={(event) => setRemarks(event.target.value)}
+            maxLength={2000}
+            disabled={isSaving}
+          />
+          <div className="docreq-actions-buttons">
+            <button
+              type="button"
+              className="docreq-save-button"
+              onClick={saveRemarks}
+              disabled={isSaving || !remarksChanged}
+            >
+              {isSaving ? "Saving…" : "Save Remarks"}
+            </button>
+          </div>
+        </label>
+      )}
 
-      <label className="docreq-actions-field">
-        <span>Set Pickup Date</span>
-        <input
-          type="date"
-          value={pickupDate}
-          onChange={(event) => setPickupDate(event.target.value)}
-          disabled={isSaving}
-        />
-      </label>
+      {status === "Ready for Pickup" && (
+        <label className="docreq-actions-field">
+          <span>Set Pickup Date</span>
+          <input
+            type="date"
+            value={pickupDate}
+            onChange={(event) => setPickupDate(event.target.value)}
+            disabled={isSaving}
+          />
+          <div className="docreq-actions-buttons">
+            <button
+              type="button"
+              className="docreq-save-button"
+              onClick={savePickupDate}
+              disabled={isSaving || !pickupDateChanged}
+            >
+              {isSaving ? "Saving…" : "Save Pickup Date"}
+            </button>
+          </div>
+        </label>
+      )}
 
       {error && (
         <p className="docreq-actions-error" role="alert">
@@ -118,24 +159,95 @@ const AdminActionsPanel = ({
         </p>
       )}
 
-      <div className="docreq-actions-buttons">
-        <button
-          type="button"
-          className="docreq-approve-button"
-          onClick={() => applyStatus("Approved")}
-          disabled={isSaving || request.status === "Approved"}
-        >
-          Approve
-        </button>
-        <button
-          type="button"
-          className="docreq-reject-button"
-          onClick={() => applyStatus("Rejected")}
-          disabled={isSaving || request.status === "Rejected"}
-        >
-          Reject
-        </button>
-      </div>
+      {notice && !error && (
+        <p className="docreq-actions-success" role="status">
+          {notice}
+        </p>
+      )}
+
+      {status === "Pending" && (
+        <div className="docreq-actions-buttons">
+          <button
+            type="button"
+            className="docreq-approve-button"
+            onClick={() => applyStatus("Approved")}
+            disabled={isSaving}
+          >
+            Approve
+          </button>
+          <button
+            type="button"
+            className="docreq-reject-button"
+            onClick={() => applyStatus("Rejected")}
+            disabled={isSaving}
+          >
+            Reject
+          </button>
+        </div>
+      )}
+
+      {status === "Approved" && (
+        <div className="docreq-actions-buttons">
+          <button
+            type="button"
+            className="docreq-approve-button"
+            onClick={() => applyStatus("Processing")}
+            disabled={isSaving}
+          >
+            Mark as Processing
+          </button>
+          <button
+            type="button"
+            className="docreq-reject-button"
+            onClick={() => applyStatus("Rejected")}
+            disabled={isSaving}
+          >
+            Reject
+          </button>
+        </div>
+      )}
+
+      {status === "Processing" && (
+        <div className="docreq-actions-buttons">
+          <button
+            type="button"
+            className="docreq-approve-button"
+            onClick={() => applyStatus("Ready for Pickup")}
+            disabled={isSaving}
+          >
+            Mark as Ready for Pickup
+          </button>
+          <button
+            type="button"
+            className="docreq-reject-button"
+            onClick={() => applyStatus("Rejected")}
+            disabled={isSaving}
+          >
+            Reject
+          </button>
+        </div>
+      )}
+
+      {status === "Ready for Pickup" && (
+        <div className="docreq-actions-buttons">
+          <button
+            type="button"
+            className="docreq-approve-button"
+            onClick={() => applyStatus("Completed")}
+            disabled={isSaving}
+          >
+            Mark as Completed
+          </button>
+        </div>
+      )}
+
+      {(status === "Completed" || status === "Rejected") && (
+        <p className="docreq-actions-note">
+          {status === "Completed"
+            ? "This request has been completed. No further actions are available."
+            : "This request was rejected. No further actions are available."}
+        </p>
+      )}
     </section>
   );
 };

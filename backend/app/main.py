@@ -1032,6 +1032,18 @@ def list_document_requests(
     return document_requests
 
 
+# Allowed admin status transitions for document requests. Requests that are
+# Completed or Rejected are final and cannot be changed anymore.
+VALID_STATUS_TRANSITIONS: dict[str, set[str]] = {
+    "Pending": {"Approved", "Rejected"},
+    "Approved": {"Processing", "Rejected"},
+    "Processing": {"Ready for Pickup", "Rejected"},
+    "Ready for Pickup": {"Completed"},
+    "Completed": set(),
+    "Rejected": set(),
+}
+
+
 def load_document_request_detail(
     connection: MySQLConnection, request_id: int
 ) -> AdminDocumentRequestDetailResponse:
@@ -1129,16 +1141,39 @@ def update_document_request(
         cursor.close()
         raise HTTPException(status_code=404, detail="Request was not found.")
 
+    new_status = payload.status
+    current_status = request["status"]
+
+    if new_status is not None and new_status != current_status:
+        allowed_transitions = VALID_STATUS_TRANSITIONS.get(
+            current_status, set()
+        )
+        if new_status not in allowed_transitions:
+            cursor.close()
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=(
+                    f"A request with status '{current_status}' cannot be "
+                    f"changed to '{new_status}'."
+                ),
+            )
+
     try:
         cursor.execute(
             """
             UPDATE requests
-            SET status = COALESCE(%s, status),
+            SET completed_at = CASE
+                    WHEN %s = 'Completed' AND status <> 'Completed'
+                    THEN NOW()
+                    ELSE completed_at
+                END,
+                status = COALESCE(%s, status),
                 admin_remarks = COALESCE(%s, admin_remarks),
                 pickup_date = COALESCE(%s, pickup_date)
             WHERE id = %s
             """,
             (
+                new_status,
                 payload.status,
                 clean_optional(payload.admin_remarks),
                 payload.pickup_date,
