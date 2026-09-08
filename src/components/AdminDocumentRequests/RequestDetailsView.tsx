@@ -122,7 +122,11 @@ const RequestDetailsView = ({
               </dl>
             </section>
 
-            <AdminActionsPanel request={request} onUpdated={handleUpdated} />
+            <AdminActionsPanel
+              key={request.id}
+              request={request}
+              onUpdated={handleUpdated}
+            />
           </div>
         )
       )}

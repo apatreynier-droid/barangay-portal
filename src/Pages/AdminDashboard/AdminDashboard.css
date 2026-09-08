@@ -507,6 +507,86 @@
   display: block;
 }
 
+.admin-bar-chart-wrapper {
+  position: relative;
+}
+
+/* Hover highlight band behind the active month group (Recharts-style cursor) */
+.admin-chart-cursor {
+  fill: rgba(37, 99, 235, 0.06);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 180ms ease-out;
+}
+
+.admin-chart-cursor.is-visible {
+  opacity: 1;
+}
+
+/* Smooth transition on the bars themselves when highlighting */
+.admin-chart-bar {
+  transition: filter 180ms ease-out, opacity 180ms ease-out;
+}
+
+.admin-chart-bar.is-active {
+  filter: brightness(1.12) saturate(1.08);
+}
+
+/* Shared hover tooltip (bar chart + donut chart) */
+.admin-chart-tooltip {
+  position: absolute;
+  z-index: 20;
+  min-width: 130px;
+  max-width: 230px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.12);
+  font-size: 12px;
+  line-height: 1.4;
+  color: #334155;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.admin-chart-tooltip-title {
+  margin: 0 0 4px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.admin-chart-tooltip-row {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-top: 2px;
+  opacity: 0.75;
+  transition: opacity 180ms ease-out;
+}
+
+.admin-chart-tooltip-row.is-active {
+  opacity: 1;
+}
+
+.admin-chart-tooltip-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  flex-shrink: 0;
+}
+
+.admin-chart-tooltip-label {
+  flex: 1;
+  padding-right: 12px;
+}
+
+.admin-chart-tooltip-value {
+  font-weight: 700;
+  color: #0f172a;
+}
+
 .admin-chart-gridline {
   stroke: #e2e8f0;
   stroke-width: 1;
@@ -520,9 +600,19 @@
 /* -------------------------------- Donut chart ------------------------------- */
 
 .admin-donut-wrapper {
+  position: relative;
   display: flex;
   justify-content: center;
   padding: 10px 0 16px;
+}
+
+/* Let the hovered slice expand slightly beyond the viewBox without clipping */
+.admin-donut-wrapper svg {
+  overflow: visible;
+}
+
+.admin-donut-slice {
+  transition: transform 200ms ease-out;
 }
 
 .admin-donut-legend {
