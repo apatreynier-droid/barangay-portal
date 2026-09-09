@@ -31,6 +31,7 @@ type AdminSidebarProps = {
   onDashboard?: () => void;
   onResidents?: () => void;
   onDocumentRequests?: () => void;
+  onRequestHistory?: () => void;
   onNotifications: () => void;
   onLogout: () => void;
 };
@@ -46,6 +47,7 @@ const AdminSidebar = ({
   onDashboard,
   onResidents,
   onDocumentRequests,
+  onRequestHistory,
   onNotifications,
   onLogout,
 }: AdminSidebarProps) => {
@@ -72,7 +74,12 @@ const AdminSidebar = ({
       badge: pendingRequests,
       onClick: onDocumentRequests,
     },
-    { key: "request-history", label: "Request History", icon: requestHistoryIcon },
+    {
+      key: "request-history",
+      label: "Request History",
+      icon: requestHistoryIcon,
+      onClick: onRequestHistory,
+    },
     {
       key: "approvals",
       label: "Approvals",

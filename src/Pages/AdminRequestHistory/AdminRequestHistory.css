@@ -1,0 +1,223 @@
+/* ------------------------------ Filter toolbar ------------------------------- */
+
+.reqhist-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 18px;
+  padding: 14px 16px;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  background: #ffffff;
+}
+
+.reqhist-search {
+  flex: 1;
+  min-width: 160px;
+  padding: 10px 14px;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  background: #ffffff;
+  color: #0f172a;
+  font-size: 13px;
+  font-family: inherit;
+}
+
+.reqhist-search::placeholder {
+  color: #94a3b8;
+}
+
+.reqhist-search:focus,
+.reqhist-select:focus,
+.reqhist-date:focus {
+  outline: 2px solid #bfdbfe;
+  border-color: #2563eb;
+}
+
+.reqhist-select {
+  flex-shrink: 0;
+  min-width: 120px;
+  max-width: 190px;
+  padding: 10px 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  background: #ffffff;
+  color: #0f172a;
+  font-size: 13px;
+  font-family: inherit;
+  cursor: pointer;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.reqhist-date {
+  flex-shrink: 0;
+  width: 132px;
+  padding: 9px 10px;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  background: #ffffff;
+  color: #0f172a;
+  font-size: 12px;
+  font-family: inherit;
+}
+
+.reqhist-date-separator {
+  flex-shrink: 0;
+  color: #94a3b8;
+  font-size: 12px;
+}
+
+.reqhist-count {
+  flex-shrink: 0;
+  margin-left: auto;
+  color: #64748b;
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+/* --------------------------------- Table card -------------------------------- */
+
+.reqhist-table-wrapper {
+  overflow-x: auto;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  background: #ffffff;
+}
+
+.reqhist-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.reqhist-table th {
+  padding: 14px 16px;
+  border-bottom: 1px solid #e2e8f0;
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 600;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.reqhist-table td {
+  padding: 14px 16px;
+  border-bottom: 1px solid #f1f5f9;
+  color: #334155;
+  vertical-align: middle;
+}
+
+.reqhist-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.reqhist-table tbody tr:hover {
+  background: #f8fafc;
+}
+
+.reqhist-request-id {
+  color: #2563eb;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.reqhist-reference {
+  color: #2563eb;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.reqhist-resident {
+  color: #0f172a;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.reqhist-document {
+  max-width: 220px;
+  overflow: hidden;
+  color: #64748b;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.reqhist-submitted {
+  color: #64748b;
+  white-space: nowrap;
+}
+
+.reqhist-processed {
+  color: #64748b;
+  white-space: nowrap;
+}
+
+.reqhist-status {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.reqhist-status.status-pending {
+  background: #fef3c7;
+  color: #b45309;
+}
+
+.reqhist-status.status-processing {
+  background: #fef3c7;
+  color: #b45309;
+}
+
+.reqhist-status.status-ready {
+  background: #ede9fe;
+  color: #7c3aed;
+}
+
+.reqhist-status.status-approved {
+  background: #dbeafe;
+  color: #2563eb;
+}
+
+.reqhist-status.status-completed {
+  background: #dcfce7;
+  color: #16a34a;
+}
+
+.reqhist-status.status-rejected {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+.reqhist-empty {
+  padding: 32px 16px !important;
+  color: #94a3b8;
+  text-align: center;
+}
+
+/* -------------------------------- Responsive --------------------------------- */
+
+@media (max-width: 1200px) {
+  .reqhist-toolbar {
+    flex-wrap: wrap;
+  }
+
+  .reqhist-search {
+    flex-basis: 100%;
+  }
+
+  .reqhist-count {
+    margin-left: 0;
+  }
+}
+
+@media (max-width: 600px) {
+  .reqhist-date {
+    width: 100%;
+  }
+
+  .reqhist-date-separator {
+    display: none;
+  }
+}

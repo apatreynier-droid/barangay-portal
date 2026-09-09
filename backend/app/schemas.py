@@ -231,6 +231,16 @@ class AdminDocumentRequestResponse(BaseModel):
     fee: float
 
 
+class AdminRequestHistoryResponse(BaseModel):
+    id: int
+    request_number: str
+    resident_name: str
+    document: str
+    status: str
+    submitted_at: datetime
+    processed_by: str | None
+
+
 class AdminDocumentRequestDetailResponse(BaseModel):
     id: int
     request_number: str
