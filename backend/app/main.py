@@ -19,6 +19,7 @@ from .schemas import (
     AdminDocumentRequestDetailResponse,
     AdminDocumentRequestResponse,
     AdminRequestActionInput,
+    AdminRequestHistoryResponse,
     AdminDocumentTypeCount,
     AdminMonthlyDataPoint,
     AdminRecentRegistration,
@@ -1030,6 +1031,54 @@ def list_document_requests(
     ]
     cursor.close()
     return document_requests
+
+
+@app.get(
+    "/api/admin/request-history",
+    response_model=list[AdminRequestHistoryResponse],
+)
+def list_request_history(
+    connection: MySQLConnection = Depends(get_db),
+    current_user: dict[str, object] = Depends(get_current_admin_user),
+) -> list[AdminRequestHistoryResponse]:
+    cursor = connection.cursor(dictionary=True)
+    cursor.execute(
+        """
+        SELECT requests.id, requests.request_number,
+               CONCAT(resident_profiles.first_name, ' ',
+                      resident_profiles.last_name) AS resident_name,
+               document_types.document_name AS document,
+               requests.status, requests.submitted_at,
+               (SELECT CONCAT(admin_profile.first_name, ' ',
+                              admin_profile.last_name)
+                FROM request_status_history history
+                JOIN resident_profiles admin_profile
+                     ON admin_profile.user_id = history.changed_by
+                WHERE history.request_id = requests.id
+                  AND history.changed_by IS NOT NULL
+                ORDER BY history.changed_at DESC, history.id DESC
+                LIMIT 1) AS processed_by
+        FROM requests
+        JOIN users ON users.id = requests.user_id
+        JOIN resident_profiles ON resident_profiles.user_id = users.id
+        JOIN document_types ON document_types.id = requests.document_type_id
+        ORDER BY requests.submitted_at DESC, requests.id DESC
+        """
+    )
+    history_requests = [
+        AdminRequestHistoryResponse(
+            id=row["id"],
+            request_number=row["request_number"],
+            resident_name=row["resident_name"],
+            document=row["document"],
+            status=row["status"],
+            submitted_at=row["submitted_at"],
+            processed_by=row["processed_by"],
+        )
+        for row in cursor.fetchall()
+    ]
+    cursor.close()
+    return history_requests
 
 
 # Allowed admin status transitions for document requests. Requests that are

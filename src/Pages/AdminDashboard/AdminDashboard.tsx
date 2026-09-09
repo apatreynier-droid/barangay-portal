@@ -19,6 +19,7 @@ type AdminDashboardProps = {
   onNotifications: () => void;
   onResidents: () => void;
   onDocumentRequests: () => void;
+  onRequestHistory: () => void;
   onLogout: () => void;
 };
 
@@ -27,6 +28,7 @@ const AdminDashboard = ({
   onNotifications,
   onResidents,
   onDocumentRequests,
+  onRequestHistory,
   onLogout,
 }: AdminDashboardProps) => {
   const [data, setData] = useState<AdminDashboardData | null>(null);
@@ -66,6 +68,7 @@ const AdminDashboard = ({
         onDashboard={() => undefined}
         onResidents={onResidents}
         onDocumentRequests={onDocumentRequests}
+        onRequestHistory={onRequestHistory}
         onNotifications={onNotifications}
         onLogout={onLogout}
       />

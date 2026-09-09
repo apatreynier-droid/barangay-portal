@@ -5,6 +5,7 @@ import Dashboard from "./Pages/Dashboard/Dashboard";
 import AdminDashboard from "./Pages/AdminDashboard/AdminDashboard";
 import AdminResidents from "./Pages/AdminResidents/AdminResidents";
 import AdminDocumentRequests from "./Pages/AdminDocumentRequests/AdminDocumentRequests";
+import AdminRequestHistory from "./Pages/AdminRequestHistory/AdminRequestHistory";
 import MyRequests from "./Pages/MyRequests/MyRequests";
 import RequestHistory from "./Pages/RequestHistory/RequestHistory";
 import NotificationPage from "./Pages/Notification/NotificationPage";
@@ -25,6 +26,7 @@ type Page =
   | "dashboard"
   | "residents"
   | "document-requests"
+  | "admin-request-history"
   | "my-requests"
   | "request-history"
   | "notifications"
@@ -115,6 +117,7 @@ function App() {
         onNotifications={() => setPage("notifications")}
         onResidents={() => setPage("residents")}
         onDocumentRequests={() => setPage("document-requests")}
+        onRequestHistory={() => setPage("admin-request-history")}
         onLogout={handleLogout}
       />
     );
@@ -127,6 +130,7 @@ function App() {
         unreadNotifications={unreadCount}
         onDashboard={() => setPage("dashboard")}
         onDocumentRequests={() => setPage("document-requests")}
+        onRequestHistory={() => setPage("admin-request-history")}
         onNotifications={() => setPage("notifications")}
         onLogout={handleLogout}
       />
@@ -140,6 +144,21 @@ function App() {
         unreadNotifications={unreadCount}
         onDashboard={() => setPage("dashboard")}
         onResidents={() => setPage("residents")}
+        onNotifications={() => setPage("notifications")}
+        onRequestHistory={() => setPage("admin-request-history")}
+        onLogout={handleLogout}
+      />
+    );
+  }
+
+  if (page === "admin-request-history" && isAdmin) {
+    return (
+      <AdminRequestHistory
+        user={user}
+        unreadNotifications={unreadCount}
+        onDashboard={() => setPage("dashboard")}
+        onResidents={() => setPage("residents")}
+        onDocumentRequests={() => setPage("document-requests")}
         onNotifications={() => setPage("notifications")}
         onLogout={handleLogout}
       />

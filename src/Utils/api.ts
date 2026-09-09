@@ -11,6 +11,7 @@ import type {
   AdminDocumentRequestActionPayload,
   AdminDocumentRequestDetail,
 } from "../Types/AdminDocumentRequestsType";
+import type { AdminRequestHistoryEntry } from "../Types/AdminRequestHistoryType";
 
 const API_BASE_URL = "http://127.0.0.1:8000";
 
@@ -412,6 +413,21 @@ export const fetchAdminDocumentRequests =
     }
 
     return (body as AdminDocumentRequest[]) ?? [];
+  };
+
+export const fetchAdminRequestHistory =
+  async (): Promise<AdminRequestHistoryEntry[]> => {
+    const response = await authedFetch("/api/admin/request-history");
+    const body: unknown = await response.json().catch(() => null);
+
+    if (!response.ok) {
+      throw new ApiError(
+        response.status,
+        parseErrorMessage(body, "Could not load the request history."),
+      );
+    }
+
+    return (body as AdminRequestHistoryEntry[]) ?? [];
   };
 
 export const fetchAdminDocumentRequestDetail = async (

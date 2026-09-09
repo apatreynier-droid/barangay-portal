@@ -25,6 +25,7 @@ type AdminDocumentRequestsProps = {
   unreadNotifications: number;
   onDashboard: () => void;
   onResidents: () => void;
+  onRequestHistory: () => void;
   onNotifications: () => void;
   onLogout: () => void;
 };
@@ -33,6 +34,7 @@ const AdminDocumentRequests = ({
   unreadNotifications,
   onDashboard,
   onResidents,
+  onRequestHistory,
   onNotifications,
   onLogout,
 }: AdminDocumentRequestsProps) => {
@@ -107,6 +109,7 @@ const AdminDocumentRequests = ({
         onDashboard={onDashboard}
         onResidents={onResidents}
         onDocumentRequests={() => undefined}
+        onRequestHistory={onRequestHistory}
         onNotifications={onNotifications}
         onLogout={onLogout}
       />
