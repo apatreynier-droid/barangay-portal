@@ -6,6 +6,7 @@ import AdminDashboard from "./Pages/AdminDashboard/AdminDashboard";
 import AdminResidents from "./Pages/AdminResidents/AdminResidents";
 import AdminDocumentRequests from "./Pages/AdminDocumentRequests/AdminDocumentRequests";
 import AdminRequestHistory from "./Pages/AdminRequestHistory/AdminRequestHistory";
+import AdminApprovals from "./Pages/AdminApprovals/AdminApprovals";
 import MyRequests from "./Pages/MyRequests/MyRequests";
 import RequestHistory from "./Pages/RequestHistory/RequestHistory";
 import NotificationPage from "./Pages/Notification/NotificationPage";
@@ -27,6 +28,7 @@ type Page =
   | "residents"
   | "document-requests"
   | "admin-request-history"
+  | "approvals"
   | "my-requests"
   | "request-history"
   | "notifications"
@@ -118,6 +120,7 @@ function App() {
         onResidents={() => setPage("residents")}
         onDocumentRequests={() => setPage("document-requests")}
         onRequestHistory={() => setPage("admin-request-history")}
+        onApprovals={() => setPage("approvals")}
         onLogout={handleLogout}
       />
     );
@@ -129,6 +132,22 @@ function App() {
         user={user}
         unreadNotifications={unreadCount}
         onDashboard={() => setPage("dashboard")}
+        onDocumentRequests={() => setPage("document-requests")}
+        onRequestHistory={() => setPage("admin-request-history")}
+        onApprovals={() => setPage("approvals")}
+        onNotifications={() => setPage("notifications")}
+        onLogout={handleLogout}
+      />
+    );
+  }
+
+  if (page === "approvals" && isAdmin) {
+    return (
+      <AdminApprovals
+        user={user}
+        unreadNotifications={unreadCount}
+        onDashboard={() => setPage("dashboard")}
+        onResidents={() => setPage("residents")}
         onDocumentRequests={() => setPage("document-requests")}
         onRequestHistory={() => setPage("admin-request-history")}
         onNotifications={() => setPage("notifications")}
@@ -146,6 +165,7 @@ function App() {
         onResidents={() => setPage("residents")}
         onNotifications={() => setPage("notifications")}
         onRequestHistory={() => setPage("admin-request-history")}
+        onApprovals={() => setPage("approvals")}
         onLogout={handleLogout}
       />
     );
@@ -159,6 +179,7 @@ function App() {
         onDashboard={() => setPage("dashboard")}
         onResidents={() => setPage("residents")}
         onDocumentRequests={() => setPage("document-requests")}
+        onApprovals={() => setPage("approvals")}
         onNotifications={() => setPage("notifications")}
         onLogout={handleLogout}
       />

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import wingsLogo from "../../assets/logo-lagab.png";
+import wingsLogo from "../../assets/logo-256.png";
 import dashboardIcon from "../../assets/dashboard.png";
 import requestIcon from "../../assets/copy.png";
 import historyIcon from "../../assets/history.png";

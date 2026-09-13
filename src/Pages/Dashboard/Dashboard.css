@@ -16,9 +16,6 @@
   display: flex;
   flex-direction: column;
   padding: 24px 16px;
-  transition:
-    width 0.25s ease,
-    padding 0.25s ease;
 }
 
 .sidebar-logo {
@@ -30,23 +27,18 @@
 }
 
 .sidebar-logo-circle {
-  width: 60px;
-  height: 60px;
+  width: 64px;
+  height: 64px;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  border-radius: 12px;
-  background: linear-gradient(135deg, #667eea, #764ba2);
-  overflow: hidden;
 }
 
 .sidebar-logo-circle img {
   width: 100%;
   height: 100%;
-  padding: 4px;
   object-fit: contain;
-  box-sizing: border-box;
   display: block;
 }
 
@@ -79,7 +71,12 @@
   text-decoration: none;
   font-size: 14px;
   font-weight: 500;
-  transition: 0.2s ease;
+  /* Explicit property list: never animate layout properties (padding,
+     font-size, font-weight) — animating "all" caused stutter and wobble. */
+  transition:
+    background-color 0.18s cubic-bezier(0.4, 0, 0.2, 1),
+    color 0.18s cubic-bezier(0.4, 0, 0.2, 1),
+    transform 0.12s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .nav-button {
@@ -95,8 +92,20 @@
 }
 
 .nav-item:hover {
-  background: rgba(255, 255, 255, 0.12);
+  background-color: rgba(255, 255, 255, 0.12);
   color: #ffffff;
+}
+
+/* Keep the active item visually stable while hovered (including the
+   disabled active buttons): it keeps its stronger highlight. */
+.nav-item.active:hover {
+  background-color: rgba(255, 255, 255, 0.18);
+  color: #ffffff;
+}
+
+/* Subtle press feedback: transform only, so layout never shifts. */
+.nav-item:not(:disabled):active {
+  transform: scale(0.98);
 }
 
 .nav-item.active {
@@ -124,17 +133,25 @@
   object-fit: contain;
   /* Recolor source icons to white for legibility on the blue background */
   filter: brightness(0) invert(1);
-}
-
-.nav-icon img {
   opacity: 0.75;
-  transition: opacity 0.2s ease;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  transition:
+    opacity 0.18s cubic-bezier(0.4, 0, 0.2, 1),
+    transform 0.18s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .nav-item:hover .nav-icon img,
 .nav-item.active .nav-icon img {
   opacity: 1;
 }
+
+/* Compositor-only scale: immediate response, no repaint-driven lag,
+   and no layout shift since transforms do not affect flow. */
+.nav-item:hover .nav-icon img {
+  transform: translateZ(0) scale(1.08);
+}
+
 .sidebar-bottom {
   margin-top: auto;
 }
@@ -145,17 +162,13 @@
 
 .logout:hover {
   color: #ffffff;
-  background: rgba(255, 255, 255, 0.12);
+  background-color: rgba(255, 255, 255, 0.12);
 }
 
 .dashboard-main {
   width: calc(100% - 250px);
   margin-left: 250px;
   padding: 30px 40px;
-  transition:
-    width 0.25s ease,
-    margin-left 0.25s ease,
-    padding 0.25s ease;
 }
 
 .topbar {
@@ -854,9 +867,7 @@
   .sidebar-logo-circle img {
     width: 100%;
     height: 100%;
-    padding: 3px;
     object-fit: contain;
-    box-sizing: border-box;
     display: block;
   }
 
@@ -880,5 +891,21 @@
 
   .stat-card {
     padding: 14px;
+  }
+}
+
+/* ---------------------- Sidebar motion preferences ------------------------- */
+
+/* Honor users who prefer reduced motion: hover feedback stays (color only),
+   but movement and transitions are disabled. */
+@media (prefers-reduced-motion: reduce) {
+  .nav-item,
+  .nav-item .nav-icon img {
+    transition: none;
+  }
+
+  .nav-item:not(:disabled):active,
+  .nav-item:hover .nav-icon img {
+    transform: none;
   }
 }

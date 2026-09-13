@@ -20,6 +20,7 @@ type AdminDashboardProps = {
   onResidents: () => void;
   onDocumentRequests: () => void;
   onRequestHistory: () => void;
+  onApprovals: () => void;
   onLogout: () => void;
 };
 
@@ -29,6 +30,7 @@ const AdminDashboard = ({
   onResidents,
   onDocumentRequests,
   onRequestHistory,
+  onApprovals,
   onLogout,
 }: AdminDashboardProps) => {
   const [data, setData] = useState<AdminDashboardData | null>(null);
@@ -59,7 +61,7 @@ const AdminDashboard = ({
     <div className="admin-dashboard">
       <AdminSidebar
         pendingRequests={data?.stats.pending ?? 0}
-        pendingApprovals={data?.stats.approved ?? 0}
+        pendingApprovals={data?.stats.pending ?? 0}
         unreadNotifications={unreadNotifications}
         firstName={ADMIN_DISPLAY_NAME}
         lastName=""
@@ -69,6 +71,7 @@ const AdminDashboard = ({
         onResidents={onResidents}
         onDocumentRequests={onDocumentRequests}
         onRequestHistory={onRequestHistory}
+        onApprovals={onApprovals}
         onNotifications={onNotifications}
         onLogout={onLogout}
       />

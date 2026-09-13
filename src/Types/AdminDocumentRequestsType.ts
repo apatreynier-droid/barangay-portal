@@ -3,6 +3,7 @@ export type AdminDocumentRequest = {
   request_number: string;
   resident_name: string;
   document: string;
+  purpose: string;
   status: string;
   submitted_at: string;
   fee: number;
