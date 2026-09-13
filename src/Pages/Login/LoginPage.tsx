@@ -2,7 +2,7 @@ import { useState } from "react";
 import type { FormEvent, ChangeEvent } from "react";
 import type { FormData, FormErrors } from "../../Types/LoginType";
 import { validateForm, authenticateUser } from "../../Utils/LoginLogic";
-import logo from "../../assets/logo-lagab.png";
+import logo from "../../assets/logo-256.png";
 import showIcon from "../../assets/show.png";
 import hideIcon from "../../assets/hide.png";
 import "./LoginPage.css";

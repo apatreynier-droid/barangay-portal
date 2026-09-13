@@ -28,6 +28,7 @@ type AdminRequestHistoryProps = {
   onDashboard: () => void;
   onResidents: () => void;
   onDocumentRequests: () => void;
+  onApprovals: () => void;
   onNotifications: () => void;
   onLogout: () => void;
 };
@@ -37,6 +38,7 @@ const AdminRequestHistory = ({
   onDashboard,
   onResidents,
   onDocumentRequests,
+  onApprovals,
   onNotifications,
   onLogout,
 }: AdminRequestHistoryProps) => {
@@ -104,7 +106,7 @@ const AdminRequestHistory = ({
     <div className="admin-dashboard">
       <AdminSidebar
         pendingRequests={sidebarStats.pending}
-        pendingApprovals={sidebarStats.approved}
+        pendingApprovals={sidebarStats.pending}
         unreadNotifications={unreadNotifications}
         firstName={ADMIN_DISPLAY_NAME}
         lastName=""
@@ -113,6 +115,7 @@ const AdminRequestHistory = ({
         onDashboard={onDashboard}
         onResidents={onResidents}
         onDocumentRequests={onDocumentRequests}
+        onApprovals={onApprovals}
         onNotifications={onNotifications}
         onLogout={onLogout}
       />

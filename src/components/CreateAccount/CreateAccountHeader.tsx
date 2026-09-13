@@ -1,4 +1,4 @@
-import logo from "../../assets/logo-lagab.png";
+import logo from "../../assets/logo-256.png";
 import "./CreateAccountHeader.css";
 
 const STEPS = ["Personal Info", "Address & Contact", "Emergency Contact"];

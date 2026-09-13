@@ -1009,6 +1009,7 @@ def list_document_requests(
                CONCAT(resident_profiles.first_name, ' ',
                       resident_profiles.last_name) AS resident_name,
                document_types.document_name AS document,
+               requests.purpose,
                requests.status, requests.submitted_at, document_types.fee
         FROM requests
         JOIN users ON users.id = requests.user_id
@@ -1023,6 +1024,7 @@ def list_document_requests(
             request_number=row["request_number"],
             resident_name=row["resident_name"],
             document=row["document"],
+            purpose=row["purpose"],
             status=row["status"],
             submitted_at=row["submitted_at"],
             fee=float(row["fee"]),

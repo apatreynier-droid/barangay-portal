@@ -19,7 +19,6 @@
   background: #10243e;
   border-right: 1px solid rgba(255, 255, 255, 0.08);
   overflow-y: auto;
-  transition: width 0.25s ease, padding 0.25s ease;
 }
 
 .admin-sidebar-header {
@@ -82,18 +81,33 @@
   padding: 10px 12px;
   border: 0;
   border-radius: 9px;
-  background: transparent;
+  background-color: transparent;
   color: #aeb9c9;
   font-size: 13px;
   font-weight: 500;
   text-align: left;
   cursor: pointer;
-  transition: background 0.2s ease, color 0.2s ease;
+  transition:
+    background-color 0.18s cubic-bezier(0.4, 0, 0.2, 1),
+    color 0.18s cubic-bezier(0.4, 0, 0.2, 1),
+    transform 0.12s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .admin-nav-item:hover:not(:disabled) {
-  background: rgba(255, 255, 255, 0.08);
+  background-color: rgba(255, 255, 255, 0.08);
   color: #ffffff;
+}
+
+/* Keep the active item visually stable while hovered: it keeps its solid
+   blue background instead of being overridden by the hover style above. */
+.admin-nav-item.active:hover:not(:disabled) {
+  background-color: #2563eb;
+  color: #ffffff;
+}
+
+/* Subtle press feedback: transform only, so layout never shifts. */
+.admin-nav-item:not(:disabled):active {
+  transform: scale(0.98);
 }
 
 .admin-nav-item.active {
@@ -125,7 +139,11 @@
   height: 18px;
   object-fit: contain;
   opacity: 0.85;
-  transition: opacity 0.2s ease;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  transition:
+    opacity 0.18s cubic-bezier(0.4, 0, 0.2, 1),
+    transform 0.18s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .admin-nav-item:hover:not(:disabled) .admin-nav-icon img,
@@ -133,11 +151,23 @@
   opacity: 1;
 }
 
+/* Compositor-only scale: immediate response, no repaint-driven lag,
+   and no layout shift since transforms do not affect flow. */
+.admin-nav-item:hover:not(:disabled) .admin-nav-icon img {
+  transform: translateZ(0) scale(1.08);
+}
+
 .admin-nav-label {
   flex: 1;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  transition: transform 0.18s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Tiny transform-only nudge for a responsive feel; cannot shift layout. */
+.admin-nav-item:hover:not(:disabled) .admin-nav-label {
+  transform: translateX(2px);
 }
 
 .admin-nav-badge {
@@ -205,11 +235,13 @@
   color: #aeb9c9;
   font-size: 15px;
   cursor: pointer;
-  transition: background 0.2s ease, color 0.2s ease;
+  transition:
+    background-color 0.18s cubic-bezier(0.4, 0, 0.2, 1),
+    color 0.18s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .admin-sidebar-logout:hover {
-  background: rgba(255, 255, 255, 0.08);
+  background-color: rgba(255, 255, 255, 0.08);
   color: #ffffff;
 }
 
@@ -219,7 +251,6 @@
   width: calc(100% - 250px);
   margin-left: 250px;
   padding: 24px 28px 32px;
-  transition: width 0.25s ease, margin-left 0.25s ease, padding 0.25s ease;
 }
 
 .admin-topbar {
@@ -916,6 +947,25 @@
 
   .admin-sidebar {
     width: 64px;
+  }
+}
+
+/* ---------------------- Sidebar motion preferences ------------------------- */
+
+/* Honor users who prefer reduced motion: hover feedback stays (color only),
+   but movement and transitions are disabled. */
+@media (prefers-reduced-motion: reduce) {
+  .admin-nav-item,
+  .admin-nav-item .admin-nav-icon img,
+  .admin-nav-item .admin-nav-label,
+  .admin-sidebar-logout {
+    transition: none;
+  }
+
+  .admin-nav-item:not(:disabled):active,
+  .admin-nav-item:hover:not(:disabled) .admin-nav-icon img,
+  .admin-nav-item:hover:not(:disabled) .admin-nav-label {
+    transform: none;
   }
 }
 

@@ -226,6 +226,7 @@ class AdminDocumentRequestResponse(BaseModel):
     request_number: str
     resident_name: str
     document: str
+    purpose: str
     status: str
     submitted_at: datetime
     fee: float
