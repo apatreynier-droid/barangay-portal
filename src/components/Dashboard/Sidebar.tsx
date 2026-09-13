@@ -1,10 +1,11 @@
 import { useState } from "react";
 import wingsLogo from "../../assets/logo-256.png";
-import dashboardIcon from "../../assets/dashboard.png";
-import requestIcon from "../../assets/copy.png";
-import historyIcon from "../../assets/history.png";
-import notificationIcon from "../../assets/notification.png";
-import reqdocumentIcon from "../../assets/add.png";
+import ADashIcon from "../../assets/icons/ADash.png";
+import requestIcon from "../../assets/icons/DR.png";
+import reqdocumentIcon from "../../assets/icons/add-file.png";
+import historyIcon from "../../assets/icons/clock.png";
+import notificationIcon from "../../assets/icons/notification-bell.png";
+import logoutIcon from "../../assets/icons/logout.png";
 import LogoutConfirmation from "../LogoutConfirmation/LogoutConfirmation";
 
 type SidebarProps = {
@@ -42,7 +43,7 @@ const Sidebar = ({
         <nav className="sidebar-nav">
           <button type="button" className="nav-item nav-button active" disabled>
             <span className="nav-icon">
-              <img src={dashboardIcon} alt="" />
+              <img src={ADashIcon} alt="" />
             </span>
             Dashboard
           </button>
@@ -93,20 +94,13 @@ const Sidebar = ({
         </nav>
 
         <div className="sidebar-bottom">
-          <a href="#" className="nav-item">
-            <span className="nav-icon" aria-hidden="true">
-              &#9881;
-            </span>
-            Settings
-          </a>
-
           <button
             type="button"
             className="nav-item nav-button logout"
             onClick={() => setIsLogoutConfirmationOpen(true)}
           >
-            <span className="nav-icon" aria-hidden="true">
-              &#8618;
+            <span className="nav-icon">
+              <img src={logoutIcon} alt="" />
             </span>
             Logout
           </button>

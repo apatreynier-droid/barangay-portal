@@ -18,6 +18,20 @@ class Settings:
     mysql_password: str = os.getenv("MYSQL_PASSWORD", "jh#4Hp$f")
     mysql_database: str = os.getenv("MYSQL_DATABASE", "barangay_portal")
     access_token_days: int = int(os.getenv("ACCESS_TOKEN_DAYS", "7"))
+    # -- Login rate limiting (in-memory, see app/rate_limit.py) ------------
+    # Max CONSECUTIVE failed login attempts before login is blocked.
+    login_max_failed_attempts: int = int(os.getenv("LOGIN_MAX_FAILED_ATTEMPTS", "5"))
+    # Failed attempts older than this are forgotten (sliding window).
+    login_failure_window_seconds: int = int(
+        os.getenv("LOGIN_FAILURE_WINDOW_SECONDS", "300")
+    )
+    # How long login stays blocked after too many consecutive failures.
+    login_block_duration_seconds: int = int(
+        os.getenv("LOGIN_BLOCK_DURATION_SECONDS", "900")
+    )
+    # Per-IP flood protection: max login requests per sliding window.
+    login_ip_max_requests: int = int(os.getenv("LOGIN_IP_MAX_REQUESTS", "10"))
+    login_ip_window_seconds: int = int(os.getenv("LOGIN_IP_WINDOW_SECONDS", "60"))
     cors_origins: tuple[str, ...] = tuple(
         origin.strip()
         for origin in os.getenv("CORS_ORIGINS", "http://localhost:5173").split(",")

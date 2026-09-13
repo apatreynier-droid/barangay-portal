@@ -131,19 +131,11 @@
   width: 18px;
   height: 18px;
   object-fit: contain;
-  /* Recolor source icons to white for legibility on the blue background */
-  filter: brightness(0) invert(1);
-  opacity: 0.75;
+  /* Render icons with their original PNG colors (no recoloring to match
+     the sidebar text or active/hover color). */
   transform: translateZ(0);
   backface-visibility: hidden;
-  transition:
-    opacity 0.18s cubic-bezier(0.4, 0, 0.2, 1),
-    transform 0.18s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.nav-item:hover .nav-icon img,
-.nav-item.active .nav-icon img {
-  opacity: 1;
+  transition: transform 0.18s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 /* Compositor-only scale: immediate response, no repaint-driven lag,
@@ -560,6 +552,14 @@
   border-radius: 9px;
   background: #f3f4f6;
   flex-shrink: 0;
+}
+
+.quick-action > span img {
+  /* Render the PNG assets with their original colors and proportions. */
+  width: 22px;
+  height: 22px;
+  object-fit: contain;
+  display: block;
 }
 
 .quick-action > div {
