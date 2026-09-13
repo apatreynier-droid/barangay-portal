@@ -1,3 +1,7 @@
+import clearanceIcon from "../../assets/icons/DR.png";
+import residencyIcon from "../../assets/icons/house.png";
+import permitIcon from "../../assets/icons/permit.png";
+
 type QuickActionsProps = {
   onSelectDocument: (document: string) => void;
 };
@@ -18,7 +22,9 @@ const QuickActions = ({ onSelectDocument }: QuickActionsProps) => {
           className="quick-action"
           onClick={() => onSelectDocument("Barangay Clearance")}
         >
-          <span>📄</span>
+          <span>
+            <img src={clearanceIcon} alt="" />
+          </span>
           <div>
             <strong>Barangay Clearance</strong>
             <small>Request clearance</small>
@@ -30,7 +36,9 @@ const QuickActions = ({ onSelectDocument }: QuickActionsProps) => {
           className="quick-action"
           onClick={() => onSelectDocument("Certificate of Residency")}
         >
-          <span>🏠</span>
+          <span>
+            <img src={residencyIcon} alt="" />
+          </span>
           <div>
             <strong>Certificate of Residency</strong>
             <small>Request certificate</small>
@@ -42,7 +50,9 @@ const QuickActions = ({ onSelectDocument }: QuickActionsProps) => {
           className="quick-action"
           onClick={() => onSelectDocument("Barangay Permit")}
         >
-          <span>📋</span>
+          <span>
+            <img src={permitIcon} alt="" />
+          </span>
           <div>
             <strong>Barangay Permit</strong>
             <small>Apply for a permit</small>

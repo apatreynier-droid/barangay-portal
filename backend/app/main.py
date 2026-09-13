@@ -1,11 +1,12 @@
 from __future__ import annotations
 
 import calendar
+import math
 from datetime import date, datetime, timedelta, timezone
 
 import mysql.connector
 import secrets
-from fastapi import Depends, FastAPI, HTTPException, Response, status
+from fastapi import Depends, FastAPI, HTTPException, Request, Response, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import RedirectResponse
 from mysql.connector import MySQLConnection
@@ -49,6 +50,11 @@ from .security import (
     hash_password,
     verify_password,
 )
+from .rate_limit import (
+    get_client_ip,
+    login_attempt_limiter,
+    login_ip_limiter,
+)
 
 
 app = FastAPI(title="Barangay Portal API", version="1.0.0")
@@ -71,6 +77,20 @@ def clean_optional(value: str | None) -> str | None:
         return None
     stripped = value.strip()
     return stripped if stripped else None
+
+
+def raise_rate_limited(retry_after: float, message: str) -> None:
+    """Raise HTTP 429 for an active rate limit, with a Retry-After header."""
+    retry_seconds = max(1, math.ceil(retry_after))
+    minutes = math.ceil(retry_seconds / 60)
+    suffix = "s" if minutes != 1 else ""
+    raise HTTPException(
+        status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+        detail=(
+            f"{message} Try again in about {minutes} minute{suffix}."
+        ),
+        headers={"Retry-After": str(retry_seconds)},
+    )
 
 
 def build_auth_response(connection: MySQLConnection, user_id: int) -> AuthResponse:
@@ -212,8 +232,29 @@ def register(
 @app.post("/api/auth/login", response_model=AuthResponse)
 def login(
     payload: LoginInput,
+    request: Request,
     connection: MySQLConnection = Depends(get_db),
 ) -> AuthResponse:
+    client_ip = get_client_ip(request)
+    # Track consecutive failures per client IP + account pair.
+    attempt_key = f"{client_ip}|{normalize_email(payload.email)}"
+
+    # IP-based flood protection for login requests.
+    retry_after = login_ip_limiter.hit(client_ip)
+    if retry_after > 0:
+        raise_rate_limited(
+            retry_after,
+            "Too many login requests from this network.",
+        )
+
+    # Temporary block after too many consecutive failed attempts.
+    retry_after = login_attempt_limiter.remaining_block(attempt_key)
+    if retry_after > 0:
+        raise_rate_limited(
+            retry_after,
+            "Too many failed login attempts. Login is temporarily blocked.",
+        )
+
     cursor = connection.cursor(dictionary=True)
     cursor.execute(
         """
@@ -227,11 +268,19 @@ def login(
     cursor.close()
 
     if user is None or not verify_password(payload.password, user["password_hash"]):
+        blocked_for = login_attempt_limiter.record_failure(attempt_key)
+        if blocked_for > 0:
+            raise_rate_limited(
+                blocked_for,
+                "Too many failed login attempts. Login is temporarily blocked.",
+            )
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect email or password.",
         )
 
+    # Successful login: give the client a clean slate again.
+    login_attempt_limiter.record_success(attempt_key)
     return build_auth_response(connection, user["id"])
 
 

@@ -73,3 +73,36 @@ Open `http://127.0.0.1:8000/docs` for the generated API documentation.
 - `GET /api/notifications`
 - `PATCH /api/notifications/{notification_id}/read`
 - `POST /api/notifications/read-all`
+
+## Login rate limiting
+
+Login protection is implemented in-memory in `app/rate_limit.py` (no Redis or
+external service needed) and wired into the `POST /api/auth/login` endpoint in
+`app/main.py`. Two limiters are active:
+
+1. **Consecutive failed attempts** (`LoginRateLimiter`, keyed by client IP +
+   account email)
+   - More than **5 failed attempts within 5 minutes** blocks login for that
+     client/account for **15 minutes** (HTTP 429 with a `Retry-After` header).
+   - Failures older than 5 minutes stop counting; a **successful login resets
+     the counter** immediately.
+2. **Per-IP request cap** (`IPRateLimiter`)
+   - Maximum **10 login requests per IP per 60-second sliding window**;
+     further requests get HTTP 429 until the window frees up.
+
+### Changing the limits
+
+All values live in one place: the `Settings` dataclass in `app/config.py`,
+and each can be overridden with an environment variable in `backend/.env`
+(see `.env.example`) — no code changes required:
+
+| Setting                        | Env variable                    | Default |
+| ------------------------------ | ------------------------------- | ------- |
+| Max consecutive failed attempts| `LOGIN_MAX_FAILED_ATTEMPTS`     | 5       |
+| Failure sliding window         | `LOGIN_FAILURE_WINDOW_SECONDS`  | 300 (5 min) |
+| Temporary block duration       | `LOGIN_BLOCK_DURATION_SECONDS`  | 900 (15 min) |
+| Max login requests per IP      | `LOGIN_IP_MAX_REQUESTS`         | 10      |
+| IP window                      | `LOGIN_IP_WINDOW_SECONDS`       | 60      |
+
+The tracked counters live in the backend process memory, so restarting the
+server (e.g. after a deploy) clears all blocks and counters.
