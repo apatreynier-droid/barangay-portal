@@ -2,8 +2,6 @@ import { useState } from "react";
 import wingsLogo from "../../assets/logo-256.png";
 import ADashIcon from "../../assets/icons/ADash.png";
 import requestIcon from "../../assets/icons/DR.png";
-import reqdocumentIcon from "../../assets/icons/add-file.png";
-import historyIcon from "../../assets/icons/clock.png";
 import notificationIcon from "../../assets/icons/notification-bell.png";
 import logoutIcon from "../../assets/icons/logout.png";
 import LogoutConfirmation from "../LogoutConfirmation/LogoutConfirmation";
@@ -11,9 +9,11 @@ import LogoutConfirmation from "../LogoutConfirmation/LogoutConfirmation";
 type SidebarProps = {
   onBackToDashboard: () => void;
   onMyRequests: () => void;
-  onRequestHistory: () => void;
+  /** Kept for backwards compatibility with pages that still pass it. */
+  onRequestHistory?: () => void;
   onNotifications: () => void;
-  onRequestDocument: () => void;
+  /** Kept for backwards compatibility with pages that still pass it. */
+  onRequestDocument?: () => void;
   onLogout: () => void;
   activePage?:
     | "my-requests"
@@ -25,12 +25,15 @@ type SidebarProps = {
 const Sidebar = ({
   onBackToDashboard,
   onMyRequests,
-  onRequestHistory,
   onNotifications,
-  onRequestDocument,
   onLogout,
   activePage = "my-requests",
 }: SidebarProps) => {
+  // Request history lives inside My Requests now, so both highlight the
+  // same item. "request-document" is reached from the Dashboard banner and
+  // Quick Actions, so no sidebar item is marked active for it.
+  const isMyRequestsActive =
+    activePage === "my-requests" || activePage === "request-history";
   const [isLogoutConfirmationOpen, setIsLogoutConfirmationOpen] =
     useState(false);
 
@@ -63,43 +66,15 @@ const Sidebar = ({
           <button
             type="button"
             className={`nav-item nav-button ${
-              activePage === "my-requests" ? "active" : ""
+              isMyRequestsActive ? "active" : ""
             }`}
             onClick={onMyRequests}
-            disabled={activePage === "my-requests"}
+            disabled={isMyRequestsActive}
           >
             <span className="nav-icon">
               <img src={requestIcon} alt="" />
             </span>
             My Requests
-          </button>
-
-          <button
-            type="button"
-            className={`nav-item nav-button ${
-              activePage === "request-document" ? "active" : ""
-            }`}
-            onClick={onRequestDocument}
-            disabled={activePage === "request-document"}
-          >
-            <span className="nav-icon">
-              <img src={reqdocumentIcon} alt="" />
-            </span>
-            Request Document
-          </button>
-
-          <button
-            type="button"
-            className={`nav-item nav-button ${
-              activePage === "request-history" ? "active" : ""
-            }`}
-            onClick={onRequestHistory}
-            disabled={activePage === "request-history"}
-          >
-            <span className="nav-icon">
-              <img src={historyIcon} alt="" />
-            </span>
-            Request History
           </button>
 
           <button

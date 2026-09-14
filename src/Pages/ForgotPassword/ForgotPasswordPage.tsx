@@ -5,7 +5,6 @@ import {
   submitPasswordResetRequest,
   validateForm,
 } from "../../Utils/ForgotPasswordLogic";
-import emailIcon from "../../assets/icons/email.png";
 import logo from "../../assets/logo-256.png";
 import "./ForgotPasswordPage.css";
 
@@ -19,15 +18,23 @@ const BrandBadge = () => (
   </div>
 );
 
+/** Generic email/envelope icon — intentionally not tied to any mail provider. */
 const MailIcon = () => (
-  <img
-    src={emailIcon}
-    alt=""
+  <svg
     width="28"
     height="28"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="#16a34a"
+    strokeWidth="1.8"
+    strokeLinecap="round"
+    strokeLinejoin="round"
     aria-hidden="true"
-    style={{ display: "block" }}
-  />
+    focusable="false"
+  >
+    <rect x="2.5" y="5" width="19" height="14" rx="2.5" />
+    <path d="m3.5 7 8.5 6 8.5-6" />
+  </svg>
 );
 
 const ForgotPasswordPage = ({ onBackToLogin }: ForgotPasswordPageProps) => {
@@ -120,29 +127,21 @@ const ForgotPasswordPage = ({ onBackToLogin }: ForgotPasswordPageProps) => {
           <button
             type="button"
             className="forgot-submit-button"
+            onClick={onBackToLogin}
+          >
+            Return to Sign In
+          </button>
+
+          <button
+            type="button"
+            className="forgot-secondary-button"
             onClick={handleTryDifferentEmail}
           >
             Try a Different Email
           </button>
-
-          <button
-            type="button"
-            className="forgot-back-link forgot-back-link--center"
-            onClick={onBackToLogin}
-          >
-            ← Back to Sign In
-          </button>
         </section>
       ) : (
         <section className="forgot-card">
-          <button
-            type="button"
-            className="forgot-back-link"
-            onClick={onBackToLogin}
-          >
-            ← Back to Sign In
-          </button>
-
           <h2 className="forgot-card-title">Forgot Password?</h2>
           <p className="forgot-card-description">
             Enter your registered email address and we&apos;ll send you a secure
@@ -180,6 +179,14 @@ const ForgotPasswordPage = ({ onBackToLogin }: ForgotPasswordPageProps) => {
               {isLoading ? "Sending..." : "Send Reset Link"}
             </button>
           </form>
+
+          <button
+            type="button"
+            className="forgot-back-link"
+            onClick={onBackToLogin}
+          >
+            ← Back to Sign In
+          </button>
         </section>
       )}
 

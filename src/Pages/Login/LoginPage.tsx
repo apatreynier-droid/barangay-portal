@@ -47,12 +47,100 @@ const LockIcon = () => (
   </svg>
 );
 
+const RecordsIcon = () => (
+  <svg
+    width="15"
+    height="15"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.8"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden="true"
+  >
+    <path d="M17 21v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2" />
+    <circle cx="10" cy="7" r="4" />
+    <path d="M21 11h-6M21 8h-6" />
+  </svg>
+);
+
+const ShieldIcon = () => (
+  <svg
+    width="15"
+    height="15"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.8"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden="true"
+  >
+    <path d="M12 22s8-3.6 8-10V5l-8-3-8 3v7c0 6.4 8 10 8 10z" />
+    <path d="m9 12 2 2 4-4" />
+  </svg>
+);
+
+const HouseIcon = () => (
+  <svg
+    width="15"
+    height="15"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.8"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden="true"
+  >
+    <path d="M3 10.5 12 3l9 7.5" />
+    <path d="M5 9.5V21h14V9.5" />
+    <path d="M10 21v-6h4v6" />
+  </svg>
+);
+
+const CertificateIcon = () => (
+  <svg
+    width="15"
+    height="15"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.8"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden="true"
+  >
+    <circle cx="12" cy="9" r="5" />
+    <path d="m8.5 13.5-1.5 8 5-3 5 3-1.5-8" />
+  </svg>
+);
+
+const DirectoryIcon = () => (
+  <svg
+    width="15"
+    height="15"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.8"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden="true"
+  >
+    <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20V4H6.5A2.5 2.5 0 0 0 4 6.5v13z" />
+    <path d="M4 19.5A2.5 2.5 0 0 0 6.5 22H20v-5" />
+    <path d="M9 8h7M9 11.5h7" />
+  </svg>
+);
+
 const BRAND_FEATURES = [
-  "Resident Records",
-  "Barangay Clearance",
-  "Permit & Residency",
-  "Certificates",
-  "Officials Directory",
+  { label: "Resident Records", Icon: RecordsIcon },
+  { label: "Barangay Clearance", Icon: ShieldIcon },
+  { label: "Permit & Residency", Icon: HouseIcon },
+  { label: "Certificates", Icon: CertificateIcon },
+  { label: "Officials Directory", Icon: DirectoryIcon },
 ];
 
 const LoginPage = ({
@@ -158,8 +246,13 @@ const LoginPage = ({
           </p>
 
           <ul className="brand-features">
-            {BRAND_FEATURES.map((feature) => (
-              <li key={feature}>{feature}</li>
+            {BRAND_FEATURES.map(({ label, Icon }) => (
+              <li key={label}>
+                <span className="feature-icon" aria-hidden="true">
+                  <Icon />
+                </span>
+                {label}
+              </li>
             ))}
           </ul>
 
@@ -217,22 +310,12 @@ const LoginPage = ({
               </div>
 
               <div className="form-group">
-                <div className="field-label-row">
-                  <label htmlFor="password" className="field-label">
-                    Password
-                  </label>
-
-                  <button
-                    type="button"
-                    className="forgot-link"
-                    onClick={onForgotPassword}
-                  >
-                    Forgot password?
-                  </button>
-                </div>
+                <label htmlFor="password" className="field-label">
+                  Password
+                </label>
 
                 <div
-                  className={`input-wrapper ${errors.password ? "input-error" : ""}`}
+                  className={`input-wrapper input-password ${errors.password ? "input-error" : ""}`}
                 >
                   <span className="input-icon">
                     <LockIcon />
@@ -268,15 +351,25 @@ const LoginPage = ({
                 )}
               </div>
 
-              <label className="remember-me">
-                <input
-                  type="checkbox"
-                  checked={rememberMe}
-                  onChange={(e) => setRememberMe(e.target.checked)}
-                  disabled={isLoading}
-                />
-                <span>Remember me</span>
-              </label>
+              <div className="form-row">
+                <label className="remember-me">
+                  <input
+                    type="checkbox"
+                    checked={rememberMe}
+                    onChange={(e) => setRememberMe(e.target.checked)}
+                    disabled={isLoading}
+                  />
+                  <span>Remember me</span>
+                </label>
+
+                <button
+                  type="button"
+                  className="forgot-link"
+                  onClick={onForgotPassword}
+                >
+                  Forgot password?
+                </button>
+              </div>
 
               <button
                 type="submit"
