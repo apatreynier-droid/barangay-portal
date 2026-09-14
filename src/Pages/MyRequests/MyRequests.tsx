@@ -1,13 +1,27 @@
 import { useEffect, useState } from "react";
 import "../Dashboard/Dashboard.css";
 import "./MyRequests.css";
-import type { Request } from "../../Types/DashboardType";
+import type { Request, RequestStatus } from "../../Types/DashboardType";
 import type { AuthUser } from "../../Utils/api";
 import Sidebar from "../../components/MyRequests/Sidebar";
 import RequestsHeader from "../../components/MyRequests/RequestsHeader";
 import RequestStats from "../../components/MyRequests/RequestStats";
 import RequestsToolbar from "../../components/MyRequests/RequestsToolbar";
+import RequestsTabs, {
+  type RequestsTab,
+} from "../../components/MyRequests/RequestsTabs";
 import RequestsList from "../../components/MyRequests/RequestsList";
+
+// Requests still moving through the barangay office.
+const ACTIVE_STATUSES: RequestStatus[] = [
+  "Pending",
+  "Approved",
+  "Processing",
+  "Ready for Pickup",
+];
+
+// Requests that have reached their final status and now serve as records.
+const HISTORY_STATUSES: RequestStatus[] = ["Completed", "Rejected"];
 
 interface MyRequestsProps {
   user: AuthUser;
@@ -39,10 +53,33 @@ const MyRequests = ({
   // Local mirror of the requests so edits and deletes are reflected
   // immediately while staying in sync with future prop refreshes.
   const [localRequests, setLocalRequests] = useState<Request[]>(requests);
+  const [activeTab, setActiveTab] = useState<RequestsTab>("all");
 
   useEffect(() => {
     setLocalRequests(requests);
   }, [requests]);
+
+  const activeRequests = localRequests.filter((request) =>
+    ACTIVE_STATUSES.includes(request.status),
+  );
+
+  const historyRequests = localRequests.filter((request) =>
+    HISTORY_STATUSES.includes(request.status),
+  );
+
+  const visibleRequests =
+    activeTab === "active"
+      ? activeRequests
+      : activeTab === "history"
+        ? historyRequests
+        : localRequests;
+
+  const emptyStateMessage =
+    activeTab === "active"
+      ? "You have no active requests right now."
+      : activeTab === "history"
+        ? "No completed or rejected requests yet."
+        : "You have not submitted any document requests yet.";
 
   const handleRequestUpdated = (updated: Request) => {
     setLocalRequests((previous) =>
@@ -104,13 +141,22 @@ const MyRequests = ({
 
         <RequestsToolbar onNewRequest={onRequestDocument} />
 
+        <RequestsTabs
+          activeTab={activeTab}
+          onTabChange={setActiveTab}
+          allCount={totalRequests}
+          activeCount={activeRequests.length}
+          historyCount={historyRequests.length}
+        />
+
         {isLoadingData && localRequests.length === 0 ? (
           <p className="requests-empty-state">Loading your requests…</p>
         ) : (
           <RequestsList
-            requests={localRequests}
+            requests={visibleRequests}
             onRequestUpdated={handleRequestUpdated}
             onRequestDeleted={handleRequestDeleted}
+            emptyMessage={emptyStateMessage}
           />
         )}
       </main>

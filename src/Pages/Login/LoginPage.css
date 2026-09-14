@@ -73,6 +73,20 @@ body {
     );
 }
 
+/* Contrast overlay so white text stays readable over bright image areas */
+.brand-panel::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background: linear-gradient(
+    to right,
+    rgba(0, 0, 0, 0.65),
+    rgba(0, 0, 0, 0.25)
+  );
+  pointer-events: none;
+}
+
 .brand-inner {
   position: relative;
   z-index: 1;
@@ -167,12 +181,25 @@ body {
 }
 
 .brand-features li {
-  padding: 8px 18px;
-  border: 1px solid rgba(255, 255, 255, 0.28);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.06);
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   font-size: 13.5px;
-  color: #e6ebf8;
+  font-weight: 500;
+  color: #eef2fb;
+  cursor: default;
+}
+
+.feature-icon {
+  display: inline-flex;
+  flex-shrink: 0;
+  color: var(--gold);
 }
 
 /* Divider + privacy note */
@@ -219,9 +246,10 @@ body {
 
 .login-title {
   margin-bottom: 8px;
-  font-family: "Playfair Display", Georgia, "Times New Roman", serif;
+  font-family: inherit;
   font-size: 30px;
   font-weight: 700;
+  letter-spacing: -0.3px;
   color: var(--ink);
 }
 
@@ -252,15 +280,13 @@ body {
   color: #1c2a55;
 }
 
-.field-label-row {
+/* Remember me + Forgot password row */
+.form-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 8px;
-}
-
-.field-label-row .field-label {
-  margin-bottom: 0;
+  gap: 12px;
+  margin-top: -2px;
 }
 
 .forgot-link {
@@ -299,7 +325,7 @@ body {
   height: 48px;
   padding: 0 44px 0 42px;
   background: var(--field-bg);
-  border: 1px solid var(--field-border);
+  border: 1px solid #e2e8f0;
   border-radius: 10px;
   font-family: inherit;
   font-size: 14.5px;
@@ -317,8 +343,8 @@ body {
 
 .form-input:focus {
   background: #ffffff;
-  border-color: var(--navy-700);
-  box-shadow: 0 0 0 3px rgba(29, 52, 104, 0.12);
+  border-color: #2563eb;
+  box-shadow: 0 0 0 1px #2563eb;
 }
 
 .form-input:disabled {
@@ -329,29 +355,35 @@ body {
   border-color: var(--danger);
 }
 
+/* Extra breathing room so the eye icon never overlaps the password text */
+.input-password .form-input {
+  padding-right: 52px;
+}
+
 .toggle-password {
   position: absolute;
-  right: 8px;
+  top: 50%;
+  right: 12px;
   display: flex;
   padding: 6px;
   background: none;
   border: none;
   cursor: pointer;
+  transform: translateY(-50%);
 }
 
+/* Neutralize the global button hover lift (App.css) and keep the icon fixed */
+.toggle-password:hover:not(:disabled),
 .toggle-password:hover {
-  transform: none;
+  transform: translateY(-50%);
   box-shadow: none;
+  transition: none;
 }
 
 .toggle-password img {
   width: 18px;
   height: 18px;
   opacity: 0.55;
-}
-
-.toggle-password:hover img {
-  opacity: 0.9;
 }
 
 /* Remember me */
@@ -452,7 +484,7 @@ body {
 
 .footer-text {
   font-size: 13px;
-  color: var(--text-faint);
+  color: #64748b;
   white-space: nowrap;
 }
 

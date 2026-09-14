@@ -160,7 +160,7 @@
 .dashboard-main {
   width: calc(100% - 250px);
   margin-left: 250px;
-  padding: 30px 40px;
+  padding: 30px 40px 48px;
 }
 
 .topbar {
@@ -291,7 +291,7 @@
 .welcome-small {
   margin: 0 0 6px;
   font-size: 13px;
-  opacity: 0.75;
+  opacity: 0.9;
 }
 
 .welcome-card h2 {
@@ -386,7 +386,7 @@
 .stat-card span {
   display: block;
   margin-bottom: 4px;
-  color: #9ca3af;
+  color: #475569;
   font-size: 11px;
 }
 
@@ -805,7 +805,7 @@
   .dashboard-main {
     width: calc(100% - 80px);
     margin-left: 80px;
-    padding: 24px;
+    padding: 24px 24px 48px;
   }
 
   .welcome-icon {
@@ -826,7 +826,7 @@
 
 @media (max-width: 600px) {
   .dashboard-main {
-    padding: 18px;
+    padding: 18px 18px 48px;
   }
 
   .stats-grid {
@@ -882,7 +882,7 @@
   .dashboard-main {
     width: calc(100% - 64px);
     margin-left: 64px;
-    padding: 14px;
+    padding: 14px 14px 48px;
   }
 
   .stats-grid {

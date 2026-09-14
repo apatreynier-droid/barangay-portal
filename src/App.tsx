@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { BrowserRouter, Navigate, Route, Routes, useNavigate } from "react-router-dom";
 import LoginPage from "./Pages/Login/LoginPage";
 import CreateAccount from "./Pages/CreateAccount/CreateAccount";
 import Dashboard from "./Pages/Dashboard/Dashboard";
@@ -24,28 +25,47 @@ import {
   type AuthUser,
 } from "./Utils/api";
 import type { Request } from "./Types/DashboardType";
-
-type Page =
-  | "dashboard"
-  | "residents"
-  | "document-requests"
-  | "admin-request-history"
-  | "document-management"
-  | "approvals"
-  | "my-requests"
-  | "request-history"
-  | "notifications"
-  | "request-document";
+import {
+  ADMIN_APPROVALS_PATH,
+  ADMIN_DOCUMENT_MANAGEMENT_PATH,
+  ADMIN_DOCUMENT_REQUESTS_PATH,
+  ADMIN_HOME_PATH,
+  ADMIN_REQUEST_HISTORY_PATH,
+  ADMIN_RESIDENTS_PATH,
+  CREATE_ACCOUNT_PATH,
+  FORGOT_PASSWORD_PATH,
+  getHomePath,
+  LEGACY_RESIDENT_HOME_PATH,
+  LOGIN_PATH,
+  NOTIFICATIONS_PATH,
+  RESIDENT_HOME_PATH,
+  RESIDENT_MY_REQUESTS_PATH,
+  RESIDENT_REQUEST_DOCUMENT_PATH,
+  RESIDENT_REQUEST_HISTORY_PATH,
+} from "./Utils/routePaths";
+import {
+  HomeRoute,
+  PublicOnly,
+  RequireAdmin,
+  RequireAuth,
+  RequireResident,
+} from "./Utils/guards";
 
 function App() {
+  return (
+    <BrowserRouter>
+      <PortalRoutes />
+    </BrowserRouter>
+  );
+}
+
+function PortalRoutes() {
+  const navigate = useNavigate();
   const [user, setUser] = useState<AuthUser | null>(getSessionUser);
-  const [page, setPage] = useState<Page>("dashboard");
   const [requests, setRequests] = useState<Request[]>([]);
   const [notifications, setNotifications] = useState<ApiNotification[]>([]);
   const [isLoadingData, setIsLoadingData] = useState(false);
   const [dataError, setDataError] = useState("");
-  const [showCreateAccount, setShowCreateAccount] = useState(false);
-  const [showForgotPassword, setShowForgotPassword] = useState(false);
 
   const loadUserData = useCallback(async () => {
     setIsLoadingData(true);
@@ -72,13 +92,9 @@ function App() {
     }
   }, [user, loadUserData]);
 
-  const openRequestDocument = () => {
-    setPage("request-document");
-  };
-
   const handleRequestCreated = () => {
     void loadUserData();
-    setPage("my-requests");
+    navigate(RESIDENT_MY_REQUESTS_PATH);
   };
 
   const handleLogout = () => {
@@ -86,6 +102,7 @@ function App() {
     setUser(null);
     setRequests([]);
     setNotifications([]);
+    navigate(LOGIN_PATH, { replace: true });
   };
 
   const handleSessionExpired = () => {
@@ -93,209 +110,318 @@ function App() {
     setUser(null);
     setRequests([]);
     setNotifications([]);
+    navigate(LOGIN_PATH, { replace: true });
   };
 
-  if (!user) {
-    if (showCreateAccount) {
-      return (
-        <CreateAccount onBackToLogin={() => setShowCreateAccount(false)} />
-      );
-    }
-
-    if (showForgotPassword) {
-      return (
-        <ForgotPasswordPage onBackToLogin={() => setShowForgotPassword(false)} />
-      );
-    }
-
-    return (
-      <LoginPage
-        onLoginSuccess={() => setUser(getSessionUser())}
-        onCreateAccount={() => setShowCreateAccount(true)}
-        onForgotPassword={() => setShowForgotPassword(true)}
-      />
-    );
-  }
-
-  const unreadCount = notifications.filter(
-    (notification) => !notification.is_read,
-  ).length;
-  const isAdmin = user.role === "admin";
-
-  if (page === "dashboard" && isAdmin) {
-    return (
-      <AdminDashboard
-        user={user}
-        unreadNotifications={unreadCount}
-        onNotifications={() => setPage("notifications")}
-        onResidents={() => setPage("residents")}
-        onDocumentRequests={() => setPage("document-requests")}
-        onRequestHistory={() => setPage("admin-request-history")}
-        onApprovals={() => setPage("approvals")}
-        onDocumentManagement={() => setPage("document-management")}
-        onLogout={handleLogout}
-      />
-    );
-  }
-
-  if (page === "residents" && isAdmin) {
-    return (
-      <AdminResidents
-        user={user}
-        unreadNotifications={unreadCount}
-        onDashboard={() => setPage("dashboard")}
-        onDocumentRequests={() => setPage("document-requests")}
-        onRequestHistory={() => setPage("admin-request-history")}
-        onApprovals={() => setPage("approvals")}
-        onDocumentManagement={() => setPage("document-management")}
-        onNotifications={() => setPage("notifications")}
-        onLogout={handleLogout}
-      />
-    );
-  }
-
-  if (page === "approvals" && isAdmin) {
-    return (
-      <AdminApprovals
-        user={user}
-        unreadNotifications={unreadCount}
-        onDashboard={() => setPage("dashboard")}
-        onResidents={() => setPage("residents")}
-        onDocumentRequests={() => setPage("document-requests")}
-        onRequestHistory={() => setPage("admin-request-history")}
-        onDocumentManagement={() => setPage("document-management")}
-        onNotifications={() => setPage("notifications")}
-        onLogout={handleLogout}
-      />
-    );
-  }
-
-  if (page === "document-requests" && isAdmin) {
-    return (
-      <AdminDocumentRequests
-        user={user}
-        unreadNotifications={unreadCount}
-        onDashboard={() => setPage("dashboard")}
-        onResidents={() => setPage("residents")}
-        onNotifications={() => setPage("notifications")}
-        onRequestHistory={() => setPage("admin-request-history")}
-        onApprovals={() => setPage("approvals")}
-        onDocumentManagement={() => setPage("document-management")}
-        onLogout={handleLogout}
-      />
-    );
-  }
-
-  if (page === "admin-request-history" && isAdmin) {
-    return (
-      <AdminRequestHistory
-        user={user}
-        unreadNotifications={unreadCount}
-        onDashboard={() => setPage("dashboard")}
-        onResidents={() => setPage("residents")}
-        onDocumentRequests={() => setPage("document-requests")}
-        onApprovals={() => setPage("approvals")}
-        onDocumentManagement={() => setPage("document-management")}
-        onNotifications={() => setPage("notifications")}
-        onLogout={handleLogout}
-      />
-    );
-  }
-
-  if (page === "document-management" && isAdmin) {
-    return (
-      <AdminDocumentManagement
-        user={user}
-        unreadNotifications={unreadCount}
-        onDashboard={() => setPage("dashboard")}
-        onResidents={() => setPage("residents")}
-        onDocumentRequests={() => setPage("document-requests")}
-        onRequestHistory={() => setPage("admin-request-history")}
-        onApprovals={() => setPage("approvals")}
-        onNotifications={() => setPage("notifications")}
-        onLogout={handleLogout}
-      />
-    );
-  }
-
-  if (page === "dashboard") {
-    return (
-      <Dashboard
-        user={user}
-        requests={requests}
-        notifications={notifications}
-        isLoadingData={isLoadingData}
-        dataError={dataError}
-        onRetry={() => void loadUserData()}
-        onMyRequests={() => setPage("my-requests")}
-        onRequestHistory={() => setPage("request-history")}
-        onNotifications={() => setPage("notifications")}
-        onRequestDocument={openRequestDocument}
-        onLogout={handleLogout}
-      />
-    );
-  }
-
-  if (page === "my-requests") {
-    return (
-      <MyRequests
-        user={user}
-        requests={requests}
-        isLoadingData={isLoadingData}
-        dataError={dataError}
-        onRetry={() => void loadUserData()}
-        onBackToDashboard={() => setPage("dashboard")}
-        onMyRequests={() => setPage("my-requests")}
-        onRequestHistory={() => setPage("request-history")}
-        onNotifications={() => setPage("notifications")}
-        onRequestDocument={() => openRequestDocument()}
-        onLogout={handleLogout}
-      />
-    );
-  }
-
-  if (page === "request-history") {
-    return (
-      <RequestHistory
-        requests={requests}
-        isLoadingData={isLoadingData}
-        dataError={dataError}
-        onRetry={() => void loadUserData()}
-        onBackToDashboard={() => setPage("dashboard")}
-        onMyRequests={() => setPage("my-requests")}
-        onNotifications={() => setPage("notifications")}
-        onRequestDocument={() => openRequestDocument()}
-        onLogout={handleLogout}
-      />
-    );
-  }
-
-  if (page === "notifications") {
-    return (
-      <NotificationPage
-        notifications={notifications}
-        onNotificationsChanged={loadUserData}
-        onSessionExpired={handleSessionExpired}
-        onBackToDashboard={() => setPage("dashboard")}
-        onMyRequests={() => setPage("my-requests")}
-        onRequestHistory={() => setPage("request-history")}
-        onRequestDocument={() => openRequestDocument()}
-        onLogout={handleLogout}
-      />
-    );
-  }
+  const unreadCount = user
+    ? notifications.filter((notification) => !notification.is_read).length
+    : 0;
 
   return (
-    <RequestDocumentPage
-      onBackToDashboard={() => setPage("dashboard")}
-      onMyRequests={() => setPage("my-requests")}
-      onRequestHistory={() => setPage("request-history")}
-      onNotifications={() => setPage("notifications")}
-      onRequestSubmitted={handleRequestCreated}
-      onSessionExpired={handleSessionExpired}
-      onLogout={handleLogout}
-    />
+    <Routes>
+      <Route path="/" element={<HomeRoute user={user} />} />
+      <Route path="*" element={<HomeRoute user={user} />} />
+
+      {/* Old resident dashboard URL: send visitors to the new address.
+          The role guards on the new route still apply after redirect. */}
+      <Route
+        path={LEGACY_RESIDENT_HOME_PATH}
+        element={<Navigate to={RESIDENT_HOME_PATH} replace />}
+      />
+
+      <Route
+        path={LOGIN_PATH}
+        element={
+          <PublicOnly user={user}>
+            <LoginPage
+              onLoginSuccess={() => setUser(getSessionUser())}
+              onCreateAccount={() => navigate(CREATE_ACCOUNT_PATH)}
+              onForgotPassword={() => navigate(FORGOT_PASSWORD_PATH)}
+            />
+          </PublicOnly>
+        }
+      />
+
+      <Route
+        path={CREATE_ACCOUNT_PATH}
+        element={
+          <PublicOnly user={user}>
+            <CreateAccount onBackToLogin={() => navigate(LOGIN_PATH)} />
+          </PublicOnly>
+        }
+      />
+
+      <Route
+        path={FORGOT_PASSWORD_PATH}
+        element={
+          <PublicOnly user={user}>
+            <ForgotPasswordPage onBackToLogin={() => navigate(LOGIN_PATH)} />
+          </PublicOnly>
+        }
+      />
+
+      <Route
+        path={RESIDENT_HOME_PATH}
+        element={
+          <RequireResident user={user}>
+            {(authUser) => (
+              <Dashboard
+                user={authUser}
+                requests={requests}
+                notifications={notifications}
+                isLoadingData={isLoadingData}
+                dataError={dataError}
+                onRetry={() => void loadUserData()}
+                onMyRequests={() => navigate(RESIDENT_MY_REQUESTS_PATH)}
+                onNotifications={() => navigate(NOTIFICATIONS_PATH)}
+                onRequestDocument={() =>
+                  navigate(RESIDENT_REQUEST_DOCUMENT_PATH)
+                }
+                onLogout={handleLogout}
+              />
+            )}
+          </RequireResident>
+        }
+      />
+
+      <Route
+        path={RESIDENT_MY_REQUESTS_PATH}
+        element={
+          <RequireResident user={user}>
+            {(authUser) => (
+              <MyRequests
+                user={authUser}
+                requests={requests}
+                isLoadingData={isLoadingData}
+                dataError={dataError}
+                onRetry={() => void loadUserData()}
+                onBackToDashboard={() => navigate(RESIDENT_HOME_PATH)}
+                onMyRequests={() => navigate(RESIDENT_MY_REQUESTS_PATH)}
+                onRequestHistory={() => navigate(RESIDENT_REQUEST_HISTORY_PATH)}
+                onNotifications={() => navigate(NOTIFICATIONS_PATH)}
+                onRequestDocument={() =>
+                  navigate(RESIDENT_REQUEST_DOCUMENT_PATH)
+                }
+                onLogout={handleLogout}
+              />
+            )}
+          </RequireResident>
+        }
+      />
+
+      <Route
+        path={RESIDENT_REQUEST_HISTORY_PATH}
+        element={
+          <RequireResident user={user}>
+            {() => (
+              <RequestHistory
+                requests={requests}
+                isLoadingData={isLoadingData}
+                dataError={dataError}
+                onRetry={() => void loadUserData()}
+                onBackToDashboard={() => navigate(RESIDENT_HOME_PATH)}
+                onMyRequests={() => navigate(RESIDENT_MY_REQUESTS_PATH)}
+                onNotifications={() => navigate(NOTIFICATIONS_PATH)}
+                onRequestDocument={() =>
+                  navigate(RESIDENT_REQUEST_DOCUMENT_PATH)
+                }
+                onLogout={handleLogout}
+              />
+            )}
+          </RequireResident>
+        }
+      />
+
+      <Route
+        path={RESIDENT_REQUEST_DOCUMENT_PATH}
+        element={
+          <RequireResident user={user}>
+            {() => (
+              <RequestDocumentPage
+                onBackToDashboard={() => navigate(RESIDENT_HOME_PATH)}
+                onMyRequests={() => navigate(RESIDENT_MY_REQUESTS_PATH)}
+                onRequestHistory={() => navigate(RESIDENT_REQUEST_HISTORY_PATH)}
+                onNotifications={() => navigate(NOTIFICATIONS_PATH)}
+                onRequestSubmitted={handleRequestCreated}
+                onSessionExpired={handleSessionExpired}
+                onLogout={handleLogout}
+              />
+            )}
+          </RequireResident>
+        }
+      />
+
+      <Route
+        path={NOTIFICATIONS_PATH}
+        element={
+          <RequireAuth user={user}>
+            {() => (
+              <NotificationPage
+                notifications={notifications}
+                onNotificationsChanged={loadUserData}
+                onSessionExpired={handleSessionExpired}
+                onBackToDashboard={() => navigate(getHomePath(user))}
+                onMyRequests={() => navigate(RESIDENT_MY_REQUESTS_PATH)}
+                onRequestHistory={() => navigate(RESIDENT_REQUEST_HISTORY_PATH)}
+                onRequestDocument={() =>
+                  navigate(RESIDENT_REQUEST_DOCUMENT_PATH)
+                }
+                onLogout={handleLogout}
+              />
+            )}
+          </RequireAuth>
+        }
+      />
+
+      <Route
+        path={ADMIN_HOME_PATH}
+        element={
+          <RequireAdmin user={user}>
+            {(authUser) => (
+              <AdminDashboard
+                user={authUser}
+                unreadNotifications={unreadCount}
+                onNotifications={() => navigate(NOTIFICATIONS_PATH)}
+                onResidents={() => navigate(ADMIN_RESIDENTS_PATH)}
+                onDocumentRequests={() =>
+                  navigate(ADMIN_DOCUMENT_REQUESTS_PATH)
+                }
+                onRequestHistory={() => navigate(ADMIN_REQUEST_HISTORY_PATH)}
+                onApprovals={() => navigate(ADMIN_APPROVALS_PATH)}
+                onDocumentManagement={() =>
+                  navigate(ADMIN_DOCUMENT_MANAGEMENT_PATH)
+                }
+                onLogout={handleLogout}
+              />
+            )}
+          </RequireAdmin>
+        }
+      />
+
+      <Route
+        path={ADMIN_RESIDENTS_PATH}
+        element={
+          <RequireAdmin user={user}>
+            {(authUser) => (
+              <AdminResidents
+                user={authUser}
+                unreadNotifications={unreadCount}
+                onDashboard={() => navigate(ADMIN_HOME_PATH)}
+                onDocumentRequests={() =>
+                  navigate(ADMIN_DOCUMENT_REQUESTS_PATH)
+                }
+                onRequestHistory={() => navigate(ADMIN_REQUEST_HISTORY_PATH)}
+                onApprovals={() => navigate(ADMIN_APPROVALS_PATH)}
+                onDocumentManagement={() =>
+                  navigate(ADMIN_DOCUMENT_MANAGEMENT_PATH)
+                }
+                onNotifications={() => navigate(NOTIFICATIONS_PATH)}
+                onLogout={handleLogout}
+              />
+            )}
+          </RequireAdmin>
+        }
+      />
+
+      <Route
+        path={ADMIN_APPROVALS_PATH}
+        element={
+          <RequireAdmin user={user}>
+            {(authUser) => (
+              <AdminApprovals
+                user={authUser}
+                unreadNotifications={unreadCount}
+                onDashboard={() => navigate(ADMIN_HOME_PATH)}
+                onResidents={() => navigate(ADMIN_RESIDENTS_PATH)}
+                onDocumentRequests={() =>
+                  navigate(ADMIN_DOCUMENT_REQUESTS_PATH)
+                }
+                onRequestHistory={() => navigate(ADMIN_REQUEST_HISTORY_PATH)}
+                onDocumentManagement={() =>
+                  navigate(ADMIN_DOCUMENT_MANAGEMENT_PATH)
+                }
+                onNotifications={() => navigate(NOTIFICATIONS_PATH)}
+                onLogout={handleLogout}
+              />
+            )}
+          </RequireAdmin>
+        }
+      />
+
+      <Route
+        path={ADMIN_DOCUMENT_REQUESTS_PATH}
+        element={
+          <RequireAdmin user={user}>
+            {(authUser) => (
+              <AdminDocumentRequests
+                user={authUser}
+                unreadNotifications={unreadCount}
+                onDashboard={() => navigate(ADMIN_HOME_PATH)}
+                onResidents={() => navigate(ADMIN_RESIDENTS_PATH)}
+                onNotifications={() => navigate(NOTIFICATIONS_PATH)}
+                onRequestHistory={() => navigate(ADMIN_REQUEST_HISTORY_PATH)}
+                onApprovals={() => navigate(ADMIN_APPROVALS_PATH)}
+                onDocumentManagement={() =>
+                  navigate(ADMIN_DOCUMENT_MANAGEMENT_PATH)
+                }
+                onLogout={handleLogout}
+              />
+            )}
+          </RequireAdmin>
+        }
+      />
+
+      <Route
+        path={ADMIN_REQUEST_HISTORY_PATH}
+        element={
+          <RequireAdmin user={user}>
+            {(authUser) => (
+              <AdminRequestHistory
+                user={authUser}
+                unreadNotifications={unreadCount}
+                onDashboard={() => navigate(ADMIN_HOME_PATH)}
+                onResidents={() => navigate(ADMIN_RESIDENTS_PATH)}
+                onDocumentRequests={() =>
+                  navigate(ADMIN_DOCUMENT_REQUESTS_PATH)
+                }
+                onApprovals={() => navigate(ADMIN_APPROVALS_PATH)}
+                onDocumentManagement={() =>
+                  navigate(ADMIN_DOCUMENT_MANAGEMENT_PATH)
+                }
+                onNotifications={() => navigate(NOTIFICATIONS_PATH)}
+                onLogout={handleLogout}
+              />
+            )}
+          </RequireAdmin>
+        }
+      />
+
+      <Route
+        path={ADMIN_DOCUMENT_MANAGEMENT_PATH}
+        element={
+          <RequireAdmin user={user}>
+            {(authUser) => (
+              <AdminDocumentManagement
+                user={authUser}
+                unreadNotifications={unreadCount}
+                onDashboard={() => navigate(ADMIN_HOME_PATH)}
+                onResidents={() => navigate(ADMIN_RESIDENTS_PATH)}
+                onDocumentRequests={() =>
+                  navigate(ADMIN_DOCUMENT_REQUESTS_PATH)
+                }
+                onRequestHistory={() => navigate(ADMIN_REQUEST_HISTORY_PATH)}
+                onApprovals={() => navigate(ADMIN_APPROVALS_PATH)}
+                onNotifications={() => navigate(NOTIFICATIONS_PATH)}
+                onLogout={handleLogout}
+              />
+            )}
+          </RequireAdmin>
+        }
+      />
+    </Routes>
   );
 }
 
 export default App;
+
+

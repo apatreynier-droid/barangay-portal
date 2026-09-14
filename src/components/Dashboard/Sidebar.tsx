@@ -2,24 +2,18 @@ import { useState } from "react";
 import wingsLogo from "../../assets/logo-256.png";
 import ADashIcon from "../../assets/icons/ADash.png";
 import requestIcon from "../../assets/icons/DR.png";
-import reqdocumentIcon from "../../assets/icons/add-file.png";
-import historyIcon from "../../assets/icons/clock.png";
 import notificationIcon from "../../assets/icons/notification-bell.png";
 import logoutIcon from "../../assets/icons/logout.png";
 import LogoutConfirmation from "../LogoutConfirmation/LogoutConfirmation";
 
 type SidebarProps = {
   onMyRequests: () => void;
-  onRequestDocument: () => void;
-  onRequestHistory: () => void;
   onNotifications: () => void;
   onLogout: () => void;
 };
 
 const Sidebar = ({
   onMyRequests,
-  onRequestDocument,
-  onRequestHistory,
   onNotifications,
   onLogout,
 }: SidebarProps) => {
@@ -57,28 +51,6 @@ const Sidebar = ({
               <img src={requestIcon} alt="" />
             </span>
             My Requests
-          </button>
-
-          <button
-            type="button"
-            className="nav-item nav-button"
-            onClick={onRequestDocument}
-          >
-            <span className="nav-icon">
-              <img src={reqdocumentIcon} alt="" />
-            </span>
-            Request Document
-          </button>
-
-          <button
-            type="button"
-            className="nav-item nav-button"
-            onClick={onRequestHistory}
-          >
-            <span className="nav-icon">
-              <img src={historyIcon} alt="" />
-            </span>
-            Request History
           </button>
 
           <button

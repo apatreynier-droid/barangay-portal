@@ -17,7 +17,6 @@ type DashboardProps = {
   dataError: string;
   onRetry: () => void;
   onMyRequests: () => void;
-  onRequestHistory: () => void;
   onNotifications: () => void;
   onRequestDocument: (document?: string) => void;
   onLogout: () => void;
@@ -30,7 +29,6 @@ const Dashboard = ({
   dataError,
   onRetry,
   onMyRequests,
-  onRequestHistory,
   onNotifications,
   onRequestDocument,
   onLogout,
@@ -43,9 +41,7 @@ const Dashboard = ({
     <div className="dashboard">
       <Sidebar
         onMyRequests={onMyRequests}
-        onRequestHistory={onRequestHistory}
         onNotifications={onNotifications}
-        onRequestDocument={() => onRequestDocument()}
         onLogout={onLogout}
       />
 
