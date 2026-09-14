@@ -6,6 +6,7 @@ import AdminDashboard from "./Pages/AdminDashboard/AdminDashboard";
 import AdminResidents from "./Pages/AdminResidents/AdminResidents";
 import AdminDocumentRequests from "./Pages/AdminDocumentRequests/AdminDocumentRequests";
 import AdminRequestHistory from "./Pages/AdminRequestHistory/AdminRequestHistory";
+import AdminDocumentManagement from "./Pages/AdminDocumentManagement/AdminDocumentManagement";
 import AdminApprovals from "./Pages/AdminApprovals/AdminApprovals";
 import MyRequests from "./Pages/MyRequests/MyRequests";
 import RequestHistory from "./Pages/RequestHistory/RequestHistory";
@@ -29,6 +30,7 @@ type Page =
   | "residents"
   | "document-requests"
   | "admin-request-history"
+  | "document-management"
   | "approvals"
   | "my-requests"
   | "request-history"
@@ -130,6 +132,7 @@ function App() {
         onDocumentRequests={() => setPage("document-requests")}
         onRequestHistory={() => setPage("admin-request-history")}
         onApprovals={() => setPage("approvals")}
+        onDocumentManagement={() => setPage("document-management")}
         onLogout={handleLogout}
       />
     );
@@ -144,6 +147,7 @@ function App() {
         onDocumentRequests={() => setPage("document-requests")}
         onRequestHistory={() => setPage("admin-request-history")}
         onApprovals={() => setPage("approvals")}
+        onDocumentManagement={() => setPage("document-management")}
         onNotifications={() => setPage("notifications")}
         onLogout={handleLogout}
       />
@@ -159,6 +163,7 @@ function App() {
         onResidents={() => setPage("residents")}
         onDocumentRequests={() => setPage("document-requests")}
         onRequestHistory={() => setPage("admin-request-history")}
+        onDocumentManagement={() => setPage("document-management")}
         onNotifications={() => setPage("notifications")}
         onLogout={handleLogout}
       />
@@ -175,6 +180,7 @@ function App() {
         onNotifications={() => setPage("notifications")}
         onRequestHistory={() => setPage("admin-request-history")}
         onApprovals={() => setPage("approvals")}
+        onDocumentManagement={() => setPage("document-management")}
         onLogout={handleLogout}
       />
     );
@@ -188,6 +194,23 @@ function App() {
         onDashboard={() => setPage("dashboard")}
         onResidents={() => setPage("residents")}
         onDocumentRequests={() => setPage("document-requests")}
+        onApprovals={() => setPage("approvals")}
+        onDocumentManagement={() => setPage("document-management")}
+        onNotifications={() => setPage("notifications")}
+        onLogout={handleLogout}
+      />
+    );
+  }
+
+  if (page === "document-management" && isAdmin) {
+    return (
+      <AdminDocumentManagement
+        user={user}
+        unreadNotifications={unreadCount}
+        onDashboard={() => setPage("dashboard")}
+        onResidents={() => setPage("residents")}
+        onDocumentRequests={() => setPage("document-requests")}
+        onRequestHistory={() => setPage("admin-request-history")}
         onApprovals={() => setPage("approvals")}
         onNotifications={() => setPage("notifications")}
         onLogout={handleLogout}

@@ -1,0 +1,254 @@
+/* ------------------------------ Section titles ------------------------------- */
+
+.docmgmt-section-title {
+  margin: 4px 0 14px;
+  color: #0f172a;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.docmgmt-issuance-title {
+  margin-top: 28px;
+}
+
+/* ----------------------------- Template cards grid ---------------------------- */
+
+.docmgmt-templates {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(186px, 1fr));
+  gap: 16px;
+}
+
+.docmgmt-template-card {
+  display: flex;
+  flex-direction: column;
+  padding: 20px 18px 18px;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  background: #ffffff;
+}
+
+.docmgmt-template-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 46px;
+  height: 46px;
+  margin-bottom: 22px;
+  border-radius: 12px;
+  font-size: 22px;
+}
+
+.docmgmt-template-icon.template-blue {
+  background: #dbeafe;
+}
+
+.docmgmt-template-icon.template-purple {
+  background: #ede9fe;
+}
+
+.docmgmt-template-icon.template-green {
+  background: #dcfce7;
+}
+
+.docmgmt-template-icon.template-slate {
+  background: #e2e8f0;
+}
+
+.docmgmt-template-icon.template-rose {
+  background: #ffe4e6;
+}
+
+.docmgmt-template-icon.template-gold {
+  background: #fef9c3;
+}
+
+.docmgmt-template-name {
+  margin-bottom: 4px;
+  color: #0f172a;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.docmgmt-template-description {
+  margin-bottom: 16px;
+  color: #94a3b8;
+  font-size: 12.5px;
+}
+
+.docmgmt-preview-button {
+  align-self: flex-start;
+  margin-top: auto;
+  padding: 6px 16px;
+  border: none;
+  border-radius: 8px;
+  background: #e0e7ff;
+  color: #3f51b5;
+  font-size: 12px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.docmgmt-preview-button:hover {
+  background: #d4defc;
+}
+
+/* ------------------------------ Issuance records ------------------------------ */
+
+.docmgmt-table-wrapper {
+  overflow-x: auto;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  background: #ffffff;
+}
+
+.docmgmt-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.docmgmt-table th {
+  padding: 13px 16px;
+  border-bottom: 1px solid #e2e8f0;
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 600;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.docmgmt-table td {
+  padding: 12px 16px;
+  border-bottom: 1px solid #f1f5f9;
+  color: #334155;
+  vertical-align: middle;
+}
+
+.docmgmt-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.docmgmt-table tbody tr:hover {
+  background: #f8fafc;
+}
+
+.docmgmt-reference {
+  color: #2563eb;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.docmgmt-resident {
+  color: #0f172a;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.docmgmt-document {
+  max-width: 220px;
+  overflow: hidden;
+  color: #64748b;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.docmgmt-processed {
+  color: #64748b;
+  white-space: nowrap;
+}
+
+.docmgmt-status {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.docmgmt-status.status-pending,
+.docmgmt-status.status-processing {
+  background: #fef3c7;
+  color: #b45309;
+}
+
+.docmgmt-status.status-ready,
+.docmgmt-status.status-completed {
+  background: #dcfce7;
+  color: #16a34a;
+}
+
+.docmgmt-status.status-approved {
+  background: #dbeafe;
+  color: #2563eb;
+}
+
+.docmgmt-status.status-rejected {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+.docmgmt-empty {
+  padding: 32px 16px !important;
+  color: #94a3b8;
+  text-align: center;
+}
+
+.docmgmt-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.docmgmt-action-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  border: none;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  font-family: inherit;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: filter 0.15s ease;
+}
+
+.docmgmt-action-button:hover {
+  filter: brightness(0.95);
+}
+
+.docmgmt-action-button.docmgmt-print {
+  background: #e8eef7;
+  color: #1e3a8a;
+}
+
+.docmgmt-action-button.docmgmt-pdf {
+  background: #dcfce7;
+  color: #16a34a;
+}
+
+/* -------------------------------- Responsive --------------------------------- */
+
+@media (max-width: 1400px) {
+  .docmgmt-templates {
+    grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+  }
+}
+
+@media (max-width: 768px) {
+  .docmgmt-templates {
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 12px;
+  }
+
+  .docmgmt-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}

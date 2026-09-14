@@ -5,6 +5,8 @@ import {
   submitPasswordResetRequest,
   validateForm,
 } from "../../Utils/ForgotPasswordLogic";
+import emailIcon from "../../assets/icons/email.png";
+import logo from "../../assets/logo-256.png";
 import "./ForgotPasswordPage.css";
 
 type ForgotPasswordPageProps = {
@@ -13,37 +15,19 @@ type ForgotPasswordPageProps = {
 
 const BrandBadge = () => (
   <div className="forgot-brand-badge" aria-hidden="true">
-    <svg
-      width="30"
-      height="30"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="#ffffff"
-      strokeWidth="1.7"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="M12 21s-7-5.6-7-11a7 7 0 0 1 14 0c0 5.4-7 11-7 11Z" />
-      <path d="M9.5 8.5h5l-.7 4.2a1.7 1.7 0 0 1-1.7 1.4h-.2a1.7 1.7 0 0 1-1.7-1.4L9.5 8.5Z" />
-    </svg>
+    <img src={logo} alt="" className="forgot-brand-badge-img" />
   </div>
 );
 
 const MailIcon = () => (
-  <svg
-    width="26"
-    height="26"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="#16a34a"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
+  <img
+    src={emailIcon}
+    alt=""
+    width="28"
+    height="28"
     aria-hidden="true"
-  >
-    <rect x="3" y="5" width="18" height="14" rx="2" />
-    <path d="m3 7 9 6 9-6" />
-  </svg>
+    style={{ display: "block" }}
+  />
 );
 
 const ForgotPasswordPage = ({ onBackToLogin }: ForgotPasswordPageProps) => {
@@ -100,7 +84,7 @@ const ForgotPasswordPage = ({ onBackToLogin }: ForgotPasswordPageProps) => {
       <header className="forgot-brand">
         <BrandBadge />
         <p className="forgot-brand-republic">Republic of the Philippines</p>
-        <h1 className="forgot-brand-title">Barangay Document Portal</h1>
+        <h1 className="forgot-brand-title">Barangay Lagab Document Portal</h1>
         <p className="forgot-brand-subtitle">
           Document Request &amp; Management System
         </p>
@@ -117,9 +101,9 @@ const ForgotPasswordPage = ({ onBackToLogin }: ForgotPasswordPageProps) => {
           </h2>
 
           <p className="forgot-success-message">
-            If an account exists for{" "}
-            <strong>{submittedEmail}</strong>, we&apos;ve sent a password reset
-            link. Please check your inbox and spam folder.
+            If an account exists for <strong>{submittedEmail}</strong>,
+            we&apos;ve sent a password reset link. Please check your inbox and
+            spam folder.
           </p>
 
           <div className="forgot-expect-box">
@@ -161,8 +145,8 @@ const ForgotPasswordPage = ({ onBackToLogin }: ForgotPasswordPageProps) => {
 
           <h2 className="forgot-card-title">Forgot Password?</h2>
           <p className="forgot-card-description">
-            Enter your registered email address and we&apos;ll send you a
-            secure reset link.
+            Enter your registered email address and we&apos;ll send you a secure
+            reset link.
           </p>
 
           <form className="forgot-form" onSubmit={handleSubmit} noValidate>

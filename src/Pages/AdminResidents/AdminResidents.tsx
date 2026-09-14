@@ -23,6 +23,7 @@ type AdminResidentsProps = {
   onDocumentRequests: () => void;
   onRequestHistory: () => void;
   onApprovals: () => void;
+  onDocumentManagement: () => void;
   onNotifications: () => void;
   onLogout: () => void;
 };
@@ -33,6 +34,7 @@ const AdminResidents = ({
   onDocumentRequests,
   onRequestHistory,
   onApprovals,
+  onDocumentManagement,
   onNotifications,
   onLogout,
 }: AdminResidentsProps) => {
@@ -109,6 +111,7 @@ const AdminResidents = ({
         onDocumentRequests={onDocumentRequests}
         onRequestHistory={onRequestHistory}
         onApprovals={onApprovals}
+        onDocumentManagement={onDocumentManagement}
         onNotifications={onNotifications}
         onLogout={onLogout}
       />

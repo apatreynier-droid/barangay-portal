@@ -33,6 +33,7 @@ type AdminSidebarProps = {
   onDocumentRequests?: () => void;
   onRequestHistory?: () => void;
   onApprovals?: () => void;
+  onDocumentManagement?: () => void;
   onNotifications: () => void;
   onLogout: () => void;
 };
@@ -50,6 +51,7 @@ const AdminSidebar = ({
   onDocumentRequests,
   onRequestHistory,
   onApprovals,
+  onDocumentManagement,
   onNotifications,
   onLogout,
 }: AdminSidebarProps) => {
@@ -93,6 +95,7 @@ const AdminSidebar = ({
       key: "document-management",
       label: "Document Management",
       icon: documentManagementIcon,
+      onClick: onDocumentManagement,
     },
     { key: "reports", label: "Reports", icon: reportsIcon },
     {
