@@ -11,6 +11,7 @@ import MyRequests from "./Pages/MyRequests/MyRequests";
 import RequestHistory from "./Pages/RequestHistory/RequestHistory";
 import NotificationPage from "./Pages/Notification/NotificationPage";
 import RequestDocumentPage from "./Pages/RequestDocument/RequestDocumentPage";
+import ForgotPasswordPage from "./Pages/ForgotPassword/ForgotPasswordPage";
 import {
   clearSession,
   fetchNotifications,
@@ -42,6 +43,7 @@ function App() {
   const [isLoadingData, setIsLoadingData] = useState(false);
   const [dataError, setDataError] = useState("");
   const [showCreateAccount, setShowCreateAccount] = useState(false);
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
 
   const loadUserData = useCallback(async () => {
     setIsLoadingData(true);
@@ -98,10 +100,17 @@ function App() {
       );
     }
 
+    if (showForgotPassword) {
+      return (
+        <ForgotPasswordPage onBackToLogin={() => setShowForgotPassword(false)} />
+      );
+    }
+
     return (
       <LoginPage
         onLoginSuccess={() => setUser(getSessionUser())}
         onCreateAccount={() => setShowCreateAccount(true)}
+        onForgotPassword={() => setShowForgotPassword(true)}
       />
     );
   }

@@ -10,6 +10,7 @@ import "./LoginPage.css";
 type LoginPageProps = {
   onLoginSuccess: () => void;
   onCreateAccount: () => void;
+  onForgotPassword: () => void;
 };
 
 const UserIcon = () => (
@@ -54,7 +55,11 @@ const BRAND_FEATURES = [
   "Officials Directory",
 ];
 
-const LoginPage = ({ onLoginSuccess, onCreateAccount }: LoginPageProps) => {
+const LoginPage = ({
+  onLoginSuccess,
+  onCreateAccount,
+  onForgotPassword,
+}: LoginPageProps) => {
   const [formData, setFormData] = useState<FormData>({
     email: "",
     password: "",
@@ -217,7 +222,11 @@ const LoginPage = ({ onLoginSuccess, onCreateAccount }: LoginPageProps) => {
                     Password
                   </label>
 
-                  <button type="button" className="forgot-link">
+                  <button
+                    type="button"
+                    className="forgot-link"
+                    onClick={onForgotPassword}
+                  >
                     Forgot password?
                   </button>
                 </div>
