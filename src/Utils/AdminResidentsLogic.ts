@@ -86,6 +86,7 @@ export function getRequestStatusMeta(status: string): ResidentStatusMeta {
   const normalized = status.trim().toLowerCase();
   const meta: Record<string, ResidentStatusMeta> = {
     pending: { label: "Pending", className: "status-pending" },
+    approved: { label: "Approved", className: "status-approved" },
     processing: { label: "Processing", className: "status-processing" },
     "ready for pickup": {
       label: "Ready for Pickup",

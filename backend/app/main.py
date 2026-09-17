@@ -30,6 +30,11 @@ from .schemas import (
     AdminResidentResponse,
     AdminResidentStatusInput,
     AdminResidentUpdateInput,
+    AdminReportsExportRow,
+    AdminReportsMonthlyPoint,
+    AdminReportsResponse,
+    AdminReportsSummary,
+    AdminPurokCount,
     AdminStatusStats,
     AuthResponse,
     CreateRequestInput,
@@ -407,8 +412,9 @@ def create_request(
 
         cursor.execute(
             """
-            INSERT INTO requests (request_number, user_id, document_type_id, purpose)
-            VALUES (%s, %s, %s, %s)
+            INSERT INTO requests (request_number, user_id, document_type_id,
+                                   purpose, status)
+            VALUES (%s, %s, %s, %s, 'Pending')
             """,
             (
                 f"TEMP-{secrets.token_hex(12)}",
@@ -775,6 +781,161 @@ def admin_dashboard(
         recent_requests=recent_requests,
         recent_registrations=recent_registrations,
         recent_activity=recent_activity,
+    )
+
+
+@app.get("/api/admin/reports", response_model=AdminReportsResponse)
+def admin_reports(
+    connection: MySQLConnection = Depends(get_db),
+    current_user: dict[str, object] = Depends(get_current_admin_user),
+) -> AdminReportsResponse:
+    cursor = connection.cursor(dictionary=True)
+
+    cursor.execute(
+        """
+        SELECT COUNT(*) AS total_residents,
+               COALESCE(SUM(users.account_status = 'active'), 0) AS active_residents
+        FROM users
+        WHERE users.role = 'resident'
+        """
+    )
+    resident_stats = cursor.fetchone()
+
+    cursor.execute(
+        """
+        SELECT COUNT(*) AS total_requests,
+               COALESCE(SUM(status = 'Completed'), 0) AS completed,
+               COALESCE(SUM(status = 'Rejected'), 0) AS rejected
+        FROM requests
+        """
+    )
+    request_stats = cursor.fetchone()
+
+    # Monthly overview (requests vs completed vs rejected) for the last 7 months.
+    cursor.execute(
+        """
+        SELECT YEAR(submitted_at) AS yr, MONTH(submitted_at) AS mo,
+               COUNT(*) AS requests,
+               COALESCE(SUM(status = 'Completed'), 0) AS completed,
+               COALESCE(SUM(status = 'Rejected'), 0) AS rejected
+        FROM requests
+        WHERE submitted_at
+              >= SUBDATE(CURDATE() - INTERVAL (DAY(CURDATE()) - 1) DAY, INTERVAL 6 MONTH)
+        GROUP BY yr, mo
+        """
+    )
+    monthly_rows = {
+        (row["yr"], row["mo"]): row for row in cursor.fetchall()
+    }
+
+    today = date.today()
+    month_keys: list[tuple[int, int]] = []
+    year, month = today.year, today.month
+    for _ in range(7):
+        month_keys.append((year, month))
+        month -= 1
+        if month == 0:
+            month = 12
+            year -= 1
+    month_keys.reverse()
+
+    monthly: list[AdminReportsMonthlyPoint] = []
+    for row_year, row_month in month_keys:
+        row = monthly_rows.get((row_year, row_month))
+        monthly.append(
+            AdminReportsMonthlyPoint(
+                month=calendar.month_abbr[row_month],
+                requests=row["requests"] if row else 0,
+                completed=row["completed"] if row else 0,
+                rejected=row["rejected"] if row else 0,
+            )
+        )
+
+    # Registered residents grouped by their purok.
+    cursor.execute(
+        """
+        SELECT resident_profiles.purok,
+               COUNT(*) AS total
+        FROM resident_profiles
+        JOIN users ON users.id = resident_profiles.user_id
+        WHERE users.role = 'resident'
+              AND resident_profiles.purok IS NOT NULL
+              AND TRIM(resident_profiles.purok) <> ''
+        GROUP BY resident_profiles.purok
+        ORDER BY total DESC, resident_profiles.purok ASC
+        """
+    )
+    residents_by_purok = [
+        AdminPurokCount(purok=row["purok"], count=row["total"])
+        for row in cursor.fetchall()
+    ]
+
+    # Requests grouped by document type (all types with at least one request).
+    cursor.execute(
+        """
+        SELECT document_types.document_name, COUNT(requests.id) AS total
+        FROM document_types
+        JOIN requests ON requests.document_type_id = document_types.id
+        GROUP BY document_types.id, document_types.document_name
+        ORDER BY total DESC
+        """
+    )
+    document_types = [
+        AdminDocumentTypeCount(document_name=row["document_name"], count=row["total"])
+        for row in cursor.fetchall()
+    ]
+
+    # Full request records used for the CSV export / printable report.
+    cursor.execute(
+        """
+        SELECT requests.request_number,
+               CONCAT(resident_profiles.first_name, ' ', resident_profiles.last_name)
+                   AS resident_name,
+               document_types.document_name AS document,
+               requests.status,
+               requests.submitted_at
+        FROM requests
+        JOIN users ON users.id = requests.user_id
+        JOIN resident_profiles ON resident_profiles.user_id = users.id
+        JOIN document_types ON document_types.id = requests.document_type_id
+        ORDER BY requests.submitted_at DESC, requests.id DESC
+        """
+    )
+    export_requests = [
+        AdminReportsExportRow(
+            request_number=row["request_number"],
+            resident_name=row["resident_name"],
+            document=row["document"],
+            status=row["status"],
+            submitted_at=row["submitted_at"],
+        )
+        for row in cursor.fetchall()
+    ]
+
+    cursor.close()
+
+    total_requests = int(request_stats["total_requests"])
+    completed = int(request_stats["completed"])
+    rejected = int(request_stats["rejected"])
+
+    return AdminReportsResponse(
+        summary=AdminReportsSummary(
+            total_residents=resident_stats["total_residents"],
+            active_residents=resident_stats["active_residents"],
+            total_requests=total_requests,
+            completed=completed,
+            rejected=rejected,
+            completion_rate=round((completed / total_requests) * 100, 1)
+            if total_requests
+            else 0.0,
+            rejection_rate=round((rejected / total_requests) * 100, 1)
+            if total_requests
+            else 0.0,
+        ),
+        monthly=monthly,
+        residents_by_purok=residents_by_purok,
+        document_types=document_types,
+        export_requests=export_requests,
     )
 
 
