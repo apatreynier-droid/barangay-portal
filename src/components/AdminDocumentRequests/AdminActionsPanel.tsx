@@ -166,24 +166,10 @@ const AdminActionsPanel = ({
       )}
 
       {status === "Pending" && (
-        <div className="docreq-actions-buttons">
-          <button
-            type="button"
-            className="docreq-approve-button"
-            onClick={() => applyStatus("Approved")}
-            disabled={isSaving}
-          >
-            Approve
-          </button>
-          <button
-            type="button"
-            className="docreq-reject-button"
-            onClick={() => applyStatus("Rejected")}
-            disabled={isSaving}
-          >
-            Reject
-          </button>
-        </div>
+        <p className="docreq-actions-note">
+          This request is awaiting review. Approve or reject it in the
+          Approvals page — processing unlocks once it is approved.
+        </p>
       )}
 
       {status === "Approved" && (

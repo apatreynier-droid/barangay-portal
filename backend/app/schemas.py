@@ -280,3 +280,41 @@ class AdminDashboardResponse(BaseModel):
     recent_requests: list[AdminRecentRequest]
     recent_registrations: list[AdminRecentRegistration]
     recent_activity: list[AdminActivityEntry]
+
+
+class AdminReportsSummary(BaseModel):
+    total_residents: int
+    active_residents: int
+    total_requests: int
+    completed: int
+    rejected: int
+    completion_rate: float
+    rejection_rate: float
+
+
+class AdminReportsMonthlyPoint(BaseModel):
+    month: str
+    requests: int
+    completed: int
+    rejected: int
+
+
+class AdminPurokCount(BaseModel):
+    purok: str
+    count: int
+
+
+class AdminReportsExportRow(BaseModel):
+    request_number: str
+    resident_name: str
+    document: str
+    status: str
+    submitted_at: datetime
+
+
+class AdminReportsResponse(BaseModel):
+    summary: AdminReportsSummary
+    monthly: list[AdminReportsMonthlyPoint]
+    residents_by_purok: list[AdminPurokCount]
+    document_types: list[AdminDocumentTypeCount]
+    export_requests: list[AdminReportsExportRow]

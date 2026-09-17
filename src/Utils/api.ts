@@ -12,6 +12,7 @@ import type {
   AdminDocumentRequestDetail,
 } from "../Types/AdminDocumentRequestsType";
 import type { AdminRequestHistoryEntry } from "../Types/AdminRequestHistoryType";
+import type { AdminReportsData } from "../Types/AdminReportsType";
 
 const API_BASE_URL = "http://127.0.0.1:8000";
 
@@ -325,6 +326,20 @@ export const fetchAdminDashboard = async (): Promise<AdminDashboardData> => {
   return body as AdminDashboardData;
 };
 
+export const fetchAdminReports = async (): Promise<AdminReportsData> => {
+  const response = await authedFetch("/api/admin/reports");
+  const body: unknown = await response.json().catch(() => null);
+
+  if (!response.ok) {
+    throw new ApiError(
+      response.status,
+      parseErrorMessage(body, "Could not load the reports data."),
+    );
+  }
+
+  return body as AdminReportsData;
+};
+
 export const fetchResidents = async (): Promise<AdminResident[]> => {
   const response = await authedFetch("/api/admin/residents");
   const body: unknown = await response.json().catch(() => null);
@@ -400,40 +415,44 @@ export const updateResidentStatus = async (
   return body as AdminResidentDetail;
 };
 
-export const fetchAdminDocumentRequests =
-  async (): Promise<AdminDocumentRequest[]> => {
-    const response = await authedFetch("/api/admin/document-requests");
-    const body: unknown = await response.json().catch(() => null);
+export const fetchAdminDocumentRequests = async (): Promise<
+  AdminDocumentRequest[]
+> => {
+  const response = await authedFetch("/api/admin/document-requests");
+  const body: unknown = await response.json().catch(() => null);
 
-    if (!response.ok) {
-      throw new ApiError(
-        response.status,
-        parseErrorMessage(body, "Could not load the document requests."),
-      );
-    }
+  if (!response.ok) {
+    throw new ApiError(
+      response.status,
+      parseErrorMessage(body, "Could not load the document requests."),
+    );
+  }
 
-    return (body as AdminDocumentRequest[]) ?? [];
-  };
+  return (body as AdminDocumentRequest[]) ?? [];
+};
 
-export const fetchAdminRequestHistory =
-  async (): Promise<AdminRequestHistoryEntry[]> => {
-    const response = await authedFetch("/api/admin/request-history");
-    const body: unknown = await response.json().catch(() => null);
+export const fetchAdminRequestHistory = async (): Promise<
+  AdminRequestHistoryEntry[]
+> => {
+  const response = await authedFetch("/api/admin/request-history");
+  const body: unknown = await response.json().catch(() => null);
 
-    if (!response.ok) {
-      throw new ApiError(
-        response.status,
-        parseErrorMessage(body, "Could not load the request history."),
-      );
-    }
+  if (!response.ok) {
+    throw new ApiError(
+      response.status,
+      parseErrorMessage(body, "Could not load the request history."),
+    );
+  }
 
-    return (body as AdminRequestHistoryEntry[]) ?? [];
-  };
+  return (body as AdminRequestHistoryEntry[]) ?? [];
+};
 
 export const fetchAdminDocumentRequestDetail = async (
   requestId: number,
 ): Promise<AdminDocumentRequestDetail> => {
-  const response = await authedFetch(`/api/admin/document-requests/${requestId}`);
+  const response = await authedFetch(
+    `/api/admin/document-requests/${requestId}`,
+  );
   const body: unknown = await response.json().catch(() => null);
 
   if (!response.ok) {
@@ -450,11 +469,14 @@ export const updateAdminDocumentRequest = async (
   requestId: number,
   payload: AdminDocumentRequestActionPayload,
 ): Promise<AdminDocumentRequestDetail> => {
-  const response = await authedFetch(`/api/admin/document-requests/${requestId}`, {
-    method: "PATCH",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
-  });
+  const response = await authedFetch(
+    `/api/admin/document-requests/${requestId}`,
+    {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    },
+  );
   const body: unknown = await response.json().catch(() => null);
 
   if (!response.ok) {
@@ -539,7 +561,9 @@ export const updateDocumentRequest = async (
   return body as ApiRequest;
 };
 
-export const deleteDocumentRequest = async (requestId: number): Promise<void> => {
+export const deleteDocumentRequest = async (
+  requestId: number,
+): Promise<void> => {
   const response = await authedFetch(`/api/requests/${requestId}`, {
     method: "DELETE",
   });

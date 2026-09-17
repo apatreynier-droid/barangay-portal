@@ -25,6 +25,7 @@ type AdminResidentsProps = {
   onApprovals: () => void;
   onDocumentManagement: () => void;
   onNotifications: () => void;
+  onReports: () => void;
   onLogout: () => void;
 };
 
@@ -36,6 +37,7 @@ const AdminResidents = ({
   onApprovals,
   onDocumentManagement,
   onNotifications,
+  onReports,
   onLogout,
 }: AdminResidentsProps) => {
   const [residents, setResidents] = useState<AdminResident[]>([]);
@@ -112,6 +114,7 @@ const AdminResidents = ({
         onRequestHistory={onRequestHistory}
         onApprovals={onApprovals}
         onDocumentManagement={onDocumentManagement}
+        onReports={onReports}
         onNotifications={onNotifications}
         onLogout={onLogout}
       />

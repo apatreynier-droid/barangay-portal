@@ -23,6 +23,7 @@ type AdminApprovalsProps = {
   onRequestHistory: () => void;
   onDocumentManagement: () => void;
   onNotifications: () => void;
+  onReports: () => void;
   onLogout: () => void;
 };
 
@@ -34,6 +35,7 @@ const AdminApprovals = ({
   onRequestHistory,
   onDocumentManagement,
   onNotifications,
+  onReports,
   onLogout,
 }: AdminApprovalsProps) => {
   const [requests, setRequests] = useState<AdminDocumentRequest[]>([]);
@@ -81,6 +83,7 @@ const AdminApprovals = ({
         onRequestHistory={onRequestHistory}
         onApprovals={() => undefined}
         onDocumentManagement={onDocumentManagement}
+        onReports={onReports}
         onNotifications={onNotifications}
         onLogout={onLogout}
       />

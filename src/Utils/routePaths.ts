@@ -18,6 +18,7 @@ export const ADMIN_DOCUMENT_REQUESTS_PATH = "/AdminDocumentRequests";
 export const ADMIN_REQUEST_HISTORY_PATH = "/AdminRequestHistory";
 export const ADMIN_DOCUMENT_MANAGEMENT_PATH = "/AdminDocumentManagement";
 export const ADMIN_APPROVALS_PATH = "/AdminApprovals";
+export const ADMIN_REPORTS_PATH = "/AdminReports";
 
 export const isAdminUser = (user: AuthUser | null): boolean =>
   user?.role === "admin";
