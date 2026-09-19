@@ -254,11 +254,21 @@
 }
 
 .admin-topbar {
+  /* Sticky: stays in flow until the page scrolls, then pins to the top of
+     the viewport. Opaque page background so content scrolls underneath
+     without showing through; z-index sits above page content but below
+     modals/backdrops (z-index 20+). */
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: #f1f5f9;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 16px;
   margin-bottom: 22px;
+  /* Thin divider under the sticky bar, so it stays visible while pinned. */
+  border-bottom: 1px solid #595a5b;
 }
 
 .admin-topbar-heading h1 {
@@ -556,7 +566,9 @@
 
 /* Smooth transition on the bars themselves when highlighting */
 .admin-chart-bar {
-  transition: filter 180ms ease-out, opacity 180ms ease-out;
+  transition:
+    filter 180ms ease-out,
+    opacity 180ms ease-out;
 }
 
 .admin-chart-bar.is-active {
@@ -968,5 +980,3 @@
     transform: none;
   }
 }
-
-
