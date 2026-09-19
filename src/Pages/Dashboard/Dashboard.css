@@ -164,10 +164,20 @@
 }
 
 .topbar {
+  /* Sticky: stays in flow until the page scrolls, then pins to the top of
+     the viewport. Opaque page background so content scrolls underneath
+     without showing through; z-index sits above page content but below
+     modal backdrops (z-index 20+). */
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: #f5f7fb;
   display: flex;
   align-items: center;
   justify-content: space-between;
   margin-bottom: 28px;
+  /* Thin divider under the sticky bar, so it stays visible while pinned. */
+  border-bottom: 1px solid #848484;
 }
 
 .dashboard-error-banner {
