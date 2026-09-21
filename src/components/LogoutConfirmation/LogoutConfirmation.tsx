@@ -7,19 +7,8 @@ type LogoutConfirmationProps = {
   onConfirm: () => void;
 };
 
-/**
- * Shared logout confirmation dialog used by the Admin and Resident sidebars
- * (via SidebarUserFooter).
- *
- * It is rendered through a portal into document.body so it is never trapped
- * inside a parent stacking context. Both sidebars are `position: fixed`
- * containers, which create their own stacking contexts; if this dialog were
- * mounted inside them, its z-index would only compete within the sidebar and
- * page content (e.g. the sticky top bar, z-index 10) would paint above it.
- * Portalling it to the end of <body> places it directly in the root stacking
- * context, so it always appears in front of the whole page.
- */
-
+// The logout dialog is shared by Admin and Resident sidebars and is
+// placed at the top page level so it always appears above other elements.
 const LogoutConfirmation = ({
   isOpen,
   onCancel,
@@ -41,10 +30,18 @@ const LogoutConfirmation = ({
         <h2 id="logout-confirmation-title">Log out?</h2>
         <p>Are you sure you want to log out of your account?</p>
         <div className="logout-confirmation-actions">
-          <button type="button" className="logout-cancel-button" onClick={onCancel}>
+          <button
+            type="button"
+            className="logout-cancel-button"
+            onClick={onCancel}
+          >
             Cancel
           </button>
-          <button type="button" className="logout-confirm-button" onClick={onConfirm}>
+          <button
+            type="button"
+            className="logout-confirm-button"
+            onClick={onConfirm}
+          >
             Log out
           </button>
         </div>
