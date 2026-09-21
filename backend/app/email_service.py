@@ -22,7 +22,7 @@ from email.message import EmailMessage
 from email.utils import formataddr
 
 from .config import settings
-from .email_templates import render_password_reset_email
+from .email_templates import render_password_reset_email, render_request_status_email
 
 logger = logging.getLogger(__name__)
 
@@ -175,7 +175,46 @@ def send_email(
         )
         raise EmailDeliveryError("Could not send the email.") from error
 
-    logger.info("Password/portal email sent to %s.", mask_email(to_email))
+    logger.info(
+        "Email sent to %s (subject=%r).", mask_email(to_email), subject
+    )
+
+
+def send_document_status_email(
+    *,
+    to_email: str,
+    resident_name: str,
+    document_name: str,
+    request_number: str,
+    status: str,
+    pickup_date: object | None = None,
+    admin_remarks: str | None = None,
+) -> None:
+    """Email a resident that one of *their* document requests changed status.
+
+    ``to_email`` must be the address registered to the resident who owns the
+    request - the caller (``app/request_notifications.py``) resolves it from
+    the database, nothing here is hardcoded or shared between residents.
+
+    Raises :class:`EmailDeliveryError` when the SMTP server rejects the
+    message; callers decide how to log it (a failed email must never undo a
+    saved status change).
+    """
+    subject, text_body, html_body = render_request_status_email(
+        resident_name=resident_name,
+        recipient_email=to_email,
+        document_name=document_name,
+        request_number=request_number,
+        status=status,
+        pickup_date=pickup_date,
+        admin_remarks=admin_remarks,
+    )
+    send_email(
+        to_email=to_email,
+        subject=subject,
+        text_body=text_body,
+        html_body=html_body,
+    )
 
 
 def send_password_reset_email(

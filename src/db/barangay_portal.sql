@@ -231,6 +231,44 @@ ALTER TABLE `request_status_history`
 -- Indexes for table `resident_profiles`
 --
 ALTER TABLE `resident_profiles`
+-- --------------------------------------------------------
+--
+-- Table structure for table `request_status_emails`
+--
+-- Logs the delivery outcome of every automatic status-change email so that
+-- each (request_id, status) pair is emailed at most once and so operators can
+-- see when a notification failed to send without having to dig through app logs.
+--
+-- --------------------------------------------------------
+
+CREATE TABLE `request_status_emails` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `request_id` int(11) NOT NULL,
+  `user_id` int(11) DEFAULT NULL,
+  `status` varchar(64) NOT NULL,
+  `delivery_status` enum('pending','sent','failed','skipped','duplicate') NOT NULL DEFAULT 'pending',
+  `recipient_email` varchar(255) DEFAULT NULL,
+  `error_message` varchar(500) DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `sent_at` timestamp NULL DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+/*
+  ALTER TABLE `request_status_emails`
+    ADD PRIMARY KEY (`id`),
+    ADD UNIQUE KEY `uq_request_status_email` (`request_id`, `status`),
+    ADD KEY `fk_rse_request` (`request_id`),
+    ADD KEY `fk_rse_user` (`user_id`);
+
+  ALTER TABLE `request_status_emails`
+    MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+  ALTER TABLE `request_status_emails`
+    ADD CONSTRAINT `fk_rse_request` FOREIGN KEY (`request_id`) REFERENCES `requests` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+    ADD CONSTRAINT `fk_rse_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL ON UPDATE CASCADE;
+*/
   ADD PRIMARY KEY (`id`),
   ADD UNIQUE KEY `user_id` (`user_id`);
 
