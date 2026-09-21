@@ -21,6 +21,7 @@ from .email_service import (
     is_email_configured,
     send_password_reset_email,
 )
+from .request_notifications import send_request_status_email
 from .schemas import (
     AdminActivityEntry,
     AdminDashboardResponse,
@@ -1738,6 +1739,17 @@ def update_document_request(
             )
 
         connection.commit()
+
+        # Send the status-change email to the resident who owns this request.
+        # This runs after the commit so a mail problem never rolls back the
+        # status change; failures are logged inside send_request_status_email.
+        if payload.status is not None and payload.status != request["status"]:
+            send_request_status_email(
+                connection,
+                request_id=request_id,
+                new_status=payload.status,
+            )
+
     except mysql.connector.Error as error:
         connection.rollback()
         raise HTTPException(

@@ -215,4 +215,380 @@ def render_password_reset_email(
         .replace("{{reset_url}}", escape(reset_url, quote=True))
     )
 
+
+# ---------------------------------------------------------------------------
+# Document-request status notifications
+# ---------------------------------------------------------------------------
+# One entry per status that triggers an automatic email to the resident who
+# owns the request. ``subject``/``headline``/``message`` are the wording shown
+# in the email; ``note`` is an extra, status-specific closing paragraph.
+STATUS_EMAIL_CONTENT: dict[str, dict[str, str]] = {
+    "Approved": {
+        "subject": "Your Barangay Document Request was Approved",
+        "headline": "Your document request was approved",
+        "message": (
+            "Good news! The Barangay office has approved your document "
+            "request. We will begin preparing your document and will email "
+            "you again as soon as it is ready for pickup."
+        ),
+        "note": (
+            "You can follow the progress of this request at any time under "
+            "My Requests in the portal."
+        ),
+    },
+    "Processing": {
+        "subject": "Your Barangay Document is Being Processed",
+        "headline": "Your document request is being processed",
+        "message": (
+            "Your document is now being prepared by the Barangay office. "
+            "We will send you another email as soon as it is ready for "
+            "pickup."
+        ),
+        "note": (
+            "No action is needed from you at this time. Please keep your "
+            "contact details up to date so we can reach you."
+        ),
+    },
+    "Ready for Pickup": {
+        "subject": "Your Barangay Document is Ready for Pickup",
+        "headline": "Your document is ready for pickup",
+        "message": (
+            "Your requested document is now ready for pickup at the "
+            "Barangay Lagab office. Please bring a valid ID and your request "
+            "number when claiming the document. If somebody else will claim "
+            "it for you, that person must bring an authorization letter and "
+            "a copy of your valid ID."
+        ),
+        "note": (
+            "Please claim your document on the scheduled pickup date. "
+            "Unclaimed documents are kept at the Barangay office and can be "
+            "released on the next working day."
+        ),
+    },
+    "Completed": {
+        "subject": "Your Barangay Document Request is Completed",
+        "headline": "Your document request is completed",
+        "message": (
+            "Your document request has been marked as completed, which means "
+            "the document has been released to you. Thank you for using the "
+            "Barangay Lagab Document Portal."
+        ),
+        "note": (
+            "If you did not receive your document, or if you need another "
+            "copy, please contact the Barangay office so they can assist you."
+        ),
+    },
+    "Rejected": {
+        "subject": "Your Barangay Document Request was Rejected",
+        "headline": "Your document request was rejected",
+        "message": (
+            "We are sorry to inform you that your document request was not "
+            "approved by the Barangay office. You may visit or contact the "
+            "Barangay office for more details, or submit a new request with "
+            "complete information."
+        ),
+        "note": (
+            "Any remarks given by the Barangay office are shown in this "
+            "email. Submitting a new request with complete details will help "
+            "us process it faster."
+        ),
+    },
+}
+
+#: Month names used to format the pickup date without depending on the
+#: machine locale (``strftime('%B')`` is locale-sensitive).
+_MONTH_NAMES = (
+    "January", "February", "March", "April", "May", "June",
+    "July", "August", "September", "October", "November", "December",
+)
+
+
+def format_pickup_date(value: object) -> str:
+    """Format a ``date``/``datetime``/ISO string as ``September 24, 2026``.
+
+    Returns an empty string when the value cannot be interpreted, so callers
+    can simply leave the pickup-date line out of the email.
+    """
+    if value is None:
+        return ""
+
+    year = getattr(value, "year", None)
+    month = getattr(value, "month", None)
+    day = getattr(value, "day", None)
+    if year is None or month is None or day is None:
+        # Fall back to ISO text such as "2026-09-24" (or the first 10 chars).
+        text = str(value).strip()
+        parts = text[:10].split("-")
+        if len(parts) != 3 or not all(part.isdigit() for part in parts):
+            return ""
+        year, month, day = int(parts[0]), int(parts[1]), int(parts[2])
+
+    if not 1 <= int(month) <= 12:
+        return ""
+    return f"{_MONTH_NAMES[int(month) - 1]} {int(day)}, {int(year)}"
+
+
+# Placeholders are replaced with ``str.replace`` (see
+# ``render_request_status_email`` below) so the CSS braces inside the template
+# never need escaping.
+_REQUEST_STATUS_HTML = """\
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{{subject}}</title>
+  </head>
+  <body style="margin:0;padding:0;background-color:#eef1f6;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0"
+           style="background-color:#eef1f6;padding:28px 12px;">
+      <tr>
+        <td align="center">
+          <table role="presentation" width="600" cellpadding="0" cellspacing="0"
+                 style="width:600px;max-width:600px;background-color:#ffffff;
+                        border:1px solid #e4e8f1;border-radius:14px;
+                        overflow:hidden;font-family:Arial,Helvetica,sans-serif;">
+            <!-- Header -->
+            <tr>
+              <td style="background-color:#152a63;padding:26px 32px;text-align:center;">
+                <p style="margin:0 0 6px;font-size:11px;letter-spacing:2.2px;
+                          text-transform:uppercase;color:#f2c14e;">
+                  {{brand_republic}}
+                </p>
+                <h1 style="margin:0 0 6px;font-size:22px;line-height:1.3;color:#ffffff;">
+                  {{brand}}
+                </h1>
+                <p style="margin:0;font-size:13px;color:#c7d0e8;">
+                  {{brand_subtitle}}
+                </p>
+              </td>
+            </tr>
+            <!-- Greeting and status message -->
+            <tr>
+              <td style="padding:32px 32px 0;">
+                <h2 style="margin:0 0 14px;font-size:20px;color:#152a63;">
+                  {{headline}}
+                </h2>
+                <p style="margin:0 0 16px;font-size:14px;line-height:1.7;color:#475569;">
+                  Hello <strong style="color:#1e293b;">{{resident_name}}</strong>,
+                </p>
+                <p style="margin:0;font-size:14px;line-height:1.7;color:#475569;">
+                  {{message}}
+                </p>
+              </td>
+            </tr>
+            <!-- Request details -->
+            <tr>
+              <td style="padding:24px 32px 0;">
+                <table role="presentation" width="100%" cellpadding="0"
+                       cellspacing="0"
+                       style="background-color:#f8fafc;border:1px solid #e4e8f1;
+                              border-radius:10px;">
+                  <tr>
+                    <td style="padding:18px 22px;">
+                      <p style="margin:0 0 10px;font-size:11px;letter-spacing:1.6px;
+                                text-transform:uppercase;color:#94a3b8;">
+                        Request details
+                      </p>
+                      <p style="margin:0 0 6px;font-size:13.5px;line-height:1.6;
+                                color:#475569;">
+                        Request number:
+                        <strong style="color:#1e293b;">{{request_number}}</strong>
+                      </p>
+                      <p style="margin:0 0 6px;font-size:13.5px;line-height:1.6;
+                                color:#475569;">
+                        Document:
+                        <strong style="color:#1e293b;">{{document_name}}</strong>
+                      </p>
+                      <p style="margin:0 0 6px;font-size:13.5px;line-height:1.6;
+                                color:#475569;">
+                        Status:
+                        <strong style="color:#152a63;">{{status}}</strong>
+                      </p>
+                      {{pickup_date_row}}
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+            {{remarks_block}}
+            <!-- Closing note -->
+            <tr>
+              <td style="padding:22px 32px 32px;">
+                <p style="margin:0;font-size:13.5px;line-height:1.7;color:#64748b;">
+                  {{note}}
+                </p>
+              </td>
+            </tr>
+            <!-- Footer -->
+            <tr>
+              <td style="background-color:#f8fafc;padding:20px 32px;
+                         border-top:1px solid #e4e8f1;">
+                <p style="margin:0 0 4px;font-size:12px;line-height:1.6;
+                          color:#94a3b8;">
+                  This is an automated message from the {{brand}} about
+                  document request {{request_number}}. Please do not reply.
+                </p>
+                <p style="margin:0;font-size:12px;line-height:1.6;color:#94a3b8;">
+                  For questions about this request, contact the Barangay Lagab
+                  office and mention the request number above.
+                </p>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>
+"""
+
+#: HTML row added to the details card only when a pickup date has been set.
+_PICKUP_DATE_ROW = """\
+<p style="margin:0;font-size:13.5px;line-height:1.6;color:#475569;">
+                        Pickup date:
+                        <strong style="color:#1e293b;">{{pickup_date}}</strong>
+                      </p>
+"""
+
+#: HTML block added only when the admin left remarks on the request.
+_REMARKS_BLOCK = """\
+<tr>
+              <td style="padding:18px 32px 0;">
+                <table role="presentation" width="100%" cellpadding="0"
+                       cellspacing="0"
+                       style="background-color:#fdf6e3;border:1px solid #f2c14e;
+                              border-radius:10px;">
+                  <tr>
+                    <td style="padding:16px 22px;">
+                      <p style="margin:0 0 6px;font-size:11px;letter-spacing:1.6px;
+                                text-transform:uppercase;color:#b07d12;">
+                        Remarks from the Barangay office
+                      </p>
+                      <p style="margin:0;font-size:13.5px;line-height:1.7;
+                                color:#475569;">
+                        {{remarks}}
+                      </p>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+"""
+
+
+def render_request_status_email(
+    *,
+    resident_name: str,
+    recipient_email: str,
+    document_name: str,
+    request_number: str,
+    status: str,
+    pickup_date: object | None = None,
+    admin_remarks: str | None = None,
+) -> tuple[str, str, str]:
+    """Build the "your document request changed status" email.
+
+    Returns ``(subject, text_body, html_body)``. ``resident_name``,
+    ``document_name``, ``request_number``, ``admin_remarks`` and the email
+    address come from the database and are treated as untrusted input, so they
+    are HTML-escaped wherever they are interpolated into the markup.
+
+    The recipient's registered address is only used for the "sent to" line at
+    the bottom of the message - the actual ``To`` header is set by
+    ``app/email_service.send_email`` from the address the caller resolved for
+    the resident who owns the request.
+    """
+    content = STATUS_EMAIL_CONTENT.get(status) or {
+        "subject": f"{BRAND_NAME} - Document request update",
+        "headline": f"Your document request is now {status}",
+        "message": (
+            "The status of your document request has been updated by the "
+            "Barangay office. Please open the portal to see the latest "
+            "details of your request."
+        ),
+        "note": (
+            "If you were not expecting this update, contact the Barangay "
+            "office so they can check the request with you."
+        ),
+    }
+
+    name = resident_name.strip() or "Resident"
+    document = document_name.strip() or "Barangay document"
+    number = request_number.strip() or "-"
+    remarks = (admin_remarks or "").strip()
+    if len(remarks) > 1000:
+        remarks = f"{remarks[:997]}..."
+
+    pickup_text = format_pickup_date(pickup_date)
+    note = content["note"]
+    if status == "Ready for Pickup" and not pickup_text:
+        note = (
+            f"{note} The pickup date has not been set yet - the Barangay "
+            "office will confirm the schedule with you."
+        )
+
+    subject = content["subject"]
+
+    text_lines = [
+        BRAND_NAME.upper(),
+        "Republic of the Philippines",
+        "",
+        content["headline"],
+        "",
+        f"Hello {name},",
+        "",
+        content["message"],
+        "",
+        "Request details",
+        "---------------",
+        f"Request number : {number}",
+        f"Document       : {document}",
+        f"Status         : {status}",
+    ]
+    if pickup_text:
+        text_lines.append(f"Pickup date    : {pickup_text}")
+    if remarks:
+        text_lines += ["", "Remarks from the Barangay office:", remarks]
+    text_lines += [
+        "",
+        note,
+        "",
+        BRAND_NAME,
+        "Document Request & Management System",
+        "",
+        (
+            f"This is an automated message sent to {recipient_email} about "
+            f"document request {number}. Please do not reply."
+        ),
+    ]
+    text_body = "\n".join(text_lines)
+
+    pickup_date_row = (
+        _PICKUP_DATE_ROW.replace("{{pickup_date}}", escape(pickup_text))
+        if pickup_text
+        else ""
+    )
+    remarks_block = (
+        _REMARKS_BLOCK.replace("{{remarks}}", escape(remarks).replace("\n", "<br />"))
+        if remarks
+        else ""
+    )
+
+    html_body = (
+        _REQUEST_STATUS_HTML.replace("{{subject}}", escape(subject))
+        .replace("{{brand_republic}}", BRAND_REPUBLIC)
+        .replace("{{brand_subtitle}}", BRAND_SUBTITLE)
+        .replace("{{brand}}", escape(BRAND_NAME))
+        .replace("{{headline}}", escape(content["headline"]))
+        .replace("{{resident_name}}", escape(name))
+        .replace("{{message}}", escape(content["message"]))
+        .replace("{{request_number}}", escape(number))
+        .replace("{{document_name}}", escape(document))
+        .replace("{{status}}", escape(status))
+        .replace("{{pickup_date_row}}", pickup_date_row)
+        .replace("{{remarks_block}}", remarks_block)
+        .replace("{{note}}", escape(note))
+    )
+
     return subject, text_body, html_body

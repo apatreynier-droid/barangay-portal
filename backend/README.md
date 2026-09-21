@@ -52,6 +52,14 @@ mysql -u root -p < scripts\migrations\004_add_password_reset_tokens.sql
 .\\.venv\Scripts\python.exe scripts\apply_password_reset_migration.py
 ```
 
+The automatic request-status email notifications need the delivery-log table
+from migration `005`. Apply it once (idempotent - safe to run more than once):
+
+```powershell
+\\.venv\Scripts\python.exe scripts\apply_request_status_email_migration.py
+```
+
+
 ## 4. Optional: initialize the database through Python
 
 Run this only when the configured MySQL user has permission to create databases
@@ -211,3 +219,33 @@ login limiter.
 6. Login protection is unchanged: 5 failed logins within 5 minutes temporarily
    block that client/account for 15 minutes. `python scripts\\test_rate_limit.py`
    checks the limiter itself and the HTTP 429 paths.
+
+## Request status email notifications
+
+When an administrator changes a document request's status, the resident who
+owns that request automatically receives an email at their registered address.
+No address is hardcoded: the recipient is resolved per request through the
+existing `requests.user_id -> users.id` relationship.
+
+* **Statuses that trigger an email:** Approved, Processing, Ready for Pickup
+  (subject: *"Your Barangay Document is Ready for Pickup"*), Completed, Rejected.
+  `Pending` (the initial status) does not send one.
+* **Trigger point:** the backend, inside
+  `PATCH /api/admin/document-requests/{id}` (`app/main.py`), *after* the status
+  change is committed. An SMTP failure therefore never rolls the status back -
+  it is logged server-side and recorded in `request_status_emails`, and the
+  resident is never shown SMTP credentials or technical error details.
+* **No duplicate emails:** every `(request_id, status)` pair is claimed in
+  `request_status_emails` (UNIQUE key) before sending, so a repeated status
+  update cannot send a second message.
+* **Implementation:** `app/request_notifications.py` (owner lookup, dedup,
+  delivery), `app/email_service.py` (`send_document_status_email` on top of the
+  existing SMTP service), `app/email_templates.py` (per-status content).
+* **Verify with multiple residents:**
+  `\\.venv\Scripts\python.exe scripts\test_request_status_email.py`
+  creates several residents, moves their requests through every status, and
+  asserts each email was routed to that resident's own address only - plus
+  duplicate-suppression, failure-logging, and non-notifiable-status checks.
+  Test data is cleaned up automatically; real SMTP messages go to the
+  `@example.com`-style addresses used by the script.
+
