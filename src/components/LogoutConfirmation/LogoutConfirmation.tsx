@@ -1,3 +1,4 @@
+import { createPortal } from "react-dom";
 import "./LogoutConfirmation.css";
 
 type LogoutConfirmationProps = {
@@ -6,6 +7,19 @@ type LogoutConfirmationProps = {
   onConfirm: () => void;
 };
 
+/**
+ * Shared logout confirmation dialog used by the Admin and Resident sidebars
+ * (via SidebarUserFooter).
+ *
+ * It is rendered through a portal into document.body so it is never trapped
+ * inside a parent stacking context. Both sidebars are `position: fixed`
+ * containers, which create their own stacking contexts; if this dialog were
+ * mounted inside them, its z-index would only compete within the sidebar and
+ * page content (e.g. the sticky top bar, z-index 10) would paint above it.
+ * Portalling it to the end of <body> places it directly in the root stacking
+ * context, so it always appears in front of the whole page.
+ */
+
 const LogoutConfirmation = ({
   isOpen,
   onCancel,
@@ -13,7 +27,7 @@ const LogoutConfirmation = ({
 }: LogoutConfirmationProps) => {
   if (!isOpen) return null;
 
-  return (
+  return createPortal(
     <div className="logout-confirmation-backdrop" role="presentation">
       <section
         className="logout-confirmation-dialog"
@@ -35,7 +49,8 @@ const LogoutConfirmation = ({
           </button>
         </div>
       </section>
-    </div>
+    </div>,
+    document.body,
   );
 };
 

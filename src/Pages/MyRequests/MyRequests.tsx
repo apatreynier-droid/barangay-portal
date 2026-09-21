@@ -11,6 +11,7 @@ import RequestsTabs, {
   type RequestsTab,
 } from "../../components/MyRequests/RequestsTabs";
 import RequestsList from "../../components/MyRequests/RequestsList";
+import { RESIDENT_ROLE_LABEL } from "../../Utils/ResidentDisplay";
 
 // Requests still moving through the barangay office.
 const ACTIVE_STATUSES: RequestStatus[] = [
@@ -118,6 +119,9 @@ const MyRequests = ({
         onNotifications={onNotifications}
         onRequestDocument={onRequestDocument}
         onLogout={onLogout}
+        firstName={user.first_name}
+        lastName={user.last_name}
+        role={RESIDENT_ROLE_LABEL}
       />
 
       <main className="requests-main">

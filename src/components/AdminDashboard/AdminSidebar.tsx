@@ -1,5 +1,4 @@
-import { useState } from "react";
-import LogoutConfirmation from "../LogoutConfirmation/LogoutConfirmation";
+import SidebarUserFooter from "../SidebarUserFooter/SidebarUserFooter";
 import dashboardIcon from "../../assets/icons/ADash.png";
 import residentsIcon from "../../assets/icons/Residents.png";
 import documentRequestsIcon from "../../assets/icons/DR.png";
@@ -57,9 +56,6 @@ const AdminSidebar = ({
   onNotifications,
   onLogout,
 }: AdminSidebarProps) => {
-  const [isLogoutConfirmationOpen, setIsLogoutConfirmationOpen] =
-    useState(false);
-
   const navItems: AdminNavItem[] = [
     {
       key: "dashboard",
@@ -178,44 +174,15 @@ const AdminSidebar = ({
           })}
         </nav>
 
-        <div className="admin-sidebar-footer">
-          <span className="admin-sidebar-avatar">
-            {getInitialsSafe(firstName, lastName)}
-          </span>
-
-          <div className="admin-sidebar-user">
-            <strong>
-              {firstName} {lastName}
-            </strong>
-            <span>{role}</span>
-          </div>
-
-          <button
-            type="button"
-            className="admin-sidebar-logout"
-            onClick={() => setIsLogoutConfirmationOpen(true)}
-            aria-label="Logout"
-            title="Logout"
-          >
-            ⏻
-          </button>
-        </div>
+        <SidebarUserFooter
+          firstName={firstName}
+          lastName={lastName}
+          role={role}
+          onLogout={onLogout}
+        />
       </aside>
-
-      <LogoutConfirmation
-        isOpen={isLogoutConfirmationOpen}
-        onCancel={() => setIsLogoutConfirmationOpen(false)}
-        onConfirm={onLogout}
-      />
     </>
   );
-};
-
-const getInitialsSafe = (firstName: string, lastName: string): string => {
-  const first = firstName.trim().charAt(0);
-  const last = lastName.trim().charAt(0);
-
-  return `${first}${last}`.toUpperCase() || "?";
 };
 
 export default AdminSidebar;

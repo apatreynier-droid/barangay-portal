@@ -1,25 +1,26 @@
-import { useState } from "react";
 import wingsLogo from "../../assets/logo-256.png";
 import ADashIcon from "../../assets/icons/ADash.png";
 import requestIcon from "../../assets/icons/DR.png";
 import notificationIcon from "../../assets/icons/notification-bell.png";
-import logoutIcon from "../../assets/icons/logout.png";
-import LogoutConfirmation from "../LogoutConfirmation/LogoutConfirmation";
+import SidebarUserFooter from "../SidebarUserFooter/SidebarUserFooter";
 
 type SidebarProps = {
+  firstName: string;
+  lastName: string;
+  role: string;
   onMyRequests: () => void;
   onNotifications: () => void;
   onLogout: () => void;
 };
 
 const Sidebar = ({
+  firstName,
+  lastName,
+  role,
   onMyRequests,
   onNotifications,
   onLogout,
 }: SidebarProps) => {
-  const [isLogoutConfirmationOpen, setIsLogoutConfirmationOpen] =
-    useState(false);
-
   return (
     <>
       <aside className="sidebar">
@@ -65,25 +66,13 @@ const Sidebar = ({
           </button>
         </nav>
 
-        <div className="sidebar-bottom">
-          <button
-            type="button"
-            className="nav-item nav-button logout"
-            onClick={() => setIsLogoutConfirmationOpen(true)}
-          >
-            <span className="nav-icon">
-              <img src={logoutIcon} alt="" />
-            </span>
-            Logout
-          </button>
-        </div>
+        <SidebarUserFooter
+          firstName={firstName}
+          lastName={lastName}
+          role={role}
+          onLogout={onLogout}
+        />
       </aside>
-
-      <LogoutConfirmation
-        isOpen={isLogoutConfirmationOpen}
-        onCancel={() => setIsLogoutConfirmationOpen(false)}
-        onConfirm={onLogout}
-      />
     </>
   );
 };

@@ -5,11 +5,15 @@ import {
   markAllNotificationsRead,
   markNotificationRead,
   type ApiNotification,
+  type AuthUser,
 } from "../../Utils/api";
+import { RESIDENT_ROLE_LABEL } from "../../Utils/ResidentDisplay";
+import { isAdminUser } from "../../Utils/routePaths";
 import "../Dashboard/Dashboard.css";
 import "./NotificationPage.css";
 
 type NotificationPageProps = {
+  user: AuthUser;
   notifications: ApiNotification[];
   onNotificationsChanged: () => Promise<void>;
   onSessionExpired: () => void;
@@ -59,6 +63,7 @@ const formatTimestamp = (value: string): string => {
 };
 
 function NotificationPage({
+  user,
   notifications,
   onNotificationsChanged,
   onSessionExpired,
@@ -124,6 +129,9 @@ function NotificationPage({
         onNotifications={() => undefined}
         onRequestDocument={onRequestDocument}
         onLogout={onLogout}
+        firstName={user.first_name}
+        lastName={user.last_name}
+        role={isAdminUser(user) ? "Brgy. Administrator" : RESIDENT_ROLE_LABEL}
       />
 
       <main className="notifications-page">

@@ -144,18 +144,8 @@
   transform: translateZ(0) scale(1.08);
 }
 
-.sidebar-bottom {
-  margin-top: auto;
-}
-
-.logout {
-  color: #d1d5db;
-}
-
-.logout:hover {
-  color: #ffffff;
-  background-color: rgba(255, 255, 255, 0.12);
-}
+/* The old ".sidebar-bottom" Logout button was replaced by the shared
+   SidebarUserFooter component (see SidebarUserFooter.css). */
 
 .dashboard-main {
   width: calc(100% - 250px);
