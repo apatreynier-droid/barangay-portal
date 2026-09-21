@@ -15,6 +15,7 @@ import RequestHistory from "./Pages/RequestHistory/RequestHistory";
 import NotificationPage from "./Pages/Notification/NotificationPage";
 import RequestDocumentPage from "./Pages/RequestDocument/RequestDocumentPage";
 import ForgotPasswordPage from "./Pages/ForgotPassword/ForgotPasswordPage";
+import ResetPasswordPage from "./Pages/ResetPassword/ResetPasswordPage";
 import {
   clearSession,
   fetchNotifications,
@@ -44,6 +45,7 @@ import {
   RESIDENT_MY_REQUESTS_PATH,
   RESIDENT_REQUEST_DOCUMENT_PATH,
   RESIDENT_REQUEST_HISTORY_PATH,
+  RESET_PASSWORD_PATH,
 } from "./Utils/routePaths";
 import {
   HomeRoute,
@@ -159,6 +161,18 @@ function PortalRoutes() {
           <PublicOnly user={user}>
             <ForgotPasswordPage onBackToLogin={() => navigate(LOGIN_PATH)} />
           </PublicOnly>
+        }
+      />
+
+      {/* Target of the link inside the password-reset email. Reachable while
+          signed out on purpose (the token itself is validated by the API). */}
+      <Route
+        path={RESET_PASSWORD_PATH}
+        element={
+          <ResetPasswordPage
+            onBackToLogin={() => navigate(LOGIN_PATH)}
+            onRequestNewLink={() => navigate(FORGOT_PASSWORD_PATH)}
+          />
         }
       />
 

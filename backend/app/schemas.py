@@ -42,6 +42,25 @@ class LoginInput(BaseModel):
     password: str = Field(min_length=6, max_length=128)
 
 
+class ForgotPasswordInput(BaseModel):
+    """Email address that a password-reset link is requested for."""
+
+    email: str = Field(min_length=3, max_length=255)
+
+
+class ResetPasswordInput(BaseModel):
+    """Reset token from the emailed link plus the new password."""
+
+    token: str = Field(min_length=16, max_length=512)
+    password: str = Field(min_length=6, max_length=128)
+
+
+class MessageResponse(BaseModel):
+    """Simple, non-technical message returned by auth helper endpoints."""
+
+    message: str
+
+
 class UserResponse(BaseModel):
     id: int
     email: str

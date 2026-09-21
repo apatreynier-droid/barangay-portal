@@ -1,4 +1,5 @@
 import type { FormData, FormErrors } from "../Types/ForgotPasswordType";
+import { ApiError, requestPasswordResetEmail } from "./api";
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -14,16 +15,12 @@ export const validateForm = (formData: FormData): FormErrors => {
   return errors;
 };
 
-// SMTP/email-based recovery is not part of the backend yet, so this function
-// is intentionally a no-op hook point. When the backend adds the password
-// reset endpoint (e.g. POST /api/auth/forgot-password), replace the body of
-// this function with the API call following the existing pattern in
-// Utils/api.ts (see loginUser / registerUser), then surface any ApiError as a
-// field error here. For now it resolves successfully so the page can show the
-// generic "Check Your Email" confirmation, which deliberately never reveals
-// whether an account exists for the submitted address.
+// Asks the backend to email a single-use reset link. The backend always
+// answers with the same generic message, so this page can never reveal
+// whether an account exists for the submitted address; only delivery
+// problems (rate limit, mail server unavailable) surface as an error here.
 export const requestPasswordReset = async (email: string): Promise<void> => {
-  void email;
+  await requestPasswordResetEmail(email);
 };
 
 export const submitPasswordResetRequest = async (
@@ -32,9 +29,12 @@ export const submitPasswordResetRequest = async (
   try {
     await requestPasswordReset(formData.email.trim());
     return null;
-  } catch {
+  } catch (error) {
     return {
-      email: "Something went wrong. Please try again.",
+      email:
+        error instanceof ApiError
+          ? error.message
+          : "Something went wrong. Please try again.",
     };
   }
 };

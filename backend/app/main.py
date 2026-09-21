@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import calendar
+import logging
 import math
 from datetime import date, datetime, timedelta, timezone
 
@@ -10,10 +11,16 @@ from fastapi import Depends, FastAPI, HTTPException, Request, Response, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import RedirectResponse
 from mysql.connector import MySQLConnection
+from urllib.parse import quote
 
 from .config import settings
 from .database import create_connection, get_db
 from .dependencies import get_current_admin_user, get_current_user
+from .email_service import (
+    EmailDeliveryError,
+    is_email_configured,
+    send_password_reset_email,
+)
 from .schemas import (
     AdminActivityEntry,
     AdminDashboardResponse,
@@ -40,9 +47,12 @@ from .schemas import (
     CreateRequestInput,
     DashboardSummaryResponse,
     DocumentTypeResponse,
+    ForgotPasswordInput,
     LoginInput,
+    MessageResponse,
     NotificationResponse,
     RegisterInput,
+    ResetPasswordInput,
     RequestDetailResponse,
     RequestResponse,
     RequestStatusHistoryEntry,
@@ -51,6 +61,7 @@ from .schemas import (
 )
 from .security import (
     create_access_token,
+    create_password_reset_token,
     hash_access_token,
     hash_password,
     verify_password,
@@ -59,6 +70,9 @@ from .rate_limit import (
     get_client_ip,
     login_attempt_limiter,
     login_ip_limiter,
+    password_reset_email_limiter,
+    password_reset_ip_limiter,
+    password_reset_submit_limiter,
 )
 
 
@@ -70,6 +84,12 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+logger = logging.getLogger(__name__)
+
+#: Frontend route the emailed reset link points at (see src/App.tsx).
+FRONTEND_RESET_PASSWORD_PATH = "/reset-password"
 
 
 def normalize_email(email: str) -> str:
@@ -302,6 +322,247 @@ def logout(
     connection.commit()
     cursor.close()
     return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+@app.post(
+    "/api/auth/forgot-password",
+    response_model=MessageResponse,
+    status_code=status.HTTP_202_ACCEPTED,
+)
+def forgot_password(
+    payload: ForgotPasswordInput,
+    request: Request,
+    connection: MySQLConnection = Depends(get_db),
+) -> MessageResponse:
+    """Email a single-use password-reset link for the submitted address.
+
+    Always replies with the same generic message so the endpoint cannot be
+    used to discover which email addresses have an account.
+    """
+    client_ip = get_client_ip(request)
+    email = normalize_email(payload.email)
+    generic_message = MessageResponse(
+        message=(
+            "If an account exists for that email address, a password reset "
+            "link has been sent. Please check your inbox and spam folder."
+        )
+    )
+
+    # Abuse protection: cap reset emails per network and per address.
+    retry_after = password_reset_ip_limiter.hit(client_ip)
+    if retry_after > 0:
+        raise_rate_limited(
+            retry_after,
+            "Too many password reset requests from this network.",
+        )
+
+    retry_after = password_reset_email_limiter.hit(f"email:{email}")
+    if retry_after > 0:
+        raise_rate_limited(
+            retry_after,
+            "Too many password reset requests for this email address.",
+        )
+
+    # Fail for everyone while mail delivery is unavailable instead of only for
+    # addresses that exist (which would leak which accounts are registered).
+    if not is_email_configured():
+        logger.error("Password reset requested while SMTP is not configured.")
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=(
+                "Password reset is temporarily unavailable. Please contact "
+                "the Barangay office."
+            ),
+        )
+
+    cursor = connection.cursor(dictionary=True)
+    cursor.execute(
+        "SELECT id, account_status FROM users WHERE email = %s",
+        (email,),
+    )
+    user = cursor.fetchone()
+    cursor.close()
+
+    if user is None or user["account_status"] != "active":
+        return generic_message
+
+    # Cryptographically secure token; only its SHA-256 hash is persisted.
+    token = create_password_reset_token()
+    token_hash = hash_access_token(token)
+    expires_at = datetime.now(timezone.utc) + timedelta(
+        minutes=settings.password_reset_token_expiration_minutes,
+    )
+    reset_url = (
+        f"{settings.frontend_url}{FRONTEND_RESET_PASSWORD_PATH}"
+        f"?token={quote(token)}"
+    )
+
+    cursor = connection.cursor()
+    try:
+        # Requesting a new link invalidates every older one for this account.
+        cursor.execute(
+            "DELETE FROM password_reset_tokens WHERE user_id = %s",
+            (user["id"],),
+        )
+        cursor.execute(
+            """
+            INSERT INTO password_reset_tokens
+              (user_id, token_hash, expires_at, requested_ip)
+            VALUES (%s, %s, %s, %s)
+            """,
+            (
+                user["id"],
+                token_hash,
+                expires_at.replace(tzinfo=None),
+                client_ip[:45],
+            ),
+        )
+        connection.commit()
+    except mysql.connector.Error as error:
+        connection.rollback()
+        logger.exception("Could not store the password reset token.")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Could not process the password reset request.",
+        ) from error
+    finally:
+        cursor.close()
+
+    try:
+        send_password_reset_email(
+            to_email=email,
+            reset_url=reset_url,
+            expires_in_minutes=settings.password_reset_token_expiration_minutes,
+        )
+    except EmailDeliveryError as error:
+        # Never leave a usable token behind when the mail did not go out.
+        discard_password_reset_token(connection, token_hash)
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail=(
+                "We could not send the reset email right now. Please try "
+                "again in a few minutes."
+            ),
+        ) from error
+
+    return generic_message
+
+
+@app.post("/api/auth/reset-password", response_model=MessageResponse)
+def reset_password(
+    payload: ResetPasswordInput,
+    request: Request,
+    connection: MySQLConnection = Depends(get_db),
+) -> MessageResponse:
+    """Set a new password using a valid, unused, unexpired reset token."""
+    retry_after = password_reset_submit_limiter.hit(get_client_ip(request))
+    if retry_after > 0:
+        raise_rate_limited(
+            retry_after,
+            "Too many password reset attempts from this network.",
+        )
+
+    cursor = connection.cursor(dictionary=True)
+    cursor.execute(
+        """
+        SELECT password_reset_tokens.id, password_reset_tokens.user_id,
+               password_reset_tokens.expires_at, password_reset_tokens.used_at
+        FROM password_reset_tokens
+        JOIN users ON users.id = password_reset_tokens.user_id
+        WHERE password_reset_tokens.token_hash = %s
+          AND users.account_status = 'active'
+        """,
+        (hash_access_token(payload.token.strip()),),
+    )
+    token_row = cursor.fetchone()
+    cursor.close()
+
+    if token_row is None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="This password reset link is invalid. Please request a new one.",
+        )
+    if token_row["used_at"] is not None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=(
+                "This password reset link has already been used. "
+                "Please request a new one."
+            ),
+        )
+    if token_row["expires_at"] <= datetime.now(timezone.utc).replace(tzinfo=None):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=(
+                "This password reset link has expired. Please request a new one."
+            ),
+        )
+
+    cursor = connection.cursor()
+    try:
+        # Passwords keep using the existing scrypt hashing from security.py.
+        cursor.execute(
+            "UPDATE users SET password_hash = %s WHERE id = %s",
+            (hash_password(payload.password), token_row["user_id"]),
+        )
+        # Single use: this token can never be replayed...
+        cursor.execute(
+            """
+            UPDATE password_reset_tokens
+            SET used_at = UTC_TIMESTAMP()
+            WHERE id = %s
+            """,
+            (token_row["id"],),
+        )
+        # ...and neither can any other outstanding link for the account.
+        cursor.execute(
+            """
+            DELETE FROM password_reset_tokens
+            WHERE user_id = %s AND id != %s
+            """,
+            (token_row["user_id"], token_row["id"]),
+        )
+        # Existing sessions are no longer trusted after a password change.
+        cursor.execute(
+            """
+            UPDATE auth_sessions SET revoked_at = UTC_TIMESTAMP()
+            WHERE user_id = %s AND revoked_at IS NULL
+            """,
+            (token_row["user_id"],),
+        )
+        connection.commit()
+    except mysql.connector.Error as error:
+        connection.rollback()
+        logger.exception("Could not store the new password hash.")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Could not update your password. Please try again.",
+        ) from error
+    finally:
+        cursor.close()
+
+    return MessageResponse(
+        message="Your password has been reset. You can now sign in with it."
+    )
+
+
+def discard_password_reset_token(
+    connection: MySQLConnection, token_hash: str
+) -> None:
+    """Best-effort cleanup of a token whose email could not be delivered."""
+    try:
+        cursor = connection.cursor()
+        try:
+            cursor.execute(
+                "DELETE FROM password_reset_tokens WHERE token_hash = %s",
+                (token_hash,),
+            )
+            connection.commit()
+        finally:
+            cursor.close()
+    except mysql.connector.Error:
+        connection.rollback()
+        logger.warning("Could not discard an undelivered password reset token.")
 
 
 @app.get("/api/document-types", response_model=list[DocumentTypeResponse])

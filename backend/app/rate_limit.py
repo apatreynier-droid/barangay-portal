@@ -9,9 +9,9 @@ Design notes:
   than ``failure_window_seconds`` are forgotten. Reaching
   ``max_failed_attempts`` within the window starts a block that lasts
   ``block_duration_seconds``. A successful login clears the counter.
-- ``IPRateLimiter`` is a coarser guard that caps the raw number of login
-  requests allowed per client IP in a sliding window, protecting the
-  endpoint against brute-force flooding.
+- ``IPRateLimiter`` is a coarser guard that caps the raw number of requests
+  allowed per key (client IP, or a reset target address) in a sliding window,
+  protecting endpoints against brute-force flooding and mail spam.
 - Every limit is configured in ``app.config.settings`` and can be changed
   through environment variables (see ``.env.example``) without touching
   this module.
@@ -127,11 +127,28 @@ class LoginRateLimiter(_InMemoryLimiter):
 
 
 class IPRateLimiter(_InMemoryLimiter):
-    """Sliding-window request cap per client IP for login requests."""
+    """Sliding-window request cap per key (client IP or email address).
 
-    def __init__(self, config: RateLimitConfig) -> None:
+    The limits default to the login flood-protection values from
+    ``RateLimitConfig``; other flows (e.g. password reset) may pass their own
+    ``max_requests``/``window_seconds`` without touching the login limits.
+    """
+
+    def __init__(
+        self,
+        config: RateLimitConfig,
+        *,
+        max_requests: int | None = None,
+        window_seconds: float | None = None,
+    ) -> None:
         super().__init__()
         self._config = config
+        self._max_requests = (
+            config.ip_max_requests if max_requests is None else max_requests
+        )
+        self._window_seconds = (
+            config.ip_window_seconds if window_seconds is None else window_seconds
+        )
 
     def hit(self, key: str) -> float:
         """Register one request from ``key``.
@@ -140,20 +157,20 @@ class IPRateLimiter(_InMemoryLimiter):
         of seconds the client must wait before retrying.
         """
         now = time.monotonic()
-        window = self._config.ip_window_seconds
+        window = self._window_seconds
         with self._lock:
             self._maybe_cleanup(now)
             state = self._entries.setdefault(key, _AttemptState())
             while state.failures and now - state.failures[0] > window:
                 state.failures.popleft()
-            if len(state.failures) >= self._config.ip_max_requests:
+            if len(state.failures) >= self._max_requests:
                 # Retry once the oldest request in the window expires.
                 return max(0.5, window - (now - state.failures[0]))
             state.failures.append(now)
             return 0.0
 
     def _is_stale(self, state: _AttemptState, now: float) -> bool:
-        window = self._config.ip_window_seconds
+        window = self._window_seconds
         return not state.failures or now - state.failures[-1] > window
 
 
@@ -182,3 +199,24 @@ def get_client_ip(request: Request) -> str:
 _rate_limit_config = RateLimitConfig()
 login_attempt_limiter = LoginRateLimiter(_rate_limit_config)
 login_ip_limiter = IPRateLimiter(_rate_limit_config)
+
+# Password-reset limiters: the same in-memory implementation with their own
+# budgets, so reset traffic can never consume the login quota (or vice versa).
+# - ``password_reset_ip_limiter``     -> reset emails per client IP
+# - ``password_reset_email_limiter``  -> reset emails per target address
+# - ``password_reset_submit_limiter`` -> reset submissions per client IP
+password_reset_ip_limiter = IPRateLimiter(
+    _rate_limit_config,
+    max_requests=settings.password_reset_ip_max_requests,
+    window_seconds=settings.password_reset_ip_window_seconds,
+)
+password_reset_email_limiter = IPRateLimiter(
+    _rate_limit_config,
+    max_requests=settings.password_reset_email_max_requests,
+    window_seconds=settings.password_reset_email_window_seconds,
+)
+password_reset_submit_limiter = IPRateLimiter(
+    _rate_limit_config,
+    max_requests=settings.password_reset_submit_max_requests,
+    window_seconds=settings.password_reset_submit_window_seconds,
+)
