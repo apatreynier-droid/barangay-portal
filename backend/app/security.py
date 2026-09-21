@@ -51,5 +51,14 @@ def create_access_token() -> str:
     return secrets.token_urlsafe(48)
 
 
+def create_password_reset_token() -> str:
+    """Cryptographically secure, URL-safe token for password-reset links.
+
+    Only the SHA-256 hash (see :func:`hash_access_token`) is stored, so a
+    leaked database row cannot be turned back into a usable reset link.
+    """
+    return secrets.token_urlsafe(48)
+
+
 def hash_access_token(token: str) -> str:
     return hashlib.sha256(token.encode("utf-8")).hexdigest()

@@ -298,6 +298,73 @@ export const logoutUser = async (): Promise<void> => {
   clearSession();
 };
 
+export const requestPasswordResetEmail = async (
+  email: string,
+): Promise<void> => {
+  let response: Response;
+
+  try {
+    response = await fetch(`${API_BASE_URL}/api/auth/forgot-password`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email }),
+    });
+  } catch {
+    throw new ApiError(
+      0,
+      "Cannot reach the server. Please make sure the backend is running.",
+      "email",
+    );
+  }
+
+  if (!response.ok) {
+    const body: unknown = await response.json().catch(() => null);
+
+    // The backend keeps its messages non-technical (wrong address, rate
+    // limited, mail server unavailable), so they can be shown as-is.
+    throw new ApiError(
+      response.status,
+      parseErrorMessage(
+        body,
+        "We could not send the reset link right now. Please try again.",
+      ),
+      "email",
+    );
+  }
+};
+
+export const confirmPasswordReset = async (
+  token: string,
+  password: string,
+): Promise<void> => {
+  let response: Response;
+
+  try {
+    response = await fetch(`${API_BASE_URL}/api/auth/reset-password`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ token, password }),
+    });
+  } catch {
+    throw new ApiError(
+      0,
+      "Cannot reach the server. Please make sure the backend is running.",
+    );
+  }
+
+  if (!response.ok) {
+    const body: unknown = await response.json().catch(() => null);
+
+    throw new ApiError(
+      response.status,
+      parseErrorMessage(
+        body,
+        "We could not reset your password. Please try again.",
+      ),
+    );
+  }
+};
+
 export const fetchDashboardSummary = async (): Promise<DashboardSummary> => {
   const response = await authedFetch("/api/dashboard-summary");
   const body: unknown = await response.json().catch(() => null);

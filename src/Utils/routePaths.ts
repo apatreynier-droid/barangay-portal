@@ -3,6 +3,8 @@ import type { AuthUser } from "./api";
 export const LOGIN_PATH = "/login";
 export const CREATE_ACCOUNT_PATH = "/create-account";
 export const FORGOT_PASSWORD_PATH = "/forgot-password";
+/** Target of the link inside the password-reset email. */
+export const RESET_PASSWORD_PATH = "/reset-password";
 
 export const RESIDENT_HOME_PATH = "/resident/dashboard";
 /** Old dashboard URL kept as a redirect target for bookmarks/links. */
