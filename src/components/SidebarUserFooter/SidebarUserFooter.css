@@ -1,0 +1,63 @@
+/* Shared sidebar footer: identical design across the Admin and Resident
+   sidebars (avatar + name/role + power-icon logout button). */
+.sidebar-user-footer {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: auto;
+  padding: 14px 6px 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.sidebar-user-avatar {
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: #2563eb;
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.sidebar-user-info {
+  min-width: 0;
+}
+
+.sidebar-user-info strong {
+  display: block;
+  font-size: 13px;
+  color: #ffffff;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sidebar-user-info span {
+  display: block;
+  margin-top: 1px;
+  font-size: 11px;
+  color: #94a3b8;
+}
+
+.sidebar-user-logout {
+  margin-left: auto;
+  padding: 6px 8px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: #aeb9c9;
+  font-size: 15px;
+  cursor: pointer;
+  transition:
+    background-color 0.18s cubic-bezier(0.4, 0, 0.2, 1),
+    color 0.18s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.sidebar-user-logout:hover {
+  background-color: rgba(255, 255, 255, 0.08);
+  color: #ffffff;
+}

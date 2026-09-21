@@ -215,6 +215,8 @@ def render_password_reset_email(
         .replace("{{reset_url}}", escape(reset_url, quote=True))
     )
 
+    return subject, text_body, html_body
+
 
 # ---------------------------------------------------------------------------
 # Document-request status notifications

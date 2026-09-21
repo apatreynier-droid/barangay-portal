@@ -183,67 +183,9 @@
   font-weight: 700;
 }
 
-.admin-sidebar-footer {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-top: auto;
-  padding: 14px 6px 0;
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.admin-sidebar-avatar {
-  width: 36px;
-  height: 36px;
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 999px;
-  background: #2563eb;
-  color: #ffffff;
-  font-size: 13px;
-  font-weight: 700;
-}
-
-.admin-sidebar-user {
-  min-width: 0;
-}
-
-.admin-sidebar-user strong {
-  display: block;
-  font-size: 13px;
-  color: #ffffff;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.admin-sidebar-user span {
-  display: block;
-  margin-top: 1px;
-  font-size: 11px;
-  color: #94a3b8;
-}
-
-.admin-sidebar-logout {
-  margin-left: auto;
-  padding: 6px 8px;
-  border: 0;
-  border-radius: 8px;
-  background: transparent;
-  color: #aeb9c9;
-  font-size: 15px;
-  cursor: pointer;
-  transition:
-    background-color 0.18s cubic-bezier(0.4, 0, 0.2, 1),
-    color 0.18s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.admin-sidebar-logout:hover {
-  background-color: rgba(255, 255, 255, 0.08);
-  color: #ffffff;
-}
+/* Sidebar footer styles moved to the shared SidebarUserFooter component
+   (src/components/SidebarUserFooter/SidebarUserFooter.css) so the Admin and
+   Resident sidebars render the exact same footer. */
 
 /* ----------------------------------- Main ----------------------------------- */
 
@@ -904,12 +846,12 @@
   .admin-collapse-arrow,
   .admin-nav-label,
   .admin-nav-badge,
-  .admin-sidebar-user {
+  .sidebar-user-info {
     display: none;
   }
 
   .admin-nav-item,
-  .admin-sidebar-footer {
+  .sidebar-user-footer {
     justify-content: center;
   }
 
@@ -917,7 +859,7 @@
     padding: 10px;
   }
 
-  .admin-sidebar-logout {
+  .sidebar-user-logout {
     margin-left: 0;
   }
 
@@ -970,7 +912,7 @@
   .admin-nav-item,
   .admin-nav-item .admin-nav-icon img,
   .admin-nav-item .admin-nav-label,
-  .admin-sidebar-logout {
+  .sidebar-user-logout {
     transition: none;
   }
 

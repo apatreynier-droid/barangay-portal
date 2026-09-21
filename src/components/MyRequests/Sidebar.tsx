@@ -1,10 +1,8 @@
-import { useState } from "react";
 import wingsLogo from "../../assets/logo-256.png";
 import ADashIcon from "../../assets/icons/ADash.png";
 import requestIcon from "../../assets/icons/DR.png";
 import notificationIcon from "../../assets/icons/notification-bell.png";
-import logoutIcon from "../../assets/icons/logout.png";
-import LogoutConfirmation from "../LogoutConfirmation/LogoutConfirmation";
+import SidebarUserFooter from "../SidebarUserFooter/SidebarUserFooter";
 
 type SidebarProps = {
   onBackToDashboard: () => void;
@@ -15,6 +13,9 @@ type SidebarProps = {
   /** Kept for backwards compatibility with pages that still pass it. */
   onRequestDocument?: () => void;
   onLogout: () => void;
+  firstName: string;
+  lastName: string;
+  role: string;
   activePage?:
     | "my-requests"
     | "request-history"
@@ -27,6 +28,9 @@ const Sidebar = ({
   onMyRequests,
   onNotifications,
   onLogout,
+  firstName,
+  lastName,
+  role,
   activePage = "my-requests",
 }: SidebarProps) => {
   // Request history lives inside My Requests now, so both highlight the
@@ -34,8 +38,6 @@ const Sidebar = ({
   // Quick Actions, so no sidebar item is marked active for it.
   const isMyRequestsActive =
     activePage === "my-requests" || activePage === "request-history";
-  const [isLogoutConfirmationOpen, setIsLogoutConfirmationOpen] =
-    useState(false);
 
   return (
     <>
@@ -92,25 +94,13 @@ const Sidebar = ({
           </button>
         </nav>
 
-        <div className="sidebar-bottom">
-          <button
-            type="button"
-            className="nav-item nav-button logout"
-            onClick={() => setIsLogoutConfirmationOpen(true)}
-          >
-            <span className="nav-icon">
-              <img src={logoutIcon} alt="" />
-            </span>
-            Logout
-          </button>
-        </div>
+        <SidebarUserFooter
+          firstName={firstName}
+          lastName={lastName}
+          role={role}
+          onLogout={onLogout}
+        />
       </aside>
-
-      <LogoutConfirmation
-        isOpen={isLogoutConfirmationOpen}
-        onCancel={() => setIsLogoutConfirmationOpen(false)}
-        onConfirm={onLogout}
-      />
     </>
   );
 };

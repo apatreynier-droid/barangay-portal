@@ -229,8 +229,9 @@ function PortalRoutes() {
         path={RESIDENT_REQUEST_HISTORY_PATH}
         element={
           <RequireResident user={user}>
-            {() => (
+            {(authUser) => (
               <RequestHistory
+                user={authUser}
                 requests={requests}
                 isLoadingData={isLoadingData}
                 dataError={dataError}
@@ -252,8 +253,9 @@ function PortalRoutes() {
         path={RESIDENT_REQUEST_DOCUMENT_PATH}
         element={
           <RequireResident user={user}>
-            {() => (
+            {(authUser) => (
               <RequestDocumentPage
+                user={authUser}
                 onBackToDashboard={() => navigate(RESIDENT_HOME_PATH)}
                 onMyRequests={() => navigate(RESIDENT_MY_REQUESTS_PATH)}
                 onRequestHistory={() => navigate(RESIDENT_REQUEST_HISTORY_PATH)}
@@ -271,8 +273,9 @@ function PortalRoutes() {
         path={NOTIFICATIONS_PATH}
         element={
           <RequireAuth user={user}>
-            {() => (
+            {(authUser) => (
               <NotificationPage
+                user={authUser}
                 notifications={notifications}
                 onNotificationsChanged={loadUserData}
                 onSessionExpired={handleSessionExpired}

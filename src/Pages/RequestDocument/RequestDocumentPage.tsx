@@ -6,11 +6,14 @@ import {
   createDocumentRequest,
   fetchDocumentTypes,
   type DocumentTypeOption,
+  type AuthUser,
 } from "../../Utils/api";
+import { RESIDENT_ROLE_LABEL } from "../../Utils/ResidentDisplay";
 import "../Dashboard/Dashboard.css";
 import "./RequestDocumentPage.css";
 
 type RequestDocumentPageProps = {
+  user: AuthUser;
   onBackToDashboard: () => void;
   onMyRequests: () => void;
   onRequestHistory: () => void;
@@ -26,6 +29,7 @@ type RequestFormData = {
 };
 
 function RequestDocumentPage({
+  user,
   onBackToDashboard,
   onMyRequests,
   onRequestHistory,
@@ -140,6 +144,9 @@ function RequestDocumentPage({
         onNotifications={onNotifications}
         onRequestDocument={() => undefined}
         onLogout={onLogout}
+        firstName={user.first_name}
+        lastName={user.last_name}
+        role={RESIDENT_ROLE_LABEL}
       />
 
       <main className="request-document-page">

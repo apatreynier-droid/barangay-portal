@@ -1,12 +1,15 @@
 import { useMemo, useState } from "react";
 import Sidebar from "../../components/MyRequests/Sidebar";
 import type { Request } from "../../Types/DashboardType";
+import type { AuthUser } from "../../Utils/api";
 import { getStatusClass } from "../../Utils/DashboardLogic";
 import { formatDate } from "../../Utils/RequestHistory";
+import { RESIDENT_ROLE_LABEL } from "../../Utils/ResidentDisplay";
 import "../Dashboard/Dashboard.css";
 import "./RequestHistory.css";
 
 type RequestHistoryProps = {
+  user: AuthUser;
   requests: Request[];
   isLoadingData: boolean;
   dataError: string;
@@ -31,6 +34,7 @@ const HISTORY_FILTERS: HistoryFilter[] = [
 ];
 
 function RequestHistory({
+  user,
   requests,
   isLoadingData,
   dataError,
@@ -69,6 +73,9 @@ function RequestHistory({
         onNotifications={onNotifications}
         onRequestDocument={onRequestDocument}
         onLogout={onLogout}
+        firstName={user.first_name}
+        lastName={user.last_name}
+        role={RESIDENT_ROLE_LABEL}
       />
 
       <main className="request-history-page">

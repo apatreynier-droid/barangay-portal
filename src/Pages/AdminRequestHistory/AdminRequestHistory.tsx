@@ -285,7 +285,7 @@ const AdminRequestHistory = ({
                           </span>
                         </td>
                         <td className="reqhist-processed">
-                          {request.processed_by ?? "—"}
+                          {request.processed_by ? ADMIN_DISPLAY_NAME : "—"}
                         </td>
                       </tr>
                     );

@@ -1,3 +1,7 @@
+/* Rendered at the end of <body> (see the component comment): as a direct
+   child of the root stacking context, z-index 20 reliably places the dialog
+   above the sidebar (stacking level 0) and the sticky top bar (z-index 10).
+   overflow-y keeps the dialog reachable on very short viewports. */
 .logout-confirmation-backdrop {
   position: fixed;
   z-index: 20;
@@ -5,6 +9,7 @@
   display: grid;
   place-items: center;
   padding: 20px;
+  overflow-y: auto;
   background: rgba(17, 24, 39, 0.45);
 }
 
