@@ -36,6 +36,10 @@ type AdminSidebarProps = {
   onReports?: () => void;
   onNotifications: () => void;
   onLogout: () => void;
+  /** Mobile drawer state (see useResponsiveSidebar); ignored on desktop. */
+  isOpen?: boolean;
+  /** Closes the mobile drawer when a nav item is chosen. */
+  onNavigate?: () => void;
 };
 
 const AdminSidebar = ({
@@ -55,6 +59,8 @@ const AdminSidebar = ({
   onReports,
   onNotifications,
   onLogout,
+  isOpen = false,
+  onNavigate,
 }: AdminSidebarProps) => {
   const navItems: AdminNavItem[] = [
     {
@@ -113,9 +119,14 @@ const AdminSidebar = ({
     { key: "activity-logs", label: "Activity Logs", icon: activityLogsIcon },
   ];
 
+  const closeThen = (action: () => void) => () => {
+    onNavigate?.();
+    action();
+  };
+
   return (
     <>
-      <aside className="admin-sidebar">
+      <aside className={`admin-sidebar${isOpen ? " is-open" : ""}`}>
         <div className="admin-sidebar-header">
           <div className="admin-logo-circle">BL</div>
 
@@ -134,14 +145,17 @@ const AdminSidebar = ({
             const className = `admin-nav-item${
               item.key === activeItem ? " active" : ""
             }`;
+            // On mobile the drawer should close before navigating.
+            const handleClick =
+              item.onClick !== undefined ? closeThen(item.onClick) : undefined;
 
-            if (item.onClick) {
+            if (handleClick) {
               return (
                 <button
                   key={item.key}
                   type="button"
                   className={className}
-                  onClick={item.onClick}
+                  onClick={handleClick}
                 >
                   <span className="admin-nav-icon" aria-hidden="true">
                     <img src={item.icon} alt="" />

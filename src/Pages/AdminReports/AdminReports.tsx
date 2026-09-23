@@ -7,6 +7,7 @@ import type { AdminReportsData } from "../../Types/AdminReportsType";
 import { ADMIN_DISPLAY_NAME } from "../../Utils/AdminDisplay";
 import AdminSidebar from "../../components/AdminDashboard/AdminSidebar";
 import AdminTopbar from "../../components/AdminDashboard/AdminTopbar";
+import useResponsiveSidebar from "../../Utils/useResponsiveSidebar";
 import ReportsStatsGrid from "../../components/AdminReports/ReportsStatsGrid";
 import MonthlyVolumeLineChart from "../../components/AdminReports/MonthlyVolumeLineChart";
 import ResidentsByPurokChart from "../../components/AdminReports/ResidentsByPurokChart";
@@ -89,6 +90,8 @@ const AdminReports = ({
   const fullName = ADMIN_DISPLAY_NAME;
   const roleLabel = "Brgy. Administrator";
 
+  const { isDrawerOpen, closeDrawer, toggleDrawer } = useResponsiveSidebar();
+
   return (
     <div className="admin-dashboard">
       <AdminSidebar
@@ -107,7 +110,18 @@ const AdminReports = ({
         onDocumentManagement={onDocumentManagement}
         onNotifications={onNotifications}
         onLogout={onLogout}
+        isOpen={isDrawerOpen}
+        onNavigate={closeDrawer}
       />
+
+      {isDrawerOpen && (
+        <button
+          type="button"
+          className="sidebar-backdrop"
+          aria-label="Close navigation menu"
+          onClick={closeDrawer}
+        />
+      )}
 
       <main className="admin-main">
         <AdminTopbar
@@ -115,6 +129,7 @@ const AdminReports = ({
           role={roleLabel}
           unreadCount={unreadNotifications}
           onNotifications={onNotifications}
+          onMenuToggle={toggleDrawer}
           title="Reports"
           subtitle="Barangay reporting and monitoring."
         />

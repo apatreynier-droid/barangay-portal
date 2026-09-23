@@ -1,3 +1,5 @@
+import MobileMenuButton from "../Shared/MobileMenuButton";
+
 type AdminTopbarProps = {
   fullName: string;
   role: string;
@@ -5,6 +7,8 @@ type AdminTopbarProps = {
   onNotifications: () => void;
   title?: string;
   subtitle?: string;
+  /** Opens the mobile drawer (rendered only below 769px via CSS). */
+  onMenuToggle?: () => void;
 };
 
 const AdminTopbar = ({
@@ -14,6 +18,7 @@ const AdminTopbar = ({
   onNotifications,
   title = "Dashboard",
   subtitle,
+  onMenuToggle,
 }: AdminTopbarProps) => {
   const heading =
     subtitle ?? `Welcome back, ${fullName}. Here's what's happening today.`;
@@ -21,8 +26,12 @@ const AdminTopbar = ({
   return (
     <header className="admin-topbar">
       <div className="admin-topbar-heading">
-        <h1>{title}</h1>
-        <p>{heading}</p>
+        {onMenuToggle && <MobileMenuButton onOpen={onMenuToggle} />}
+
+        <div>
+          <h1>{title}</h1>
+          <p>{heading}</p>
+        </div>
       </div>
 
       <div className="admin-topbar-actions">

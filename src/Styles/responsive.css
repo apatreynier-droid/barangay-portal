@@ -1,0 +1,460 @@
+/* ==========================================================================
+   Shared responsive layer (global safety net)
+   --------------------------------------------------------------------------
+   Imported once in src/main.tsx, after every page stylesheet. Contains:
+   1. Global horizontal-overflow guard
+   2. Sidebar behavior: icon rail (769-1024px) / drawer (<=768px)
+   3. Shared hamburger button + backdrop
+   4. Chart responsiveness
+   5. Modal safety net
+   6. Small-screen spacing/typography and touch targets
+   7. Reduced-motion preferences
+
+   Colors, branding and the desktop layout are intentionally NOT redefined
+   here; page stylesheets keep owning their look. Only behavior and
+   breakpoints live in this file.
+   ========================================================================== */
+
+/* --------------------------------- 1. Guard ------------------------------- */
+
+html,
+body {
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+/* ----------------------------- 2. Icon rail 769-1024 ---------------------- */
+
+@media (max-width: 1024px) {
+  .sidebar,
+  .admin-sidebar {
+    width: 80px;
+    padding: 24px 12px;
+  }
+
+  .sidebar-logo {
+    justify-content: center;
+    padding: 0;
+  }
+
+  .sidebar-logo > div:last-child {
+    display: none;
+  }
+
+  .admin-logo-text,
+  .admin-collapse-arrow {
+    display: none;
+  }
+
+  .nav-item {
+    justify-content: center;
+    gap: 0;
+    padding: 12px 8px;
+    font-size: 0;
+  }
+
+  .nav-icon {
+    width: auto;
+    font-size: 20px;
+  }
+
+  .admin-nav-item,
+  .sidebar-user-footer {
+    justify-content: center;
+  }
+
+  .admin-nav-item {
+    padding: 10px;
+  }
+
+  .admin-nav-label,
+  .admin-nav-badge,
+  .sidebar-user-info {
+    display: none;
+  }
+
+  .sidebar-user-logout {
+    margin-left: 0;
+  }
+
+  .dashboard-main,
+  .requests-main,
+  .request-history-page,
+  .notifications-page,
+  .request-document-page {
+    width: calc(100% - 80px);
+    margin-left: 80px;
+    padding: 24px;
+  }
+
+  .admin-main {
+    width: calc(100% - 80px);
+    margin-left: 80px;
+    padding: 20px;
+  }
+
+  .welcome-icon {
+    display: none;
+  }
+
+  .profile-info {
+    display: none;
+  }
+}
+
+
+/* ----------------------- 2b. Drawer (max-width: 768px) ------------------------ */
+/* <=768px: the sidebar slides off-canvas; the hamburger in the sticky Top Bar
+   opens it above a dimmed backdrop. `.is-open` is toggled by the shared
+   useResponsiveSidebar hook; the backdrop is rendered by each page.
+   Sidebar widths/offsets for the rail (>768px) and page padding are handled by
+   the page stylesheets (icon rail 769-1024px, full sidebar >1024px); this
+   block only takes over once the rail is no longer used. */
+
+@media (max-width: 768px) {
+  .dashboard-main,
+  .requests-main,
+  .request-history-page,
+  .notifications-page,
+  .request-document-page,
+  .admin-main {
+    width: 100%;
+    margin-left: 0;
+  }
+
+  .sidebar,
+  .admin-sidebar {
+    width: 250px;
+    max-width: 84vw;
+    padding: 24px 16px;
+    transform: translateX(-100%);
+    transition: transform 240ms cubic-bezier(0.4, 0, 0.2, 1);
+    z-index: 40;
+  }
+
+  .sidebar.is-open,
+  .admin-sidebar.is-open {
+    transform: translateX(0);
+    box-shadow: 0 12px 40px rgba(15, 23, 42, 0.35);
+  }
+
+  /* Restore labels inside the drawer (hidden for the rail above) */
+  .sidebar-logo > div:last-child,
+  .admin-logo-text,
+  .admin-nav-label,
+  .admin-nav-badge,
+  .sidebar-user-info,
+  .admin-collapse-arrow {
+    display: block;
+  }
+
+  .nav-item {
+    justify-content: flex-start;
+    gap: 12px;
+    padding: 12px 14px;
+    font-size: 14px;
+  }
+
+  .nav-icon {
+    width: 20px;
+    font-size: inherit;
+  }
+
+  .admin-nav-item {
+    justify-content: flex-start;
+    padding: 10px 12px;
+  }
+
+  .admin-nav-item .admin-nav-icon {
+    width: 20px;
+    font-size: 15px;
+  }
+
+  .sidebar-user-footer {
+    justify-content: flex-start;
+  }
+
+  .sidebar-user-logout {
+    margin-left: auto;
+  }
+/* Shared backdrop (rendered by each page on mobile widths) */
+  .sidebar-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 39;
+    border: 0;
+    padding: 0;
+    background: rgba(15, 23, 42, 0.45);
+    -webkit-tap-highlight-color: transparent;
+    cursor: default;
+  }
+
+  /* Shared hamburger button (rendered by both Top Bars) */
+  .sidebar-toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    flex-shrink: 0;
+    padding: 0;
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    background: #ffffff;
+    cursor: pointer;
+  }
+
+  .sidebar-toggle:focus-visible {
+    outline: 2px solid #4f46e5;
+    outline-offset: 2px;
+  }
+
+  .sidebar-toggle-bar {
+    display: block;
+    width: 18px;
+    height: 2px;
+    border-radius: 2px;
+    background: #374151;
+    transition: transform 180ms ease, opacity 180ms ease;
+  }
+
+  .sidebar-toggle-bar + .sidebar-toggle-bar {
+    margin-top: 4px;
+  }
+}
+
+/* The hamburger/backdrop never appear on tablet/desktop widths */
+@media (min-width: 769px) {
+  .sidebar-toggle,
+  .sidebar-backdrop {
+    display: none;
+  }
+}
+
+/* --------------------------- 3b. Page offsets ------------------------------ */
+/* Sidebar widths own the resident content offsets here (single source of
+   truth at <=1024px and <=768px), so stale per-page rules cannot keep a
+   250px gutter or reintroduce the 72px MyRequests mismatch. */
+
+@media (max-width: 1024px) {
+  .dashboard-main,
+  .requests-main,
+  .request-history-page,
+  .notifications-page,
+  .request-document-page,
+  .admin-main {
+    padding-left: 24px;
+    padding-right: 24px;
+  }
+}
+
+@media (max-width: 768px) {
+  .dashboard-main,
+  .requests-main,
+  .request-history-page,
+  .notifications-page,
+  .request-document-page,
+  .admin-main {
+    width: 100%;
+    margin-left: 0;
+  }
+}
+
+@media (max-width: 480px) {
+  .dashboard-main,
+  .requests-main,
+  .request-history-page,
+  .notifications-page,
+  .request-document-page {
+    padding: 18px 16px 48px;
+  }
+
+  .admin-main {
+    padding: 16px 14px 48px;
+  }
+}
+
+@media (max-width: 375px) {
+  .dashboard-main,
+  .requests-main,
+  .request-history-page,
+  .notifications-page,
+  .request-document-page,
+  .admin-main {
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+}
+
+/* --------------------------- 3c. Conflicting legacy breakpoints ------------ */
+/* Below 1024px the global rail/drawer rules own the sidebar geometry; the
+   older per-page collapse rules below only added conflicting widths after
+   this file was imported, so they are neutralized here. */
+
+@media (max-width: 1024px) {
+  .dashboard .sidebar,
+  .my-requests-page .sidebar,
+  .request-history-layout .sidebar,
+  .notifications-layout .sidebar,
+  .request-document-layout .sidebar,
+  .admin-dashboard .admin-sidebar {
+    width: 80px;
+    max-width: none;
+    padding: 24px 12px;
+    transform: none;
+  }
+}
+
+@media (max-width: 800px) {
+  .dashboard-main,
+  .requests-main {
+    width: calc(100% - 80px);
+    margin-left: 80px;
+  }
+}
+
+@media (max-width: 768px) {
+  .dashboard .sidebar,
+  .my-requests-page .sidebar,
+  .request-history-layout .sidebar,
+  .notifications-layout .sidebar,
+  .request-document-layout .sidebar,
+  .admin-dashboard .admin-sidebar {
+    width: 250px;
+    max-width: 84vw;
+    padding: 24px 16px;
+    transform: translateX(-100%);
+  }
+
+  .dashboard .sidebar.is-open,
+  .my-requests-page .sidebar.is-open,
+  .request-history-layout .sidebar.is-open,
+  .notifications-layout .sidebar.is-open,
+  .request-document-layout .sidebar.is-open,
+  .admin-dashboard .admin-sidebar.is-open {
+    transform: translateX(0);
+    box-shadow: 0 12px 40px rgba(15, 23, 42, 0.35);
+  }
+
+  .dashboard-main,
+  .requests-main,
+  .request-history-page,
+  .notifications-page,
+  .request-document-page,
+  .admin-main {
+    width: 100%;
+    margin-left: 0;
+  }
+}
+
+/* --------------------------------- 4. Charts ------------------------------- */
+
+/* All SVG charts already scale via viewBox; these rules keep them contained
+   and keep axis/legend text readable when the chart shrinks. */
+
+.admin-chart-panel,
+.reports-panel {
+  min-width: 0;
+}
+
+.admin-chart-panel svg,
+.reports-panel svg {
+  max-width: 100%;
+  height: auto;
+}
+
+/* Donut chart: keep its rendered size in sync with the available width */
+.admin-donut-wrapper svg {
+  width: min(100%, 180px);
+  height: auto;
+}
+
+/* Wider SVG text compensates for viewBox down-scaling on narrow screens */
+@media (max-width: 1024px) {
+  .admin-chart-axis-label,
+  .reports-purok-label {
+    font-size: 13px;
+  }
+}
+
+@media (max-width: 768px) {
+  .admin-chart-axis-label,
+  .reports-purok-label {
+    font-size: 15px;
+  }
+}
+
+@media (max-width: 480px) {
+  .admin-chart-axis-label,
+  .reports-purok-label {
+    font-size: 17px;
+  }
+}
+
+/* Chart legends wrap instead of clipping */
+.reports-chart-legend {
+  flex-wrap: wrap;
+}
+
+
+
+/* --------------------------------- 5. Modals ------------------------------- */
+
+/* Safety net: modal dialogs never exceed the viewport height (dvh handles
+   mobile URL bars) and their content scrolls inside the dialog. */
+.request-modal,
+.edit-request-modal,
+.request-details-modal,
+.logout-confirmation-dialog {
+  max-height: calc(100dvh - 32px);
+  overflow-y: auto;
+}
+
+/* --------------------- 6. Small screens: spacing + touch ------------------- */
+
+@media (max-width: 480px) {
+  /* Modal padding tightens and action buttons become full-width, tappable */
+  .request-modal {
+    padding: 20px 18px;
+    border-radius: 14px;
+  }
+
+  .request-form-actions {
+    flex-direction: column-reverse;
+  }
+
+  .request-form-actions button {
+    width: 100%;
+    padding: 12px 16px;
+  }
+
+  /* Small-screen typography for the largest page headings */
+  .topbar h1 {
+    font-size: 24px;
+  }
+
+  .admin-topbar-heading h1 {
+    font-size: 18px;
+  }
+
+  .welcome-card h2 {
+    font-size: 20px;
+  }
+
+  /* Comfortable touch targets for primary controls */
+  .primary-button,
+  .secondary-button,
+  .view-all {
+    padding: 12px 16px;
+  }
+}
+
+/* --------------------------- 7. Reduced motion ----------------------------- */
+
+@media (prefers-reduced-motion: reduce) {
+  .sidebar,
+  .admin-sidebar,
+  .sidebar-toggle-bar {
+    transition: none;
+  }
+}

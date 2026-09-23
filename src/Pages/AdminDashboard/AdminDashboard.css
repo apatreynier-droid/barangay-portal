@@ -213,6 +213,23 @@
   border-bottom: 1px solid #595a5b;
 }
 
+.admin-topbar-heading {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.admin-topbar-heading > div {
+  min-width: 0;
+}
+
+.admin-topbar-heading h1 {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .admin-topbar-heading h1 {
   margin: 0;
   font-size: 20px;

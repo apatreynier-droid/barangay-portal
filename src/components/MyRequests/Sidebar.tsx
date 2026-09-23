@@ -21,6 +21,10 @@ type SidebarProps = {
     | "request-history"
     | "notifications"
     | "request-document";
+  /** Mobile drawer state (see useResponsiveSidebar); ignored on desktop. */
+  isOpen?: boolean;
+  /** Closes the mobile drawer when a nav item is chosen. */
+  onNavigate?: () => void;
 };
 
 const Sidebar = ({
@@ -32,6 +36,8 @@ const Sidebar = ({
   lastName,
   role,
   activePage = "my-requests",
+  isOpen = false,
+  onNavigate,
 }: SidebarProps) => {
   // Request history lives inside My Requests now, so both highlight the
   // same item. "request-document" is reached from the Dashboard banner and
@@ -39,9 +45,14 @@ const Sidebar = ({
   const isMyRequestsActive =
     activePage === "my-requests" || activePage === "request-history";
 
+  const closeThen = (action: () => void) => () => {
+    onNavigate?.();
+    action();
+  };
+
   return (
     <>
-      <aside className="sidebar">
+      <aside className={`sidebar${isOpen ? " is-open" : ""}`}>
         <div className="sidebar-logo">
           <div className="sidebar-logo-circle">
             <img src={wingsLogo} alt="Barangay Logo" />
@@ -57,7 +68,7 @@ const Sidebar = ({
           <button
             type="button"
             className="nav-item nav-button"
-            onClick={onBackToDashboard}
+            onClick={closeThen(onBackToDashboard)}
           >
             <span className="nav-icon">
               <img src={ADashIcon} alt="" />
@@ -70,7 +81,7 @@ const Sidebar = ({
             className={`nav-item nav-button ${
               isMyRequestsActive ? "active" : ""
             }`}
-            onClick={onMyRequests}
+            onClick={closeThen(onMyRequests)}
             disabled={isMyRequestsActive}
           >
             <span className="nav-icon">
@@ -84,7 +95,7 @@ const Sidebar = ({
             className={`nav-item nav-button ${
               activePage === "notifications" ? "active" : ""
             }`}
-            onClick={onNotifications}
+            onClick={closeThen(onNotifications)}
             disabled={activePage === "notifications"}
           >
             <span className="nav-icon">

@@ -9,6 +9,8 @@ import {
   type AuthUser,
 } from "../../Utils/api";
 import { RESIDENT_ROLE_LABEL } from "../../Utils/ResidentDisplay";
+import useResponsiveSidebar from "../../Utils/useResponsiveSidebar";
+import MobileMenuButton from "../../components/Shared/MobileMenuButton";
 import "../Dashboard/Dashboard.css";
 import "./RequestDocumentPage.css";
 
@@ -46,6 +48,8 @@ function RequestDocumentPage({
     purpose: "",
   });
   const [formError, setFormError] = useState("");
+
+  const { isDrawerOpen, closeDrawer, toggleDrawer } = useResponsiveSidebar();
 
   useEffect(() => {
     let cancelled = false;
@@ -147,14 +151,29 @@ function RequestDocumentPage({
         firstName={user.first_name}
         lastName={user.last_name}
         role={RESIDENT_ROLE_LABEL}
+        isOpen={isDrawerOpen}
+        onNavigate={closeDrawer}
       />
+
+      {isDrawerOpen && (
+        <button
+          type="button"
+          className="sidebar-backdrop"
+          aria-label="Close navigation menu"
+          onClick={closeDrawer}
+        />
+      )}
 
       <main className="request-document-page">
         <header className="request-document-header">
-          <div>
-            <p className="page-label">Resident Portal</p>
-            <h1>Request a Document</h1>
-            <p>Submit a document request for review by the Barangay Hall.</p>
+          <div className="topbar-leading">
+            {toggleDrawer && <MobileMenuButton onOpen={toggleDrawer} />}
+
+            <div>
+              <p className="page-label">Resident Portal</p>
+              <h1>Request a Document</h1>
+              <p>Submit a document request for review by the Barangay Hall.</p>
+            </div>
           </div>
         </header>
 

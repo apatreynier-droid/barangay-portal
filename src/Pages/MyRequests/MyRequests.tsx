@@ -12,6 +12,7 @@ import RequestsTabs, {
 } from "../../components/MyRequests/RequestsTabs";
 import RequestsList from "../../components/MyRequests/RequestsList";
 import { RESIDENT_ROLE_LABEL } from "../../Utils/ResidentDisplay";
+import useResponsiveSidebar from "../../Utils/useResponsiveSidebar";
 
 // Requests still moving through the barangay office.
 const ACTIVE_STATUSES: RequestStatus[] = [
@@ -110,6 +111,8 @@ const MyRequests = ({
     (request) => request.status === "Ready for Pickup",
   ).length;
 
+  const { isDrawerOpen, closeDrawer, toggleDrawer } = useResponsiveSidebar();
+
   return (
     <div className="my-requests-page">
       <Sidebar
@@ -122,10 +125,24 @@ const MyRequests = ({
         firstName={user.first_name}
         lastName={user.last_name}
         role={RESIDENT_ROLE_LABEL}
+        isOpen={isDrawerOpen}
+        onNavigate={closeDrawer}
       />
 
+      {isDrawerOpen && (
+        <button
+          type="button"
+          className="sidebar-backdrop"
+          aria-label="Close navigation menu"
+          onClick={closeDrawer}
+        />
+      )}
+
       <main className="requests-main">
-        <RequestsHeader firstName={user.first_name} />
+        <RequestsHeader
+          firstName={user.first_name}
+          onMenuToggle={toggleDrawer}
+        />
 
         {dataError && (
           <div className="dashboard-error-banner" role="alert">

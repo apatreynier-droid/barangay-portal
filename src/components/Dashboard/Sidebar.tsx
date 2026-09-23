@@ -11,6 +11,10 @@ type SidebarProps = {
   onMyRequests: () => void;
   onNotifications: () => void;
   onLogout: () => void;
+  /** Mobile drawer state (see useResponsiveSidebar); ignored on desktop. */
+  isOpen?: boolean;
+  /** Closes the mobile drawer when a nav item is chosen. */
+  onNavigate?: () => void;
 };
 
 const Sidebar = ({
@@ -20,10 +24,17 @@ const Sidebar = ({
   onMyRequests,
   onNotifications,
   onLogout,
+  isOpen = false,
+  onNavigate,
 }: SidebarProps) => {
+  const closeThen = (action: () => void) => () => {
+    onNavigate?.();
+    action();
+  };
+
   return (
     <>
-      <aside className="sidebar">
+      <aside className={`sidebar${isOpen ? " is-open" : ""}`}>
         <div className="sidebar-logo">
           <div className="sidebar-logo-circle">
             <img src={wingsLogo} alt="Barangay Logo" />
@@ -46,7 +57,7 @@ const Sidebar = ({
           <button
             type="button"
             className="nav-item nav-button"
-            onClick={onMyRequests}
+            onClick={closeThen(onMyRequests)}
           >
             <span className="nav-icon">
               <img src={requestIcon} alt="" />
@@ -57,7 +68,7 @@ const Sidebar = ({
           <button
             type="button"
             className="nav-item nav-button"
-            onClick={onNotifications}
+            onClick={closeThen(onNotifications)}
           >
             <span className="nav-icon">
               <img src={notificationIcon} alt="" />
