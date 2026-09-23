@@ -12,6 +12,7 @@ import type { DocumentTypeOption } from "../../Utils/api";
 import { ADMIN_DISPLAY_NAME } from "../../Utils/AdminDisplay";
 import AdminSidebar from "../../components/AdminDashboard/AdminSidebar";
 import AdminTopbar from "../../components/AdminDashboard/AdminTopbar";
+import useResponsiveSidebar from "../../Utils/useResponsiveSidebar";
 import {
   getDocumentTemplateMeta,
   getIssuanceStatusMeta,
@@ -100,6 +101,8 @@ const AdminDocumentManagement = ({
   const fullName = ADMIN_DISPLAY_NAME;
   const roleLabel = "Brgy. Administrator";
 
+  const { isDrawerOpen, closeDrawer, toggleDrawer } = useResponsiveSidebar();
+
   return (
     <div className="admin-dashboard">
       <AdminSidebar
@@ -119,7 +122,18 @@ const AdminDocumentManagement = ({
         onReports={onReports}
         onNotifications={onNotifications}
         onLogout={onLogout}
+        isOpen={isDrawerOpen}
+        onNavigate={closeDrawer}
       />
+
+      {isDrawerOpen && (
+        <button
+          type="button"
+          className="sidebar-backdrop"
+          aria-label="Close navigation menu"
+          onClick={closeDrawer}
+        />
+      )}
 
       <main className="admin-main">
         <AdminTopbar
@@ -127,6 +141,7 @@ const AdminDocumentManagement = ({
           role={roleLabel}
           unreadCount={unreadNotifications}
           onNotifications={onNotifications}
+          onMenuToggle={toggleDrawer}
           title="Document Management"
           subtitle="Generate and manage official barangay documents."
         />

@@ -9,6 +9,8 @@ import {
 } from "../../Utils/api";
 import { RESIDENT_ROLE_LABEL } from "../../Utils/ResidentDisplay";
 import { isAdminUser } from "../../Utils/routePaths";
+import useResponsiveSidebar from "../../Utils/useResponsiveSidebar";
+import MobileMenuButton from "../../components/Shared/MobileMenuButton";
 import "../Dashboard/Dashboard.css";
 import "./NotificationPage.css";
 
@@ -81,6 +83,8 @@ function NotificationPage({
     (notification) => !notification.is_read,
   ).length;
 
+  const { isDrawerOpen, closeDrawer, toggleDrawer } = useResponsiveSidebar();
+
   const handleMarkAllAsRead = async () => {
     setIsMarkingAll(true);
     setActionError("");
@@ -132,14 +136,29 @@ function NotificationPage({
         firstName={user.first_name}
         lastName={user.last_name}
         role={isAdminUser(user) ? "Brgy. Administrator" : RESIDENT_ROLE_LABEL}
+        isOpen={isDrawerOpen}
+        onNavigate={closeDrawer}
       />
+
+      {isDrawerOpen && (
+        <button
+          type="button"
+          className="sidebar-backdrop"
+          aria-label="Close navigation menu"
+          onClick={closeDrawer}
+        />
+      )}
 
       <main className="notifications-page">
         <header className="notifications-header">
-          <div>
-            <p className="page-label">Resident Portal</p>
-            <h1>Notifications</h1>
-            <p>Stay up to date with your document requests.</p>
+          <div className="topbar-leading">
+            {toggleDrawer && <MobileMenuButton onOpen={toggleDrawer} />}
+
+            <div>
+              <p className="page-label">Resident Portal</p>
+              <h1>Notifications</h1>
+              <p>Stay up to date with your document requests.</p>
+            </div>
           </div>
           <button
             className="mark-read-button"

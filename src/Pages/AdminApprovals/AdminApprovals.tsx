@@ -8,6 +8,7 @@ import type { AdminDocumentRequest } from "../../Types/AdminDocumentRequestsType
 import { ADMIN_DISPLAY_NAME } from "../../Utils/AdminDisplay";
 import AdminSidebar from "../../components/AdminDashboard/AdminSidebar";
 import AdminTopbar from "../../components/AdminDashboard/AdminTopbar";
+import useResponsiveSidebar from "../../Utils/useResponsiveSidebar";
 import ApprovalRequestCard from "../../components/AdminApprovals/ApprovalRequestCard";
 import {
   getPendingApprovals,
@@ -67,6 +68,8 @@ const AdminApprovals = ({
   const fullName = ADMIN_DISPLAY_NAME;
   const roleLabel = "Brgy. Administrator";
 
+  const { isDrawerOpen, closeDrawer, toggleDrawer } = useResponsiveSidebar();
+
   return (
     <div className="admin-dashboard">
       <AdminSidebar
@@ -86,7 +89,18 @@ const AdminApprovals = ({
         onReports={onReports}
         onNotifications={onNotifications}
         onLogout={onLogout}
+        isOpen={isDrawerOpen}
+        onNavigate={closeDrawer}
       />
+
+      {isDrawerOpen && (
+        <button
+          type="button"
+          className="sidebar-backdrop"
+          aria-label="Close navigation menu"
+          onClick={closeDrawer}
+        />
+      )}
 
       <main className="admin-main">
         <AdminTopbar
@@ -94,6 +108,7 @@ const AdminApprovals = ({
           role={roleLabel}
           unreadCount={unreadNotifications}
           onNotifications={onNotifications}
+          onMenuToggle={toggleDrawer}
           title="Approvals"
           subtitle="Requests awaiting your approval."
         />

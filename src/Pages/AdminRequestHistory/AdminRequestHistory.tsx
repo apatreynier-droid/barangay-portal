@@ -10,6 +10,7 @@ import {
 import type { AdminRequestHistoryEntry } from "../../Types/AdminRequestHistoryType";
 import { ADMIN_DISPLAY_NAME } from "../../Utils/AdminDisplay";
 import AdminSidebar from "../../components/AdminDashboard/AdminSidebar";
+import useResponsiveSidebar from "../../Utils/useResponsiveSidebar";
 import AdminTopbar from "../../components/AdminDashboard/AdminTopbar";
 import {
   DEFAULT_ADMIN_REQUEST_HISTORY_FILTERS,
@@ -106,6 +107,8 @@ const AdminRequestHistory = ({
   const fullName = ADMIN_DISPLAY_NAME;
   const roleLabel = "Brgy. Administrator";
 
+  const { isDrawerOpen, closeDrawer, toggleDrawer } = useResponsiveSidebar();
+
   return (
     <div className="admin-dashboard">
       <AdminSidebar
@@ -124,7 +127,18 @@ const AdminRequestHistory = ({
         onReports={onReports}
         onNotifications={onNotifications}
         onLogout={onLogout}
+        isOpen={isDrawerOpen}
+        onNavigate={closeDrawer}
       />
+
+      {isDrawerOpen && (
+        <button
+          type="button"
+          className="sidebar-backdrop"
+          aria-label="Close navigation menu"
+          onClick={closeDrawer}
+        />
+      )}
 
       <main className="admin-main">
         <AdminTopbar
@@ -132,6 +146,7 @@ const AdminRequestHistory = ({
           role={roleLabel}
           unreadCount={unreadNotifications}
           onNotifications={onNotifications}
+          onMenuToggle={toggleDrawer}
           title="Request History"
           subtitle="Complete record of all document requests."
         />

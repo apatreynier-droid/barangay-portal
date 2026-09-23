@@ -12,6 +12,7 @@ import DocumentTypeDonut from "../../components/AdminDashboard/DocumentTypeDonut
 import AdminRecentRequests from "../../components/AdminDashboard/AdminRecentRequests";
 import RecentRegistrations from "../../components/AdminDashboard/RecentRegistrations";
 import AdminNotificationsCard from "../../components/AdminDashboard/AdminNotificationsCard";
+import useResponsiveSidebar from "../../Utils/useResponsiveSidebar";
 
 type AdminDashboardProps = {
   user: AuthUser;
@@ -61,6 +62,8 @@ const AdminDashboard = ({
   const fullName = ADMIN_DISPLAY_NAME;
   const roleLabel = "Brgy. Administrator";
 
+  const { isDrawerOpen, closeDrawer, toggleDrawer } = useResponsiveSidebar();
+
   return (
     <div className="admin-dashboard">
       <AdminSidebar
@@ -80,7 +83,18 @@ const AdminDashboard = ({
         onReports={onReports}
         onNotifications={onNotifications}
         onLogout={onLogout}
+        isOpen={isDrawerOpen}
+        onNavigate={closeDrawer}
       />
+
+      {isDrawerOpen && (
+        <button
+          type="button"
+          className="sidebar-backdrop"
+          aria-label="Close navigation menu"
+          onClick={closeDrawer}
+        />
+      )}
 
       <main className="admin-main">
         <AdminTopbar
@@ -88,6 +102,7 @@ const AdminDashboard = ({
           role={roleLabel}
           unreadCount={unreadNotifications}
           onNotifications={onNotifications}
+          onMenuToggle={toggleDrawer}
         />
 
         {error && (

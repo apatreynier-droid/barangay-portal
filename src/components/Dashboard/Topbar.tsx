@@ -1,14 +1,23 @@
+import notificationIcon from "../../assets/icons/notification-bell.png";
+import MobileMenuButton from "../Shared/MobileMenuButton";
+
 type TopbarProps = {
   unreadCount: number;
   onNotifications: () => void;
+  /** Opens the mobile drawer (rendered only below 769px via CSS). */
+  onMenuToggle?: () => void;
 };
 
-const Topbar = ({ unreadCount, onNotifications }: TopbarProps) => {
+const Topbar = ({ unreadCount, onNotifications, onMenuToggle }: TopbarProps) => {
   return (
     <header className="topbar">
-      <div>
-        <p className="topbar-label">Resident Portal</p>
-        <h1>Dashboard</h1>
+      <div className="topbar-leading">
+        {onMenuToggle && <MobileMenuButton onOpen={onMenuToggle} />}
+
+        <div>
+          <p className="topbar-label">Resident Portal</p>
+          <h1>Dashboard</h1>
+        </div>
       </div>
 
       <div className="profile">
@@ -18,7 +27,7 @@ const Topbar = ({ unreadCount, onNotifications }: TopbarProps) => {
           onClick={onNotifications}
           aria-label="Notifications"
         >
-          🔔
+          <img src={notificationIcon} alt="" className="notification-icon" />
           {unreadCount > 0 && (
             <span className="notification-dot">{unreadCount}</span>
           )}

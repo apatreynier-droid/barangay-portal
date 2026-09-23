@@ -9,6 +9,7 @@ import RecentRequests from "../../components/Dashboard/RecentRequests";
 import QuickActions from "../../components/Dashboard/QuickActions";
 import PickupCard from "../../components/Dashboard/PickupCard";
 import { RESIDENT_ROLE_LABEL } from "../../Utils/ResidentDisplay";
+import useResponsiveSidebar from "../../Utils/useResponsiveSidebar";
 
 type DashboardProps = {
   user: AuthUser;
@@ -39,6 +40,9 @@ const Dashboard = ({
     (notification) => !notification.is_read,
   ).length;
 
+  const { isDrawerOpen, closeDrawer, toggleDrawer } =
+    useResponsiveSidebar();
+
   return (
     <div className="dashboard">
       <Sidebar
@@ -48,10 +52,25 @@ const Dashboard = ({
         onMyRequests={onMyRequests}
         onNotifications={onNotifications}
         onLogout={onLogout}
+        isOpen={isDrawerOpen}
+        onNavigate={closeDrawer}
       />
 
+      {isDrawerOpen && (
+        <button
+          type="button"
+          className="sidebar-backdrop"
+          aria-label="Close navigation menu"
+          onClick={closeDrawer}
+        />
+      )}
+
       <main className="dashboard-main">
-        <Topbar unreadCount={unreadCount} onNotifications={onNotifications} />
+        <Topbar
+          unreadCount={unreadCount}
+          onNotifications={onNotifications}
+          onMenuToggle={toggleDrawer}
+        />
 
         <WelcomeCard onRequestDocument={() => onRequestDocument()} />
 

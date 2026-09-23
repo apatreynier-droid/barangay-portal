@@ -10,6 +10,7 @@ import {
 import type { AdminDocumentRequest } from "../../Types/AdminDocumentRequestsType";
 import { ADMIN_DISPLAY_NAME } from "../../Utils/AdminDisplay";
 import AdminSidebar from "../../components/AdminDashboard/AdminSidebar";
+import useResponsiveSidebar from "../../Utils/useResponsiveSidebar";
 import AdminTopbar from "../../components/AdminDashboard/AdminTopbar";
 import DocumentRequestsToolbar from "../../components/AdminDocumentRequests/DocumentRequestsToolbar";
 import DocumentRequestsTable from "../../components/AdminDocumentRequests/DocumentRequestsTable";
@@ -102,6 +103,8 @@ const AdminDocumentRequests = ({
   const fullName = ADMIN_DISPLAY_NAME;
   const roleLabel = "Brgy. Administrator";
 
+  const { isDrawerOpen, closeDrawer, toggleDrawer } = useResponsiveSidebar();
+
   return (
     <div className="admin-dashboard">
       <AdminSidebar
@@ -121,7 +124,18 @@ const AdminDocumentRequests = ({
         onReports={onReports}
         onNotifications={onNotifications}
         onLogout={onLogout}
+        isOpen={isDrawerOpen}
+        onNavigate={closeDrawer}
       />
+
+      {isDrawerOpen && (
+        <button
+          type="button"
+          className="sidebar-backdrop"
+          aria-label="Close navigation menu"
+          onClick={closeDrawer}
+        />
+      )}
 
       <main className="admin-main">
         <AdminTopbar
@@ -129,6 +143,7 @@ const AdminDocumentRequests = ({
           role={roleLabel}
           unreadCount={unreadNotifications}
           onNotifications={onNotifications}
+          onMenuToggle={toggleDrawer}
           title="Document Requests"
           subtitle="Review and process document requests."
         />
