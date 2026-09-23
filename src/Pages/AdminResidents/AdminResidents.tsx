@@ -27,6 +27,7 @@ type AdminResidentsProps = {
   onDocumentManagement: () => void;
   onNotifications: () => void;
   onReports: () => void;
+  onActivityLogs: () => void;
   onLogout: () => void;
 };
 
@@ -39,6 +40,7 @@ const AdminResidents = ({
   onDocumentManagement,
   onNotifications,
   onReports,
+  onActivityLogs,
   onLogout,
 }: AdminResidentsProps) => {
   const [residents, setResidents] = useState<AdminResident[]>([]);
@@ -118,6 +120,7 @@ const AdminResidents = ({
         onApprovals={onApprovals}
         onDocumentManagement={onDocumentManagement}
         onReports={onReports}
+        onActivityLogs={onActivityLogs}
         onNotifications={onNotifications}
         onLogout={onLogout}
         isOpen={isDrawerOpen}

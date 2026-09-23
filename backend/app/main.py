@@ -15,7 +15,15 @@ from urllib.parse import quote
 
 from .config import settings
 from .database import create_connection, get_db
+from .activity_logs import record_activity_log
 from .dependencies import get_current_admin_user, get_current_user
+from .notifications import (
+    NOTIFICATION_TYPE_REQUEST,
+    action_time_bucket,
+    build_dedupe_key,
+    notify_admins,
+    record_admin_notification,
+)
 from .email_service import (
     EmailDeliveryError,
     is_email_configured,
@@ -33,6 +41,7 @@ from .schemas import (
     AdminMonthlyDataPoint,
     AdminRecentRegistration,
     AdminRecentRequest,
+    AdminActivityLogResponse,
     AdminResidentDetailResponse,
     AdminResidentRequestEntry,
     AdminResidentResponse,
@@ -103,6 +112,15 @@ def clean_optional(value: str | None) -> str | None:
         return None
     stripped = value.strip()
     return stripped if stripped else None
+
+
+def user_display_name(user: dict[str, object]) -> str:
+    """Full name of the signed-in user (resolved by the auth dependencies).
+
+    Admin notifications name the person who performed the action, so every
+    call site can use this instead of re-reading the profile from the database.
+    """
+    return f"{user['first_name']} {user['last_name']}".strip()
 
 
 def raise_rate_limited(retry_after: float, message: str) -> None:
@@ -252,6 +270,19 @@ def register(
     finally:
         cursor.close()
 
+    # The account exists and is committed, so the administrator notification is
+    # written now. Recording it is best-effort: a notification problem must
+    # never fail a registration that already succeeded.
+    record_admin_notification(
+        connection,
+        title="New resident account",
+        message=(
+            f"{payload.first_name.strip()} {payload.last_name.strip()} "
+            f"created a resident account ({email})."
+        ),
+        dedupe_key=build_dedupe_key("resident-registered", user_id),
+    )
+
     return build_auth_response(connection, user_id)
 
 
@@ -307,7 +338,18 @@ def login(
 
     # Successful login: give the client a clean slate again.
     login_attempt_limiter.record_success(attempt_key)
-    return build_auth_response(connection, user["id"])
+    response = build_auth_response(connection, user["id"])
+
+    record_activity_log(
+        connection,
+        user_id=user["id"],
+        action_type="Login",
+        action="logged in",
+        target="System",
+        ip_address=client_ip,
+    )
+
+    return response
 
 
 @app.post("/api/auth/logout", status_code=status.HTTP_204_NO_CONTENT)
@@ -655,6 +697,7 @@ def get_request_detail(
 @app.post("/api/requests", response_model=RequestResponse, status_code=status.HTTP_201_CREATED)
 def create_request(
     payload: CreateRequestInput,
+    request: Request,
     connection: MySQLConnection = Depends(get_db),
     current_user: dict[str, object] = Depends(get_current_user),
 ) -> RequestResponse:
@@ -711,6 +754,27 @@ def create_request(
                 request_id,
             ),
         )
+        # Same transaction as the request itself: when the insert above fails
+        # and the request is rolled back, the admin is not told about a request
+        # that does not exist.
+        notify_admins(
+            connection,
+            title="New document request",
+            message=(
+                f"{user_display_name(current_user)} submitted a "
+                f"{document_type['document_name']} request "
+                f"({request_number}, status: Pending)."
+            ),
+            notification_type=NOTIFICATION_TYPE_REQUEST,
+            related_request_id=request_id,
+            dedupe_key=build_dedupe_key(
+                "request-submitted",
+                current_user["id"],
+                payload.document_type_id,
+                payload.purpose.strip(),
+                action_time_bucket(),
+            ),
+        )
         connection.commit()
     except HTTPException:
         connection.rollback()
@@ -731,9 +795,20 @@ def create_request(
         """,
         (request_id,),
     )
-    request = cursor.fetchone()
+    row = cursor.fetchone()
     cursor.close()
-    return RequestResponse(**request)
+
+    record_activity_log(
+        connection,
+        user_id=current_user["id"],
+        action_type="Create",
+        action="submitted a document request",
+        target=f"{request_number} ({row['document']})",
+        target_type="Request",
+        ip_address=get_client_ip(request),
+    )
+
+    return RequestResponse(**row)
 
 
 @app.put("/api/requests/{request_id}", response_model=RequestResponse)
@@ -746,9 +821,11 @@ def update_request(
     cursor = connection.cursor(dictionary=True)
     cursor.execute(
         """
-        SELECT id, status
+        SELECT requests.id, requests.status, requests.request_number,
+               document_types.document_name AS document
         FROM requests
-        WHERE id = %s AND user_id = %s
+        JOIN document_types ON document_types.id = requests.document_type_id
+        WHERE requests.id = %s AND requests.user_id = %s
         """,
         (request_id, current_user["id"]),
     )
@@ -772,6 +849,27 @@ def update_request(
             WHERE id = %s AND user_id = %s
             """,
             (payload.purpose.strip(), request_id, current_user["id"]),
+        )
+        # Written in the same transaction as the edit: a failed update (or a
+        # rollback) leaves no admin notification behind, and a retry of the
+        # same edit is suppressed by the dedupe key.
+        notify_admins(
+            connection,
+            title="Document request updated",
+            message=(
+                f"{user_display_name(current_user)} updated their "
+                f"{request['document']} request "
+                f"({request['request_number']}, "
+                f"status: {request['status']})."
+            ),
+            notification_type=NOTIFICATION_TYPE_REQUEST,
+            related_request_id=request_id,
+            dedupe_key=build_dedupe_key(
+                "request-updated",
+                request_id,
+                payload.purpose.strip(),
+                action_time_bucket(),
+            ),
         )
         connection.commit()
     except mysql.connector.Error as error:
@@ -809,9 +907,11 @@ def delete_request(
     cursor = connection.cursor(dictionary=True)
     cursor.execute(
         """
-        SELECT id, status
+        SELECT requests.id, requests.status, requests.request_number,
+               document_types.document_name AS document
         FROM requests
-        WHERE id = %s AND user_id = %s
+        JOIN document_types ON document_types.id = requests.document_type_id
+        WHERE requests.id = %s AND user_id = %s
         """,
         (request_id, current_user["id"]),
     )
@@ -839,6 +939,19 @@ def delete_request(
         cursor.execute(
             "DELETE FROM requests WHERE id = %s AND user_id = %s",
             (request_id, current_user["id"]),
+        )
+        # The request row is gone, so the admin notification carries no
+        # related_request_id; it still records who deleted what, and the
+        # dedupe key keeps a retried delete from notifying twice.
+        notify_admins(
+            connection,
+            title="Document request deleted",
+            message=(
+                f"{user_display_name(current_user)} deleted their "
+                f"{request['document']} request ({request['request_number']})."
+            ),
+            notification_type=NOTIFICATION_TYPE_REQUEST,
+            dedupe_key=build_dedupe_key("request-deleted", request_id),
         )
         connection.commit()
     except mysql.connector.Error as error:
@@ -1331,6 +1444,7 @@ def get_resident_detail(
 def update_resident(
     resident_id: int,
     payload: AdminResidentUpdateInput,
+    request: Request,
     connection: MySQLConnection = Depends(get_db),
     current_user: dict[str, object] = Depends(get_current_admin_user),
 ) -> AdminResidentDetailResponse:
@@ -1410,6 +1524,41 @@ def update_resident(
     finally:
         cursor.close()
 
+    record_activity_log(
+        connection,
+        user_id=current_user["id"],
+        action_type="Update",
+        action="updated resident information",
+        target=(
+            f"RES-{resident_id:03d} "
+            f"({payload.first_name.strip()} {payload.last_name.strip()})"
+        ),
+        target_type="Resident",
+        ip_address=get_client_ip(request),
+    )
+
+    # The profile change is committed; tell every administrator about the new
+    # information. Best-effort, so a notification problem cannot fail the save.
+    record_admin_notification(
+        connection,
+        title="Resident profile updated",
+        message=(
+            f"Administrator {user_display_name(current_user)} updated the "
+            f"profile of {payload.first_name.strip()} "
+            f"{payload.last_name.strip()} (RES-{resident_id:03d})."
+        ),
+        dedupe_key=build_dedupe_key(
+            "resident-updated",
+            resident_id,
+            email,
+            payload.first_name.strip(),
+            payload.last_name.strip(),
+            payload.purok,
+            payload.contact_number,
+            action_time_bucket(),
+        ),
+    )
+
     return load_resident_detail(connection, resident_id)
 
 
@@ -1420,13 +1569,16 @@ def update_resident(
 def set_resident_status(
     resident_id: int,
     payload: AdminResidentStatusInput,
+    request: Request,
     connection: MySQLConnection = Depends(get_db),
     current_user: dict[str, object] = Depends(get_current_admin_user),
 ) -> AdminResidentDetailResponse:
     cursor = connection.cursor(dictionary=True)
     cursor.execute(
         """
-        SELECT users.id AS user_id
+        SELECT users.id AS user_id,
+               CONCAT(resident_profiles.first_name, ' ',
+                      resident_profiles.last_name) AS resident_name
         FROM resident_profiles
         JOIN users ON users.id = resident_profiles.user_id
         WHERE resident_profiles.id = %s AND users.role = 'resident'
@@ -1465,6 +1617,41 @@ def set_resident_status(
         ) from error
     finally:
         cursor.close()
+
+    status_action = (
+        "deactivated resident account"
+        if payload.account_status == "inactive"
+        else "reactivated resident account"
+    )
+    record_activity_log(
+        connection,
+        user_id=current_user["id"],
+        action_type="Update",
+        action=status_action,
+        target=f"RES-{resident_id:03d}",
+        target_type="Resident",
+        ip_address=get_client_ip(request),
+    )
+
+    # The account status change is committed; every administrator is told which
+    # resident was affected. Best-effort, so it can never fail the status change.
+    deactivated = payload.account_status == "inactive"
+    record_admin_notification(
+        connection,
+        title=(
+            "Resident account deactivated"
+            if deactivated
+            else "Resident account reactivated"
+        ),
+        message=(
+            f"Administrator {user_display_name(current_user)} "
+            f"{'deactivated' if deactivated else 'reactivated'} the account "
+            f"of {resident['resident_name']} (RES-{resident_id:03d})."
+        ),
+        dedupe_key=build_dedupe_key(
+            "resident-account-status", resident_id, payload.account_status
+        ),
+    )
 
     return load_resident_detail(connection, resident_id)
 
@@ -1640,6 +1827,7 @@ def get_document_request_detail(
 def update_document_request(
     request_id: int,
     payload: AdminRequestActionInput,
+    request: Request,
     connection: MySQLConnection = Depends(get_db),
     current_user: dict[str, object] = Depends(get_current_admin_user),
 ) -> AdminDocumentRequestDetailResponse:
@@ -1653,19 +1841,25 @@ def update_document_request(
     cursor.execute(
         """
         SELECT requests.id, requests.user_id, requests.request_number,
-               requests.status
+               requests.status,
+               document_types.document_name AS document,
+               CONCAT(resident_profiles.first_name, ' ',
+                      resident_profiles.last_name) AS resident_name
         FROM requests
+        JOIN users ON users.id = requests.user_id
+        JOIN resident_profiles ON resident_profiles.user_id = users.id
+        JOIN document_types ON document_types.id = requests.document_type_id
         WHERE requests.id = %s
         """,
         (request_id,),
     )
-    request = cursor.fetchone()
-    if request is None:
+    row = cursor.fetchone()
+    if row is None:
         cursor.close()
         raise HTTPException(status_code=404, detail="Request was not found.")
 
     new_status = payload.status
-    current_status = request["status"]
+    current_status = row["status"]
 
     if new_status is not None and new_status != current_status:
         allowed_transitions = VALID_STATUS_TRANSITIONS.get(
@@ -1704,7 +1898,7 @@ def update_document_request(
             ),
         )
 
-        if payload.status is not None and payload.status != request["status"]:
+        if payload.status is not None and payload.status != row["status"]:
             cursor.execute(
                 """
                 INSERT INTO request_status_history
@@ -1713,7 +1907,7 @@ def update_document_request(
                 """,
                 (
                     request_id,
-                    request["status"],
+                    row["status"],
                     payload.status,
                     current_user["id"],
                     clean_optional(payload.admin_remarks),
@@ -1728,13 +1922,32 @@ def update_document_request(
                 VALUES (%s, %s, %s, 'request', %s)
                 """,
                 (
-                    request["user_id"],
+                    row["user_id"],
                     f"Request {payload.status}",
                     (
-                        f"Your document request {request['request_number']} "
+                        f"Your document request {row['request_number']} "
                         f"is now {payload.status}."
                     ),
                     request_id,
+                ),
+            )
+
+            # Keep the admin feed in step with the resident notification: every
+            # administrator sees that this request moved to a new status, who
+            # moved it, and for which resident.
+            notify_admins(
+                connection,
+                title=f"Request status: {payload.status}",
+                message=(
+                    f"Administrator {user_display_name(current_user)} changed "
+                    f"{row['request_number']} ({row['document']}) from "
+                    f"{current_status} to {payload.status} for "
+                    f"{row['resident_name']}."
+                ),
+                notification_type=NOTIFICATION_TYPE_REQUEST,
+                related_request_id=request_id,
+                dedupe_key=build_dedupe_key(
+                    "request-status", request_id, payload.status
                 ),
             )
 
@@ -1743,12 +1956,35 @@ def update_document_request(
         # Send the status-change email to the resident who owns this request.
         # This runs after the commit so a mail problem never rolls back the
         # status change; failures are logged inside send_request_status_email.
-        if payload.status is not None and payload.status != request["status"]:
+        if payload.status is not None and payload.status != row["status"]:
             send_request_status_email(
                 connection,
                 request_id=request_id,
                 new_status=payload.status,
             )
+
+        log_target = (
+            f"{row['request_number']} "
+            f"({row['document']} - {row['resident_name']})"
+        )
+        if payload.status == "Approved" and payload.status != row["status"]:
+            log_action_type, log_action = "Approve", "approved request"
+        elif payload.status == "Rejected" and payload.status != row["status"]:
+            log_action_type, log_action = "Reject", "rejected request"
+        elif payload.status is not None and payload.status != row["status"]:
+            log_action_type = "Status"
+            log_action = f"updated status to {payload.status}"
+        else:
+            log_action_type, log_action = "Update", "updated request details"
+        record_activity_log(
+            connection,
+            user_id=current_user["id"],
+            action_type=log_action_type,
+            action=log_action,
+            target=log_target,
+            target_type="Request",
+            ip_address=get_client_ip(request),
+        )
 
     except mysql.connector.Error as error:
         connection.rollback()
@@ -1760,6 +1996,58 @@ def update_document_request(
         cursor.close()
 
     return load_document_request_detail(connection, request_id)
+
+
+@app.get("/api/admin/activity-logs", response_model=list[AdminActivityLogResponse])
+def list_activity_logs(
+    search: str | None = None,
+    action_type: str | None = None,
+    connection: MySQLConnection = Depends(get_db),
+    current_user: dict[str, object] = Depends(get_current_admin_user),
+) -> list[AdminActivityLogResponse]:
+    """Audit trail for the Admin Activity Logs page (newest entries first)."""
+    query = """
+        SELECT id, actor_name, actor_role, action_type, action, target_type,
+               target, ip_address, created_at
+        FROM activity_logs
+    """
+    conditions: list[str] = []
+    params: list[str] = []
+
+    if search and search.strip():
+        term = f"%{search.strip()}%"
+        conditions.append(
+            "(actor_name LIKE %s OR action LIKE %s OR target LIKE %s)"
+        )
+        params.extend([term, term, term])
+
+    if action_type and action_type != "all":
+        conditions.append("action_type = %s")
+        params.append(action_type)
+
+    if conditions:
+        query += " WHERE " + " AND ".join(conditions)
+
+    query += " ORDER BY created_at DESC, id DESC"
+
+    cursor = connection.cursor(dictionary=True)
+    cursor.execute(query, tuple(params))
+    logs = [
+        AdminActivityLogResponse(
+            id=row["id"],
+            actor_name=row["actor_name"],
+            actor_role=row["actor_role"],
+            action_type=row["action_type"],
+            action=row["action"],
+            target_type=row["target_type"],
+            target=row["target"],
+            ip_address=row["ip_address"],
+            created_at=row["created_at"],
+        )
+        for row in cursor.fetchall()
+    ]
+    cursor.close()
+    return logs
 
 
 @app.get("/api/notifications", response_model=list[NotificationResponse])

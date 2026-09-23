@@ -47,6 +47,13 @@ CREATE TABLE `document_types` (
 --
 -- Table structure for table `notifications`
 --
+-- One row per notification, per user. Read by GET /api/notifications for both
+-- the resident Notification page and the Admin Notification page. The backend
+-- writes the admin-facing rows automatically (backend/app/notifications.py) for
+-- important actions: new/updated/deleted document requests, request status
+-- changes, new resident accounts, and resident profile/account updates.
+-- `dedupe_key` is the UNIQUE guard that stops a repeated action (double submit,
+-- retried API call) from storing the same notification twice.
 
 CREATE TABLE `notifications` (
   `id` int(11) NOT NULL,
@@ -56,6 +63,7 @@ CREATE TABLE `notifications` (
   `notification_type` enum('request','announcement','system') NOT NULL DEFAULT 'system',
   `related_request_id` int(11) DEFAULT NULL,
   `is_read` tinyint(1) NOT NULL DEFAULT 0,
+  `dedupe_key` varchar(191) DEFAULT NULL,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
@@ -197,6 +205,7 @@ ALTER TABLE `document_types`
 --
 ALTER TABLE `notifications`
   ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `uq_notification_dedupe` (`dedupe_key`),
   ADD KEY `fk_notification_user` (`user_id`),
   ADD KEY `fk_notification_request` (`related_request_id`);
 
@@ -251,6 +260,31 @@ CREATE TABLE `request_status_emails` (
   `error_message` varchar(500) DEFAULT NULL,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
   `sent_at` timestamp NULL DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `activity_logs`
+--
+-- Audit trail shown on the Admin "Activity Logs" page. Entries are
+-- append-only and created by the API (see backend/app/activity_logs.py).
+
+CREATE TABLE `activity_logs` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `user_id` int(11) DEFAULT NULL,
+  `actor_name` varchar(150) NOT NULL,
+  `actor_role` varchar(50) NOT NULL DEFAULT 'system',
+  `action_type` enum('Approve','Reject','Status','Update','Create','Login','Delete') NOT NULL DEFAULT 'Update',
+  `action` varchar(255) NOT NULL,
+  `target_type` varchar(50) NOT NULL DEFAULT 'System',
+  `target` varchar(255) NOT NULL DEFAULT 'System',
+  `ip_address` varchar(45) DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`),
+  KEY `fk_activity_user` (`user_id`),
+  KEY `activity_created_lookup` (`created_at`),
+  CONSTRAINT `fk_activity_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------

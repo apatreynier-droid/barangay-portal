@@ -1,0 +1,215 @@
+/* --------------------------------- Toolbar --------------------------------- */
+
+.admin-logs-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.admin-logs-search {
+  flex: 1;
+  min-width: 0;
+  padding: 11px 16px;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  background: #ffffff;
+  color: #0f172a;
+  font-size: 13px;
+  font-family: inherit;
+}
+
+.admin-logs-search::placeholder {
+  color: #94a3b8;
+}
+
+.admin-logs-search:focus {
+  outline: 2px solid #bfdbfe;
+  border-color: #2563eb;
+}
+
+.admin-logs-select {
+  flex-shrink: 0;
+  min-width: 110px;
+  padding: 11px 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  background: #ffffff;
+  color: #0f172a;
+  font-size: 13px;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.admin-logs-select:focus {
+  outline: 2px solid #bfdbfe;
+  border-color: #2563eb;
+}
+
+.admin-logs-count {
+  flex-shrink: 0;
+  color: #64748b;
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+/* ---------------------------------- Table ---------------------------------- */
+
+.admin-logs-card {
+  overflow-x: auto;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  background: #ffffff;
+}
+
+.admin-logs-table {
+  width: 100%;
+  /* Wide tables scroll horizontally inside .admin-logs-card instead of
+     squeezing their columns on tablets/phones. */
+  min-width: 860px;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.admin-logs-table th {
+  padding: 14px 16px;
+  border-bottom: 1px solid #e2e8f0;
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 600;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.admin-logs-table td {
+  padding: 14px 16px;
+  border-bottom: 1px solid #f1f5f9;
+  color: #334155;
+  vertical-align: middle;
+}
+
+.admin-logs-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.admin-logs-table tbody tr:hover {
+  background: #f8fafc;
+}
+
+.admin-logs-empty {
+  padding: 32px 16px !important;
+  color: #94a3b8;
+  text-align: center;
+}
+
+.admin-logs-timestamp {
+  color: #64748b;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.admin-logs-target {
+  max-width: 320px;
+  word-break: break-word;
+}
+
+.admin-logs-ip {
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ------------------------------- Type badges ------------------------------- */
+
+.admin-logs-type {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.admin-logs-type-icon {
+  font-size: 11px;
+  line-height: 1;
+}
+
+.admin-logs-type.type-approve {
+  background: #dcfce7;
+  color: #16a34a;
+}
+
+.admin-logs-type.type-reject {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+.admin-logs-type.type-status {
+  background: #dbeafe;
+  color: #2563eb;
+}
+
+.admin-logs-type.type-update {
+  background: #fef3c7;
+  color: #b45309;
+}
+
+.admin-logs-type.type-create {
+  background: #ede9fe;
+  color: #7c3aed;
+}
+
+.admin-logs-type.type-login {
+  background: #f1f5f9;
+  color: #64748b;
+}
+
+/* --------------------------------- Actor cell ------------------------------ */
+
+.admin-logs-actor strong {
+  display: block;
+  color: #0f172a;
+  font-weight: 600;
+}
+
+.admin-logs-actor span {
+  display: block;
+  margin-top: 1px;
+  color: #94a3b8;
+  font-size: 12px;
+}
+
+/* ------------------------------ Audit notice ------------------------------- */
+
+.admin-logs-notice {
+  margin-top: 18px;
+  padding: 16px 20px;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  background: #ffffff;
+  color: #475569;
+  font-size: 13px;
+}
+
+.admin-logs-notice strong {
+  color: #0f172a;
+  font-weight: 600;
+}
+
+/* ------------------------------- Responsive -------------------------------- */
+
+@media (max-width: 900px) {
+  .admin-logs-toolbar {
+    flex-wrap: wrap;
+  }
+
+  .admin-logs-search {
+    flex-basis: 100%;
+  }
+
+  .admin-logs-count {
+    margin-left: auto;
+  }
+}

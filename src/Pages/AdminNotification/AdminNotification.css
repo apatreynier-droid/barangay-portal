@@ -1,0 +1,222 @@
+/* --------------------------- Admin Notifications page -------------------------- */
+
+.admin-notifications-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
+.admin-notifications-filters {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.admin-notification-filter-pill {
+  padding: 8px 18px;
+  border: 1px solid #e2e8f0;
+  border-radius: 999px;
+  background: #ffffff;
+  color: #475569;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background 0.18s ease,
+    color 0.18s ease,
+    border-color 0.18s ease;
+}
+
+.admin-notification-filter-pill:hover {
+  border-color: #cbd5e1;
+  color: #0f172a;
+}
+
+.admin-notification-filter-pill.active {
+  border-color: #2563eb;
+  background: #2563eb;
+  color: #ffffff;
+}
+
+.admin-notifications-mark-all {
+  border: 0;
+  background: transparent;
+  color: #2563eb;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.admin-notifications-mark-all:hover:not(:disabled) {
+  text-decoration: underline;
+}
+
+.admin-notifications-mark-all:disabled {
+  color: #94a3b8;
+  cursor: default;
+}
+
+/* ----------------------------- Notification cards ----------------------------- */
+
+.admin-notifications-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.admin-notification-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 18px 20px;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  background: #ffffff;
+}
+
+.admin-notification-item.unread {
+  border-color: #bfdbfe;
+  background: #f8faff;
+  cursor: pointer;
+  transition:
+    background 0.18s ease,
+    border-color 0.18s ease,
+    box-shadow 0.18s ease;
+}
+
+.admin-notification-item.unread:hover {
+  border-color: #93c5fd;
+  box-shadow: 0 1px 3px rgba(37, 99, 235, 0.12);
+}
+
+.admin-notification-item.unread:focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: 2px;
+}
+
+.admin-notification-icon {
+  width: 38px;
+  height: 38px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9px;
+  font-size: 16px;
+}
+
+.admin-notification-icon.blue {
+  background: #eff6ff;
+}
+
+.admin-notification-icon.green {
+  background: #d1fae5;
+}
+
+.admin-notification-icon.red {
+  background: #fee2e2;
+}
+
+.admin-notification-icon.amber {
+  background: #fef3c7;
+}
+
+.admin-notification-icon.slate {
+  background: #e2e8f0;
+}
+
+.admin-notification-body {
+  min-width: 0;
+  flex: 1;
+}
+
+.admin-notification-title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.admin-notification-title-row h3 {
+  margin: 0;
+  color: #0f172a;
+  font-size: 14px;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.admin-notification-dot {
+  width: 8px;
+  height: 8px;
+  flex-shrink: 0;
+  border-radius: 999px;
+  background: #2563eb;
+}
+
+.admin-notification-body p {
+  margin: 5px 0 0;
+  color: #475569;
+  font-size: 13px;
+  line-height: 1.55;
+  overflow-wrap: anywhere;
+}
+
+.admin-notification-time {
+  display: block;
+  margin-top: 6px;
+  color: #94a3b8;
+  font-size: 12px;
+}
+
+
+/* -------------------------------- Empty state -------------------------------- */
+
+.admin-notifications-empty {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 44px 24px;
+  border: 1px dashed #cbd5e1;
+  border-radius: 12px;
+  background: #ffffff;
+  text-align: center;
+}
+
+.admin-notifications-empty p {
+  margin: 0;
+  color: #0f172a;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.admin-notifications-empty span {
+  color: #64748b;
+  font-size: 12px;
+}
+
+/* ------------------------------- Responsive ------------------------------- */
+
+@media (max-width: 640px) {
+  .admin-notifications-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .admin-notifications-mark-all {
+    align-self: flex-end;
+    padding: 6px 0;
+  }
+
+  .admin-notification-item {
+    padding: 16px;
+    gap: 12px;
+  }
+}
+

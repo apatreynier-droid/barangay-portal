@@ -58,6 +58,12 @@ from migration `005`. Apply it once (idempotent - safe to run more than once):
 ```powershell
 \\.venv\Scripts\python.exe scripts\apply_request_status_email_migration.py
 ```
+The Admin "Activity Logs" page needs the audit table from migration `006`. Apply
+it once (idempotent - safe to run more than once):
+
+```powershell
+.\.venv\Scripts\python.exe scripts\apply_activity_logs_migration.py
+```
 
 
 ## 4. Optional: initialize the database through Python
@@ -249,3 +255,29 @@ existing `requests.user_id -> users.id` relationship.
   Test data is cleaned up automatically; real SMTP messages go to the
   `@example.com`-style addresses used by the script.
 
+## Activity logs (admin audit trail)
+
+Every notable action in the portal is written once to the append-only
+`activity_logs` table and shown on the Admin **Activity Logs** page
+(`/AdminLogs`). Nothing in the application edits or deletes those rows.
+
+* **Recorded actions:** logins, document-request submissions, request approvals
+  and rejections, other request status changes, resident information updates,
+  and resident account deactivations/reactivations.
+* **Fields:** timestamp, action type (`Approve`, `Reject`, `Status`, `Update`,
+  `Create`, `Login`), actor name + role, a short action description, the target
+  the action applied to (`Request`/`Resident`/`System`), and the client IP.
+* **Endpoint:** `GET /api/admin/activity-logs` (administrator only) returns the
+  newest entries first and accepts optional `search` and `action_type` filters.
+  The page also filters client-side, so typing in the toolbar is instant.
+* **Implementation:** `app/activity_logs.py` (`record_activity_log` resolves the
+  actor from `user_id` and is deliberately best-effort - a logging failure is
+  logged and swallowed so it can never break the action that produced it),
+  `app/main.py` (the call sites and the endpoint), `app/schemas.py`
+  (`AdminActivityLogResponse`), `src/Pages/AdminLogs/` (page, toolbar, table).
+* **Verify:** start the API (`uvicorn app.main:app --port 8000`) and run
+  `.\.venv\Scripts\python.exe scripts\test_activity_logs_api.py`. It signs in,
+  checks the response shape, ordering, both server-side filters and the 401/403
+  paths, then submits and processes a document request to prove every call site
+  writes its own entry. Disposable accounts, requests, and the audit rows the
+  run created are removed again afterwards.

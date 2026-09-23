@@ -87,6 +87,8 @@
 
 .reqhist-table {
   width: 100%;
+  /* Scrolls horizontally inside .reqhist-table-wrapper on small screens. */
+  min-width: 720px;
   border-collapse: collapse;
   font-size: 13px;
 }

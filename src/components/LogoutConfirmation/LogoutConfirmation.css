@@ -1,10 +1,11 @@
 /* Rendered at the end of <body> (see the component comment): as a direct
-   child of the root stacking context, z-index 20 reliably places the dialog
-   above the sidebar (stacking level 0) and the sticky top bar (z-index 10).
-   overflow-y keeps the dialog reachable on very short viewports. */
+   child of the root stacking context. z-index 50 keeps the dialog above the
+   sticky top bar (z-index 10) and above the mobile navigation drawer +
+   backdrop (z-index 40/39), since logout is triggered from inside the
+   drawer. overflow-y keeps the dialog reachable on very short viewports. */
 .logout-confirmation-backdrop {
   position: fixed;
-  z-index: 20;
+  z-index: 50;
   inset: 0;
   display: grid;
   place-items: center;
