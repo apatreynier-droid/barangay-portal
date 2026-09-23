@@ -107,6 +107,8 @@
 
 .docmgmt-table {
   width: 100%;
+  /* Scrolls horizontally inside .docmgmt-table-wrapper on small screens. */
+  min-width: 680px;
   border-collapse: collapse;
   font-size: 13px;
 }

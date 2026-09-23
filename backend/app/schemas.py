@@ -179,6 +179,18 @@ class AdminActivityEntry(BaseModel):
     created_at: datetime
 
 
+class AdminActivityLogResponse(BaseModel):
+    id: int
+    actor_name: str
+    actor_role: str
+    action_type: str
+    action: str
+    target_type: str
+    target: str
+    ip_address: str | None
+    created_at: datetime
+
+
 class AdminResidentResponse(BaseModel):
     id: int
     resident_code: str

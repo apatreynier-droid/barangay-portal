@@ -64,6 +64,9 @@
 
 .residents-table {
   width: 100%;
+  /* Wide tables scroll horizontally inside .residents-card instead of
+     squeezing their columns on tablets/phones. */
+  min-width: 760px;
   border-collapse: collapse;
   font-size: 13px;
 }

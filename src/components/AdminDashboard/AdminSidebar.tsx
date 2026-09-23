@@ -34,6 +34,7 @@ type AdminSidebarProps = {
   onApprovals?: () => void;
   onDocumentManagement?: () => void;
   onReports?: () => void;
+  onActivityLogs?: () => void;
   onNotifications: () => void;
   onLogout: () => void;
   /** Mobile drawer state (see useResponsiveSidebar); ignored on desktop. */
@@ -57,6 +58,7 @@ const AdminSidebar = ({
   onApprovals,
   onDocumentManagement,
   onReports,
+  onActivityLogs,
   onNotifications,
   onLogout,
   isOpen = false,
@@ -116,7 +118,12 @@ const AdminSidebar = ({
     },
     { key: "announcements", label: "Announcements", icon: announcementsIcon },
     { key: "user-management", label: "User Management", icon: userManagementIcon },
-    { key: "activity-logs", label: "Activity Logs", icon: activityLogsIcon },
+    {
+      key: "activity-logs",
+      label: "Activity Logs",
+      icon: activityLogsIcon,
+      onClick: onActivityLogs,
+    },
   ];
 
   const closeThen = (action: () => void) => () => {

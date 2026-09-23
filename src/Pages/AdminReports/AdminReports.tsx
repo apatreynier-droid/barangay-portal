@@ -29,6 +29,7 @@ type AdminReportsProps = {
   onApprovals: () => void;
   onDocumentManagement: () => void;
   onNotifications: () => void;
+  onActivityLogs: () => void;
   onLogout: () => void;
 };
 
@@ -41,6 +42,7 @@ const AdminReports = ({
   onApprovals,
   onDocumentManagement,
   onNotifications,
+  onActivityLogs,
   onLogout,
 }: AdminReportsProps) => {
   const [data, setData] = useState<AdminReportsData | null>(null);
@@ -109,6 +111,7 @@ const AdminReports = ({
         onApprovals={onApprovals}
         onDocumentManagement={onDocumentManagement}
         onNotifications={onNotifications}
+        onActivityLogs={onActivityLogs}
         onLogout={onLogout}
         isOpen={isDrawerOpen}
         onNavigate={closeDrawer}

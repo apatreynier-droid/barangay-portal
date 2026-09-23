@@ -13,6 +13,7 @@ import type {
 } from "../Types/AdminDocumentRequestsType";
 import type { AdminRequestHistoryEntry } from "../Types/AdminRequestHistoryType";
 import type { AdminReportsData } from "../Types/AdminReportsType";
+import type { AdminActivityLog } from "../Types/AdminLogsType";
 
 const API_BASE_URL = "http://127.0.0.1:8000";
 
@@ -657,6 +658,20 @@ export const fetchDocumentTypes = async (): Promise<DocumentTypeOption[]> => {
   }
 
   return (body as DocumentTypeOption[]) ?? [];
+};
+
+export const fetchActivityLogs = async (): Promise<AdminActivityLog[]> => {
+  const response = await authedFetch("/api/admin/activity-logs");
+  const body: unknown = await response.json().catch(() => null);
+
+  if (!response.ok) {
+    throw new ApiError(
+      response.status,
+      parseErrorMessage(body, "Could not load the activity logs."),
+    );
+  }
+
+  return (body as AdminActivityLog[]) ?? [];
 };
 
 export const fetchNotifications = async (): Promise<ApiNotification[]> => {

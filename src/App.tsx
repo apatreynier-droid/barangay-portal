@@ -10,6 +10,8 @@ import AdminRequestHistory from "./Pages/AdminRequestHistory/AdminRequestHistory
 import AdminDocumentManagement from "./Pages/AdminDocumentManagement/AdminDocumentManagement";
 import AdminApprovals from "./Pages/AdminApprovals/AdminApprovals";
 import AdminReports from "./Pages/AdminReports/AdminReports";
+import AdminLogs from "./Pages/AdminLogs/AdminLogs";
+import AdminNotification from "./Pages/AdminNotification/AdminNotification";
 import MyRequests from "./Pages/MyRequests/MyRequests";
 import RequestHistory from "./Pages/RequestHistory/RequestHistory";
 import NotificationPage from "./Pages/Notification/NotificationPage";
@@ -35,9 +37,11 @@ import {
   ADMIN_REQUEST_HISTORY_PATH,
   ADMIN_REPORTS_PATH,
   ADMIN_RESIDENTS_PATH,
+  ADMIN_ACTIVITY_LOGS_PATH,
   CREATE_ACCOUNT_PATH,
   FORGOT_PASSWORD_PATH,
   getHomePath,
+  isAdminUser,
   LEGACY_RESIDENT_HOME_PATH,
   LOGIN_PATH,
   NOTIFICATIONS_PATH,
@@ -62,6 +66,14 @@ function App() {
     </BrowserRouter>
   );
 }
+
+/**
+ * How often the notification list is re-read from GET /api/notifications while
+ * a user is signed in. Residents and administrators are usually signed in in
+ * different windows, so polling is what makes a notification created by one
+ * person show up for the other without a page reload.
+ */
+const NOTIFICATION_REFRESH_MS = 30000;
 
 function PortalRoutes() {
   const navigate = useNavigate();
@@ -90,11 +102,39 @@ function PortalRoutes() {
     }
   }, []);
 
+  const refreshNotifications = useCallback(async () => {
+    try {
+      setNotifications(await fetchNotifications());
+    } catch {
+      // Background refresh only: a transient failure must not disturb the page
+      // the user is looking at (the badge simply keeps its last value).
+    }
+  }, []);
+
   useEffect(() => {
     if (user) {
       void loadUserData();
     }
   }, [user, loadUserData]);
+
+  useEffect(() => {
+    if (!user) {
+      return;
+    }
+
+    const timer = window.setInterval(() => {
+      void refreshNotifications();
+    }, NOTIFICATION_REFRESH_MS);
+    const handleWindowFocus = () => {
+      void refreshNotifications();
+    };
+    window.addEventListener("focus", handleWindowFocus);
+
+    return () => {
+      window.clearInterval(timer);
+      window.removeEventListener("focus", handleWindowFocus);
+    };
+  }, [user, refreshNotifications]);
 
   const handleRequestCreated = () => {
     void loadUserData();
@@ -273,21 +313,49 @@ function PortalRoutes() {
         path={NOTIFICATIONS_PATH}
         element={
           <RequireAuth user={user}>
-            {(authUser) => (
-              <NotificationPage
-                user={authUser}
-                notifications={notifications}
-                onNotificationsChanged={loadUserData}
-                onSessionExpired={handleSessionExpired}
-                onBackToDashboard={() => navigate(getHomePath(user))}
-                onMyRequests={() => navigate(RESIDENT_MY_REQUESTS_PATH)}
-                onRequestHistory={() => navigate(RESIDENT_REQUEST_HISTORY_PATH)}
-                onRequestDocument={() =>
-                  navigate(RESIDENT_REQUEST_DOCUMENT_PATH)
-                }
-                onLogout={handleLogout}
-              />
-            )}
+            {(authUser) =>
+              isAdminUser(authUser) ? (
+                <AdminNotification
+                  user={authUser}
+                  notifications={notifications}
+                  unreadNotifications={unreadCount}
+                  onNotificationsChanged={loadUserData}
+                  onSessionExpired={handleSessionExpired}
+                  onDashboard={() => navigate(ADMIN_HOME_PATH)}
+                  onResidents={() => navigate(ADMIN_RESIDENTS_PATH)}
+                  onDocumentRequests={() =>
+                    navigate(ADMIN_DOCUMENT_REQUESTS_PATH)
+                  }
+                  onRequestHistory={() =>
+                    navigate(ADMIN_REQUEST_HISTORY_PATH)
+                  }
+                  onApprovals={() => navigate(ADMIN_APPROVALS_PATH)}
+                  onDocumentManagement={() =>
+                    navigate(ADMIN_DOCUMENT_MANAGEMENT_PATH)
+                  }
+                  onReports={() => navigate(ADMIN_REPORTS_PATH)}
+                  onActivityLogs={() => navigate(ADMIN_ACTIVITY_LOGS_PATH)}
+                  onNotifications={() => navigate(NOTIFICATIONS_PATH)}
+                  onLogout={handleLogout}
+                />
+              ) : (
+                <NotificationPage
+                  user={authUser}
+                  notifications={notifications}
+                  onNotificationsChanged={loadUserData}
+                  onSessionExpired={handleSessionExpired}
+                  onBackToDashboard={() => navigate(getHomePath(user))}
+                  onMyRequests={() => navigate(RESIDENT_MY_REQUESTS_PATH)}
+                  onRequestHistory={() =>
+                    navigate(RESIDENT_REQUEST_HISTORY_PATH)
+                  }
+                  onRequestDocument={() =>
+                    navigate(RESIDENT_REQUEST_DOCUMENT_PATH)
+                  }
+                  onLogout={handleLogout}
+                />
+              )
+            }
           </RequireAuth>
         }
       />
@@ -301,6 +369,7 @@ function PortalRoutes() {
                 user={authUser}
                 unreadNotifications={unreadCount}
                 onReports={() => navigate(ADMIN_REPORTS_PATH)}
+                onActivityLogs={() => navigate(ADMIN_ACTIVITY_LOGS_PATH)}
                 onNotifications={() => navigate(NOTIFICATIONS_PATH)}
                 onResidents={() => navigate(ADMIN_RESIDENTS_PATH)}
                 onDocumentRequests={() =>
@@ -328,6 +397,7 @@ function PortalRoutes() {
                 unreadNotifications={unreadCount}
                 onDashboard={() => navigate(ADMIN_HOME_PATH)}
                 onReports={() => navigate(ADMIN_REPORTS_PATH)}
+                onActivityLogs={() => navigate(ADMIN_ACTIVITY_LOGS_PATH)}
                 onDocumentRequests={() =>
                   navigate(ADMIN_DOCUMENT_REQUESTS_PATH)
                 }
@@ -355,6 +425,7 @@ function PortalRoutes() {
                 onDashboard={() => navigate(ADMIN_HOME_PATH)}
                 onResidents={() => navigate(ADMIN_RESIDENTS_PATH)}
                 onReports={() => navigate(ADMIN_REPORTS_PATH)}
+                onActivityLogs={() => navigate(ADMIN_ACTIVITY_LOGS_PATH)}
                 onDocumentRequests={() =>
                   navigate(ADMIN_DOCUMENT_REQUESTS_PATH)
                 }
@@ -381,6 +452,7 @@ function PortalRoutes() {
                 onDashboard={() => navigate(ADMIN_HOME_PATH)}
                 onResidents={() => navigate(ADMIN_RESIDENTS_PATH)}
                 onReports={() => navigate(ADMIN_REPORTS_PATH)}
+                onActivityLogs={() => navigate(ADMIN_ACTIVITY_LOGS_PATH)}
                 onNotifications={() => navigate(NOTIFICATIONS_PATH)}
                 onRequestHistory={() => navigate(ADMIN_REQUEST_HISTORY_PATH)}
                 onApprovals={() => navigate(ADMIN_APPROVALS_PATH)}
@@ -408,6 +480,7 @@ function PortalRoutes() {
                   navigate(ADMIN_DOCUMENT_REQUESTS_PATH)
                 }
                 onReports={() => navigate(ADMIN_REPORTS_PATH)}
+                onActivityLogs={() => navigate(ADMIN_ACTIVITY_LOGS_PATH)}
                 onApprovals={() => navigate(ADMIN_APPROVALS_PATH)}
                 onDocumentManagement={() =>
                   navigate(ADMIN_DOCUMENT_MANAGEMENT_PATH)
@@ -434,8 +507,36 @@ function PortalRoutes() {
                   navigate(ADMIN_DOCUMENT_REQUESTS_PATH)
                 }
                 onReports={() => navigate(ADMIN_REPORTS_PATH)}
+                onActivityLogs={() => navigate(ADMIN_ACTIVITY_LOGS_PATH)}
                 onRequestHistory={() => navigate(ADMIN_REQUEST_HISTORY_PATH)}
                 onApprovals={() => navigate(ADMIN_APPROVALS_PATH)}
+                onNotifications={() => navigate(NOTIFICATIONS_PATH)}
+                onLogout={handleLogout}
+              />
+            )}
+          </RequireAdmin>
+        }
+      />
+
+      <Route
+        path={ADMIN_ACTIVITY_LOGS_PATH}
+        element={
+          <RequireAdmin user={user}>
+            {(authUser) => (
+              <AdminLogs
+                user={authUser}
+                unreadNotifications={unreadCount}
+                onDashboard={() => navigate(ADMIN_HOME_PATH)}
+                onResidents={() => navigate(ADMIN_RESIDENTS_PATH)}
+                onDocumentRequests={() =>
+                  navigate(ADMIN_DOCUMENT_REQUESTS_PATH)
+                }
+                onRequestHistory={() => navigate(ADMIN_REQUEST_HISTORY_PATH)}
+                onApprovals={() => navigate(ADMIN_APPROVALS_PATH)}
+                onDocumentManagement={() =>
+                  navigate(ADMIN_DOCUMENT_MANAGEMENT_PATH)
+                }
+                onReports={() => navigate(ADMIN_REPORTS_PATH)}
                 onNotifications={() => navigate(NOTIFICATIONS_PATH)}
                 onLogout={handleLogout}
               />
@@ -462,6 +563,7 @@ function PortalRoutes() {
                 onDocumentManagement={() =>
                   navigate(ADMIN_DOCUMENT_MANAGEMENT_PATH)
                 }
+                onActivityLogs={() => navigate(ADMIN_ACTIVITY_LOGS_PATH)}
                 onNotifications={() => navigate(NOTIFICATIONS_PATH)}
                 onLogout={handleLogout}
               />

@@ -77,17 +77,19 @@ body {
     margin-left: 0;
   }
 
-  .dashboard-main,
-  .requests-main,
-  .request-history-page,
-  .notifications-page,
-  .request-document-page {
+  /* Scoped with page wrappers so these win over the older single-class
+     rules in page stylesheets regardless of CSS bundle order. */
+  .dashboard .dashboard-main,
+  .my-requests-page .requests-main,
+  .request-history-layout .request-history-page,
+  .notifications-layout .notifications-page,
+  .request-document-layout .request-document-page {
     width: calc(100% - 80px);
     margin-left: 80px;
     padding: 24px;
   }
 
-  .admin-main {
+  .admin-dashboard .admin-main {
     width: calc(100% - 80px);
     margin-left: 80px;
     padding: 20px;
@@ -112,14 +114,15 @@ body {
    block only takes over once the rail is no longer used. */
 
 @media (max-width: 768px) {
-  .dashboard-main,
-  .requests-main,
-  .request-history-page,
-  .notifications-page,
-  .request-document-page,
-  .admin-main {
+  .dashboard .dashboard-main,
+  .my-requests-page .requests-main,
+  .request-history-layout .request-history-page,
+  .notifications-layout .notifications-page,
+  .request-document-layout .request-document-page,
+  .admin-dashboard .admin-main {
     width: 100%;
     margin-left: 0;
+    padding: 20px 16px 40px;
   }
 
   .sidebar,
@@ -177,7 +180,8 @@ body {
   .sidebar-user-logout {
     margin-left: auto;
   }
-/* Shared backdrop (rendered by each page on mobile widths) */
+
+  /* Shared backdrop (rendered by each page on mobile widths) */
   .sidebar-backdrop {
     position: fixed;
     inset: 0;
@@ -232,64 +236,42 @@ body {
 }
 
 /* --------------------------- 3b. Page offsets ------------------------------ */
-/* Sidebar widths own the resident content offsets here (single source of
-   truth at <=1024px and <=768px), so stale per-page rules cannot keep a
-   250px gutter or reintroduce the 72px MyRequests mismatch. */
-
-@media (max-width: 1024px) {
-  .dashboard-main,
-  .requests-main,
-  .request-history-page,
-  .notifications-page,
-  .request-document-page,
-  .admin-main {
-    padding-left: 24px;
-    padding-right: 24px;
-  }
-}
-
-@media (max-width: 768px) {
-  .dashboard-main,
-  .requests-main,
-  .request-history-page,
-  .notifications-page,
-  .request-document-page,
-  .admin-main {
-    width: 100%;
-    margin-left: 0;
-  }
-}
+/* Scoped padding refinements for the rail and drawer ranges. Sidebar widths
+   and the 80px/100% offsets are owned by sections 2 and 2b; these only tune
+   spacing on smaller screens (page stylesheets load after this file, so the
+   page-wrapper prefixes keep these winning the cascade). */
 
 @media (max-width: 480px) {
-  .dashboard-main,
-  .requests-main,
-  .request-history-page,
-  .notifications-page,
-  .request-document-page {
+  .dashboard .dashboard-main,
+  .my-requests-page .requests-main,
+  .request-history-layout .request-history-page,
+  .notifications-layout .notifications-page,
+  .request-document-layout .request-document-page {
     padding: 18px 16px 48px;
   }
 
-  .admin-main {
+  .admin-dashboard .admin-main {
     padding: 16px 14px 48px;
   }
 }
 
 @media (max-width: 375px) {
-  .dashboard-main,
-  .requests-main,
-  .request-history-page,
-  .notifications-page,
-  .request-document-page,
-  .admin-main {
+  .dashboard .dashboard-main,
+  .my-requests-page .requests-main,
+  .request-history-layout .request-history-page,
+  .notifications-layout .notifications-page,
+  .request-document-layout .request-document-page,
+  .admin-dashboard .admin-main {
     padding-left: 12px;
     padding-right: 12px;
   }
 }
 
 /* --------------------------- 3c. Conflicting legacy breakpoints ------------ */
-/* Below 1024px the global rail/drawer rules own the sidebar geometry; the
-   older per-page collapse rules below only added conflicting widths after
-   this file was imported, so they are neutralized here. */
+/* The page stylesheets still collapse the sidebar to a 64px rail at <=420px
+   and offset content to match. Below 1024px the shared rail/drawer rules own
+   the sidebar geometry, so these page-wrapper-scoped overrides (higher
+   specificity than the per-page single-class rules) neutralize them. */
 
 @media (max-width: 1024px) {
   .dashboard .sidebar,
@@ -302,14 +284,7 @@ body {
     max-width: none;
     padding: 24px 12px;
     transform: none;
-  }
-}
-
-@media (max-width: 800px) {
-  .dashboard-main,
-  .requests-main {
-    width: calc(100% - 80px);
-    margin-left: 80px;
+    transition: none;
   }
 }
 
@@ -324,6 +299,8 @@ body {
     max-width: 84vw;
     padding: 24px 16px;
     transform: translateX(-100%);
+    transition: transform 240ms cubic-bezier(0.4, 0, 0.2, 1);
+    z-index: 40;
   }
 
   .dashboard .sidebar.is-open,
@@ -336,14 +313,87 @@ body {
     box-shadow: 0 12px 40px rgba(15, 23, 42, 0.35);
   }
 
-  .dashboard-main,
-  .requests-main,
-  .request-history-page,
-  .notifications-page,
-  .request-document-page,
-  .admin-main {
-    width: 100%;
-    margin-left: 0;
+  /* Restore the full labels/nav layout inside the drawer: the per-page rail
+     rules hide the logo text and zero the nav font-size, and being later in
+     the bundle they would otherwise win these ties. */
+  .dashboard .sidebar-logo,
+  .my-requests-page .sidebar-logo,
+  .request-history-layout .sidebar-logo,
+  .notifications-layout .sidebar-logo,
+  .request-document-layout .sidebar-logo {
+    justify-content: flex-start;
+    padding: 0 6px;
+  }
+
+  .dashboard .sidebar-logo > div:last-child,
+  .my-requests-page .sidebar-logo > div:last-child,
+  .request-history-layout .sidebar-logo > div:last-child,
+  .notifications-layout .sidebar-logo > div:last-child,
+  .request-document-layout .sidebar-logo > div:last-child {
+    display: block;
+  }
+
+  .dashboard .nav-item,
+  .my-requests-page .nav-item,
+  .request-history-layout .nav-item,
+  .notifications-layout .nav-item,
+  .request-document-layout .nav-item {
+    justify-content: flex-start;
+    gap: 12px;
+    padding: 12px 14px;
+    font-size: 14px;
+  }
+
+  .dashboard .nav-icon,
+  .my-requests-page .nav-icon,
+  .request-history-layout .nav-icon,
+  .notifications-layout .nav-icon,
+  .request-document-layout .nav-icon {
+    width: 20px;
+    font-size: inherit;
+  }
+
+  .dashboard .sidebar-user-footer,
+  .my-requests-page .sidebar-user-footer,
+  .request-history-layout .sidebar-user-footer,
+  .notifications-layout .sidebar-user-footer,
+  .request-document-layout .sidebar-user-footer {
+    justify-content: flex-start;
+  }
+
+  .dashboard .sidebar-user-logout,
+  .my-requests-page .sidebar-user-logout,
+  .request-history-layout .sidebar-user-logout,
+  .notifications-layout .sidebar-user-logout,
+  .request-document-layout .sidebar-user-logout {
+    margin-left: auto;
+  }
+
+  .admin-dashboard .sidebar-logo,
+  .admin-dashboard .admin-sidebar-header {
+    justify-content: flex-start;
+    padding: 0 6px;
+  }
+
+  .admin-dashboard .admin-logo-text,
+  .admin-dashboard .admin-collapse-arrow,
+  .admin-dashboard .admin-nav-label,
+  .admin-dashboard .admin-nav-badge,
+  .admin-dashboard .sidebar-user-info {
+    display: block;
+  }
+
+  .admin-dashboard .admin-nav-item {
+    justify-content: flex-start;
+    padding: 10px 12px;
+  }
+
+  .admin-dashboard .sidebar-user-footer {
+    justify-content: flex-start;
+  }
+
+  .admin-dashboard .sidebar-user-logout {
+    margin-left: auto;
   }
 }
 
@@ -428,16 +478,50 @@ body {
     padding: 12px 16px;
   }
 
-  /* Small-screen typography for the largest page headings */
-  .topbar h1 {
+  /* Stack dialog actions vertically (primary button last/on top) */
+  .edit-request-actions {
+    flex-direction: column-reverse;
+  }
+
+  .edit-request-actions button {
+    width: 100%;
+    padding: 12px 16px;
+  }
+
+  .delete-request-actions,
+  .logout-confirmation-actions,
+  .residents-confirm-actions {
+    flex-direction: column-reverse;
+  }
+
+  .delete-request-actions button,
+  .logout-confirmation-actions button,
+  .residents-confirm-actions button {
+    width: 100%;
+    padding: 12px 16px;
+  }
+
+  .residents-edit-footer {
+    flex-direction: column-reverse;
+  }
+
+  .residents-edit-cancel,
+  .residents-edit-save {
+    width: 100%;
+    padding: 12px 16px;
+  }
+
+  /* Small-screen typography for the largest page headings (scoped so these
+     win over the identical selectors in the later page stylesheets) */
+  .dashboard .topbar h1 {
     font-size: 24px;
   }
 
-  .admin-topbar-heading h1 {
+  .admin-dashboard .admin-topbar-heading h1 {
     font-size: 18px;
   }
 
-  .welcome-card h2 {
+  .dashboard .welcome-card h2 {
     font-size: 20px;
   }
 
