@@ -213,17 +213,15 @@ body {
     outline-offset: 2px;
   }
 
-  .sidebar-toggle-bar {
+  /* Shared menu-image icon inside the toggle button. Sizing only: the image
+     keeps its original colors (no filters/blend modes) and scales cleanly. */
+  .sidebar-toggle-icon {
     display: block;
-    width: 18px;
-    height: 2px;
-    border-radius: 2px;
-    background: #374151;
-    transition: transform 180ms ease, opacity 180ms ease;
-  }
-
-  .sidebar-toggle-bar + .sidebar-toggle-bar {
-    margin-top: 4px;
+    width: 20px;
+    height: 20px;
+    max-width: 100%;
+    object-fit: contain;
+    pointer-events: none;
   }
 }
 
@@ -537,8 +535,7 @@ body {
 
 @media (prefers-reduced-motion: reduce) {
   .sidebar,
-  .admin-sidebar,
-  .sidebar-toggle-bar {
+  .admin-sidebar {
     transition: none;
   }
 }
