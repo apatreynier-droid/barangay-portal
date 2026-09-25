@@ -114,6 +114,17 @@
   border-color: #2563eb;
 }
 
+/* Keep Chrome's native date control consistent with the other fields. */
+.residents-edit-field input[type="date"]::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  opacity: 0.65;
+}
+
+.residents-edit-field
+  input[type="date"]::-webkit-calendar-picker-indicator:hover {
+  opacity: 1;
+}
+
 .residents-edit-error {
   flex-shrink: 0;
   margin: 0;

@@ -129,9 +129,6 @@ const AdminReports = ({
       <main className="admin-main">
         <AdminTopbar
           fullName={fullName || "Administrator"}
-          role={roleLabel}
-          unreadCount={unreadNotifications}
-          onNotifications={onNotifications}
           onMenuToggle={toggleDrawer}
           title="Reports"
           subtitle="Barangay reporting and monitoring."

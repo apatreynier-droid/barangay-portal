@@ -69,6 +69,7 @@ body {
 
   .admin-nav-label,
   .admin-nav-badge,
+  .admin-nav-section-label,
   .sidebar-user-info {
     display: none;
   }

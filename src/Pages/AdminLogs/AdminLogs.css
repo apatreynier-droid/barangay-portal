@@ -138,32 +138,32 @@
 
 .admin-logs-type.type-approve {
   background: #dcfce7;
-  color: #16a34a;
+  color: #166534;
 }
 
 .admin-logs-type.type-reject {
   background: #fee2e2;
-  color: #dc2626;
+  color: #991b1b;
 }
 
 .admin-logs-type.type-status {
   background: #dbeafe;
-  color: #2563eb;
+  color: #1e40af;
 }
 
 .admin-logs-type.type-update {
   background: #fef3c7;
-  color: #b45309;
+  color: #92400e;
 }
 
 .admin-logs-type.type-create {
   background: #ede9fe;
-  color: #7c3aed;
+  color: #5b21b6;
 }
 
 .admin-logs-type.type-login {
   background: #f1f5f9;
-  color: #64748b;
+  color: #475569;
 }
 
 /* --------------------------------- Actor cell ------------------------------ */

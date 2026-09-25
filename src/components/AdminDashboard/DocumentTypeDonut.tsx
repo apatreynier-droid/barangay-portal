@@ -9,7 +9,9 @@ type DocumentTypeDonutProps = {
 const SIZE = 180;
 const RADIUS = 70;
 const STROKE_WIDTH = 30;
-const COLORS = ["#2563eb", "#8b5cf6", "#059669", "#f59e0b", "#ef4444"];
+// Muted shades derived from the Barangay Portal palette so the donut stays
+// cohesive with the rest of the UI while keeping categories distinguishable.
+const COLORS = ["#3d6ea8", "#7b6bb5", "#3a8266", "#9a6b2a", "#b25f57"];
 
 // Entrance animation settings (Recharts-equivalent):
 // isAnimationActive={true}

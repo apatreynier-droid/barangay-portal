@@ -96,6 +96,11 @@
   background: #d4defc;
 }
 
+.docmgmt-preview-button:focus-visible {
+  outline: 2px solid #3f51b5;
+  outline-offset: 2px;
+}
+
 /* ------------------------------ Issuance records ------------------------------ */
 
 .docmgmt-table-wrapper {
@@ -175,23 +180,23 @@
 .docmgmt-status.status-pending,
 .docmgmt-status.status-processing {
   background: #fef3c7;
-  color: #b45309;
+  color: #92400e;
 }
 
 .docmgmt-status.status-ready,
 .docmgmt-status.status-completed {
   background: #dcfce7;
-  color: #16a34a;
+  color: #166534;
 }
 
 .docmgmt-status.status-approved {
   background: #dbeafe;
-  color: #2563eb;
+  color: #1e40af;
 }
 
 .docmgmt-status.status-rejected {
   background: #fee2e2;
-  color: #dc2626;
+  color: #991b1b;
 }
 
 .docmgmt-empty {
@@ -211,28 +216,50 @@
   align-items: center;
   gap: 6px;
   padding: 5px 12px;
-  border: none;
+  border: 1px solid transparent;
   border-radius: 8px;
   font-size: 12px;
-  font-weight: 600;
+  font-weight: 700;
   font-family: inherit;
   white-space: nowrap;
   cursor: pointer;
-  transition: filter 0.15s ease;
+  transition:
+    background-color 0.18s ease,
+    border-color 0.18s ease;
 }
 
 .docmgmt-action-button:hover {
-  filter: brightness(0.95);
+  filter: brightness(0.97);
 }
 
 .docmgmt-action-button.docmgmt-print {
+  border-color: #c3d0e4;
   background: #e8eef7;
   color: #1e3a8a;
 }
 
+.docmgmt-action-button.docmgmt-print:hover {
+  background: #dbe6f5;
+}
+
+.docmgmt-action-button.docmgmt-print:focus-visible {
+  outline: 2px solid #1e3a8a;
+  outline-offset: 2px;
+}
+
 .docmgmt-action-button.docmgmt-pdf {
+  border-color: #bbf7d0;
   background: #dcfce7;
-  color: #16a34a;
+  color: #166534;
+}
+
+.docmgmt-action-button.docmgmt-pdf:hover {
+  background: #bbf7d0;
+}
+
+.docmgmt-action-button.docmgmt-pdf:focus-visible {
+  outline: 2px solid #166534;
+  outline-offset: 2px;
 }
 
 /* -------------------------------- Responsive --------------------------------- */

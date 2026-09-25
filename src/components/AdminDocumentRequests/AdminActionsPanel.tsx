@@ -4,6 +4,7 @@ import type {
   AdminDocumentRequestDetail,
 } from "../../Types/AdminDocumentRequestsType";
 import { updateAdminDocumentRequest } from "../../Utils/api";
+import DatePickerInput from "../Shared/DatePickerInput";
 
 type AdminActionsPanelProps = {
   request: AdminDocumentRequestDetail;
@@ -132,13 +133,13 @@ const AdminActionsPanel = ({
       )}
 
       {status === "Ready for Pickup" && (
-        <label className="docreq-actions-field">
+        <div className="docreq-actions-field">
           <span>Set Pickup Date</span>
-          <input
-            type="date"
+          <DatePickerInput
             value={pickupDate}
-            onChange={(event) => setPickupDate(event.target.value)}
+            onChange={setPickupDate}
             disabled={isSaving}
+            ariaLabel="Set pickup date"
           />
           <div className="docreq-actions-buttons">
             <button
@@ -150,7 +151,7 @@ const AdminActionsPanel = ({
               {isSaving ? "Saving…" : "Save Pickup Date"}
             </button>
           </div>
-        </label>
+        </div>
       )}
 
       {error && (

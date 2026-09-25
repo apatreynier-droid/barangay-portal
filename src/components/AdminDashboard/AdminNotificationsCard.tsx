@@ -1,3 +1,4 @@
+import filesIcon from "../../assets/icons/files.png";
 import type { AdminActivityEntry } from "../../Types/AdminDashboardType";
 import { formatRelativeTime } from "../../Utils/AdminDashboardLogic";
 
@@ -24,7 +25,7 @@ const AdminNotificationsCard = ({
           {activities.map((activity) => (
             <li key={activity.title + activity.created_at}>
               <span className="admin-activity-icon" aria-hidden="true">
-                📄
+                <img src={filesIcon} alt="" />
               </span>
 
               <div className="admin-activity-info">

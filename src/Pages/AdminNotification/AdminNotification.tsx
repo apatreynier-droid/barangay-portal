@@ -30,7 +30,6 @@ type AdminNotificationProps = {
   onDocumentManagement: () => void;
   onReports: () => void;
   onActivityLogs: () => void;
-  onNotifications: () => void;
   onLogout: () => void;
 };
 
@@ -105,7 +104,6 @@ function AdminNotification({
   onDocumentManagement,
   onReports,
   onActivityLogs,
-  onNotifications,
   onLogout,
 }: AdminNotificationProps) {
   const [filter, setFilter] = useState<NotificationFilter>("all");
@@ -219,9 +217,6 @@ function AdminNotification({
       <main className="admin-main">
         <AdminTopbar
           fullName={ADMIN_DISPLAY_NAME}
-          role={roleLabel}
-          unreadCount={unreadNotifications}
-          onNotifications={onNotifications}
           onMenuToggle={toggleDrawer}
           title="Notifications"
           subtitle="Alerts and system notifications."

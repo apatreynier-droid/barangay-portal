@@ -73,6 +73,28 @@
   gap: 4px;
 }
 
+/* Subtle grouping: small muted labels separate the MAIN tools from the
+   reporting/system tools without adding much height. */
+.admin-nav-section {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.admin-nav-section + .admin-nav-section {
+  margin-top: 14px;
+}
+
+.admin-nav-section-label {
+  margin: 0 0 4px;
+  padding: 0 12px;
+  color: #7d8b9f;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
 .admin-nav-item {
   display: flex;
   align-items: center;
@@ -177,7 +199,7 @@
   align-items: center;
   justify-content: center;
   border-radius: 999px;
-  background: #f59e0b;
+  background: #b45309;
   color: #ffffff;
   font-size: 11px;
   font-weight: 700;
@@ -242,77 +264,6 @@
   color: #64748b;
 }
 
-.admin-topbar-actions {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-}
-
-.admin-bell-button {
-  position: relative;
-  width: 40px;
-  height: 40px;
-  border: 1px solid #e2e8f0;
-  border-radius: 999px;
-  background: #ffffff;
-  font-size: 16px;
-  cursor: pointer;
-  transition: background 0.2s ease;
-}
-
-.admin-bell-button:hover {
-  background: #f8fafc;
-}
-
-.admin-bell-badge {
-  position: absolute;
-  top: -4px;
-  right: -4px;
-  min-width: 18px;
-  height: 18px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 999px;
-  background: #f59e0b;
-  border: 2px solid #ffffff;
-  color: #ffffff;
-  font-size: 10px;
-  font-weight: 700;
-}
-
-.admin-topbar-profile {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.admin-topbar-avatar {
-  width: 38px;
-  height: 38px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 999px;
-  background: #2563eb;
-  color: #ffffff;
-  font-size: 13px;
-  font-weight: 700;
-}
-
-.admin-topbar-user strong {
-  display: block;
-  font-size: 13px;
-  color: #0f172a;
-}
-
-.admin-topbar-user span {
-  display: block;
-  margin-top: 1px;
-  font-size: 11px;
-  color: #64748b;
-}
-
 .admin-error-banner {
   display: flex;
   align-items: center;
@@ -349,7 +300,10 @@
 
 .admin-stats-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  /* Three cards per row on large desktops so labels keep their breathing
+     room; the grid wraps naturally on smaller viewports (see responsive
+     rules below). */
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 16px;
   margin-bottom: 22px;
 }
@@ -373,6 +327,12 @@
   justify-content: center;
   border-radius: 10px;
   font-size: 17px;
+}
+
+.admin-stat-icon img {
+  width: 22px;
+  height: 22px;
+  object-fit: contain;
 }
 
 .admin-stat-icon.blue {
@@ -409,14 +369,14 @@
 
 .admin-stat-label {
   margin: 3px 0 0;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 600;
   color: #334155;
 }
 
 .admin-stat-note {
   margin: 4px 0 0;
-  font-size: 11px;
+  font-size: 12px;
   color: #94a3b8;
 }
 
@@ -425,16 +385,16 @@
 }
 
 .admin-stat-note-warning {
-  color: #ea580c;
+  color: #c2410c;
   font-weight: 600;
 }
 
 .admin-stat-note-purple {
-  color: #7c3aed;
+  color: #6d28d9;
 }
 
 .admin-stat-note-danger {
-  color: #dc2626;
+  color: #b91c1c;
 }
 
 /* ---------------------------------- Panels ---------------------------------- */
@@ -463,7 +423,7 @@
   align-items: center;
   justify-content: center;
   border-radius: 999px;
-  background: #f59e0b;
+  background: #b45309;
   color: #ffffff;
   font-size: 11px;
   font-weight: 700;
@@ -702,27 +662,27 @@
 
 .admin-status-pill.status-pending {
   background: #fef3c7;
-  color: #b45309;
+  color: #92400e;
 }
 
 .admin-status-pill.status-approved {
   background: #dbeafe;
-  color: #1d4ed8;
+  color: #1e40af;
 }
 
 .admin-status-pill.status-processing {
   background: #ede9fe;
-  color: #6d28d9;
+  color: #5b21b6;
 }
 
 .admin-status-pill.status-completed {
   background: #d1fae5;
-  color: #047857;
+  color: #065f46;
 }
 
 .admin-status-pill.status-rejected {
   background: #fee2e2;
-  color: #b91c1c;
+  color: #991b1b;
 }
 
 .admin-table-footnote {
@@ -761,24 +721,26 @@
   font-weight: 700;
 }
 
+/* Resident avatars: muted palette shades derived from the portal colors so
+   the initial circles no longer clash with the rest of the UI. */
 .admin-avatar.admin-avatar-1 {
-  background: #2563eb;
+  background: #3d6ea8;
 }
 
 .admin-avatar.admin-avatar-2 {
-  background: #059669;
+  background: #3a8266;
 }
 
 .admin-avatar.admin-avatar-3 {
-  background: #8b5cf6;
+  background: #7b6bb5;
 }
 
 .admin-avatar.admin-avatar-4 {
-  background: #f59e0b;
+  background: #9a6b2a;
 }
 
 .admin-avatar.admin-avatar-5 {
-  background: #e11d48;
+  background: #b25f57;
 }
 
 .admin-registration-info strong {
@@ -826,6 +788,12 @@
   font-size: 14px;
 }
 
+.admin-activity-icon img {
+  width: 18px;
+  height: 18px;
+  object-fit: contain;
+}
+
 .admin-activity-info strong {
   display: block;
   font-size: 12px;
@@ -848,6 +816,12 @@
   }
 }
 
+@media (max-width: 900px) {
+  .admin-stats-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
 @media (max-width: 800px) {
   .admin-sidebar {
     width: 80px;
@@ -863,6 +837,7 @@
   .admin-collapse-arrow,
   .admin-nav-label,
   .admin-nav-badge,
+  .admin-nav-section-label,
   .sidebar-user-info {
     display: none;
   }
@@ -899,10 +874,6 @@
   .admin-stats-grid {
     grid-template-columns: 1fr 1fr;
     gap: 12px;
-  }
-
-  .admin-topbar-user {
-    display: none;
   }
 }
 

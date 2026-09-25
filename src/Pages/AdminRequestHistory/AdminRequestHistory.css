@@ -52,14 +52,25 @@
 
 .reqhist-date {
   flex-shrink: 0;
-  width: 132px;
-  padding: 9px 10px;
+  width: 150px;
+  padding: 10px 12px;
   border: 1px solid #e2e8f0;
   border-radius: 10px;
   background: #ffffff;
   color: #0f172a;
-  font-size: 12px;
+  font-size: 13px;
   font-family: inherit;
+  color-scheme: light;
+}
+
+/* Keep Chrome's native date control consistent with the other fields. */
+.reqhist-date::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  opacity: 0.65;
+}
+
+.reqhist-date::-webkit-calendar-picker-indicator:hover {
+  opacity: 1;
 }
 
 .reqhist-date-separator {
@@ -164,32 +175,32 @@
 
 .reqhist-status.status-pending {
   background: #fef3c7;
-  color: #b45309;
+  color: #92400e;
 }
 
 .reqhist-status.status-processing {
   background: #fef3c7;
-  color: #b45309;
+  color: #92400e;
 }
 
 .reqhist-status.status-ready {
   background: #ede9fe;
-  color: #7c3aed;
+  color: #5b21b6;
 }
 
 .reqhist-status.status-approved {
   background: #dbeafe;
-  color: #2563eb;
+  color: #1e40af;
 }
 
 .reqhist-status.status-completed {
   background: #dcfce7;
-  color: #16a34a;
+  color: #166534;
 }
 
 .reqhist-status.status-rejected {
   background: #fee2e2;
-  color: #dc2626;
+  color: #991b1b;
 }
 
 .reqhist-empty {

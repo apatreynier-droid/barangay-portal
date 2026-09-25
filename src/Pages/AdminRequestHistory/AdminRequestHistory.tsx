@@ -146,9 +146,6 @@ const AdminRequestHistory = ({
       <main className="admin-main">
         <AdminTopbar
           fullName={fullName || "Administrator"}
-          role={roleLabel}
-          unreadCount={unreadNotifications}
-          onNotifications={onNotifications}
           onMenuToggle={toggleDrawer}
           title="Request History"
           subtitle="Complete record of all document requests."

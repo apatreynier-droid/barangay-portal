@@ -1,0 +1,402 @@
+/* ------------------------- Shared date picker dropdown ----------------------- */
+/* Text field (mm/dd/yyyy) plus a calendar dropdown. Drop-in for the admin
+   pickup-date fields: it keeps their box styling and adds a standard
+   day/month/year calendar that always stays inside the viewport. */
+
+.date-picker,
+.date-picker *,
+.date-picker *::before,
+.date-picker *::after {
+  box-sizing: border-box;
+}
+
+.date-picker {
+  position: relative;
+  width: 100%;
+}
+
+.date-picker-control {
+  position: relative;
+  width: 100%;
+}
+
+/* `.date-picker .date-picker-input` outranks the page-level input rules, so
+   the field keeps its branding while reserving room for the calendar button. */
+.date-picker .date-picker-input {
+  width: 100%;
+  padding: 10px 40px 10px 12px;
+  border: 1px solid #cbd5e1;
+  border-radius: 9px;
+  background: #ffffff;
+  color: #0f172a;
+  font-size: 13px;
+  font-family: inherit;
+  color-scheme: light;
+}
+
+.date-picker .date-picker-input::placeholder {
+  color: #94a3b8;
+}
+
+.date-picker .date-picker-input:focus {
+  outline: 2px solid #bfdbfe;
+  border-color: #2563eb;
+}
+
+.date-picker .date-picker-input:disabled {
+  background: #f8fafc;
+  cursor: default;
+}
+
+.date-picker .date-picker-input[aria-invalid="true"] {
+  border-color: #dc2626;
+}
+
+.date-picker .date-picker-input[aria-invalid="true"]:focus {
+  outline-color: #fecaca;
+  border-color: #dc2626;
+}
+
+.date-picker-toggle {
+  position: absolute;
+  top: 50%;
+  right: 6px;
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  margin: 0;
+  padding: 0;
+  transform: translateY(-50%);
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: #64748b;
+  cursor: pointer;
+}
+
+.date-picker-toggle:hover:not(:disabled) {
+  background: #eff6ff;
+  color: #2563eb;
+}
+
+.date-picker-toggle:focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: 1px;
+}
+
+.date-picker-toggle:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+/* The global `button:hover` lift in App.css would move the calendar controls;
+   the extra class keeps every button inside the picker flat. */
+.date-picker button {
+  transform: none;
+  box-shadow: none;
+  transition:
+    background 140ms ease,
+    border-color 140ms ease,
+    color 140ms ease;
+}
+
+.date-picker button:hover:not(:disabled) {
+  transform: none;
+  box-shadow: none;
+}
+
+.date-picker-panel {
+  position: absolute;
+  z-index: 30;
+  top: calc(100% + 8px);
+  left: 0;
+  width: min(19rem, calc(100vw - 1.5rem));
+  padding: 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  background: #ffffff;
+  box-shadow: 0 18px 38px rgba(15, 23, 42, 0.16);
+}
+
+/* Viewport-aware placement applied by the component. */
+.date-picker-panel--above {
+  top: auto;
+  bottom: calc(100% + 8px);
+}
+
+.date-picker-panel--right {
+  left: auto;
+  right: 0;
+}
+
+.date-picker-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.date-picker-nav {
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  margin: 0;
+  padding: 0;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #475569;
+  cursor: pointer;
+}
+
+.date-picker-nav:hover:not(:disabled) {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+  color: #1e293b;
+}
+
+.date-picker-nav:focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: 1px;
+}
+
+.date-picker-header-title {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  padding: 6px 8px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: #0f172a;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.date-picker-header-title:hover {
+  background: #f1f5f9;
+}
+
+.date-picker-header-title:focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: 1px;
+}
+
+.date-picker-header-label {
+  flex: 1;
+  min-width: 0;
+  padding: 6px 8px;
+  color: #0f172a;
+  font-size: 13px;
+  font-weight: 700;
+  text-align: center;
+}
+
+.date-picker-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.date-picker-week {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 2px;
+}
+
+.date-picker-weekday {
+  display: grid;
+  place-items: center;
+  height: 26px;
+  color: #94a3b8;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.date-picker-day {
+  display: grid;
+  place-items: center;
+  height: 34px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: #334155;
+  font-family: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.date-picker-day:hover:not(:disabled) {
+  background: #eff6ff;
+  color: #2563eb;
+}
+
+.date-picker-day.is-outside {
+  color: #cbd5e1;
+}
+
+.date-picker-day.is-outside:hover:not(:disabled) {
+  color: #2563eb;
+}
+
+.date-picker-day.is-today {
+  color: #1d4ed8;
+  box-shadow: inset 0 0 0 1.5px #bfdbfe;
+}
+
+.date-picker-day.is-selected,
+.date-picker-day.is-selected:hover:not(:disabled) {
+  background: #2563eb;
+  color: #ffffff;
+}
+
+.date-picker-day.is-selected.is-today {
+  box-shadow: inset 0 0 0 2px #dbeafe;
+}
+
+.date-picker-day:focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: 1px;
+}
+
+.date-picker-day.is-selected:focus-visible {
+  outline-color: #1d4ed8;
+}
+
+.date-picker-options {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.date-picker-options-row {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.date-picker-option {
+  display: grid;
+  place-items: center;
+  height: 36px;
+  margin: 0;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: transparent;
+  color: #334155;
+  font-family: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.date-picker-option:hover:not(:disabled) {
+  background: #eff6ff;
+  color: #2563eb;
+}
+
+.date-picker-option.is-selected,
+.date-picker-option.is-selected:hover:not(:disabled) {
+  background: #2563eb;
+  color: #ffffff;
+}
+
+.date-picker-option:focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: 1px;
+}
+
+.date-picker-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px solid #f1f5f9;
+}
+
+.date-picker-footer-button {
+  margin: 0;
+  padding: 4px 8px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: #2563eb;
+  font-family: inherit;
+  font-size: 11.5px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.date-picker-footer-button:hover:not(:disabled) {
+  background: #eff6ff;
+}
+
+.date-picker-footer-button:focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: 1px;
+}
+
+.date-picker-footer-button--muted {
+  color: #64748b;
+}
+
+.date-picker-footer-button--muted:hover:not(:disabled) {
+  background: #f1f5f9;
+}
+
+.date-picker-footer-button:disabled {
+  color: #cbd5e1;
+  cursor: default;
+}
+
+.date-picker-error {
+  margin: 6px 0 0;
+  color: #b91c1c;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+/* ------------------------------- Responsive --------------------------------- */
+
+/* Larger touch targets on touch devices (the panel width already shrinks
+   with the viewport via `min()` above). */
+@media (pointer: coarse) {
+  .date-picker-day {
+    height: 40px;
+  }
+
+  .date-picker-option,
+  .date-picker-nav {
+    height: 40px;
+  }
+}
+
+@media (max-width: 380px) {
+  .date-picker-panel {
+    padding: 10px;
+  }
+
+  .date-picker-day {
+    font-size: 12px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .date-picker button {
+    transition: none;
+  }
+}
+

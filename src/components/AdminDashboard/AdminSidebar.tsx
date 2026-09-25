@@ -19,6 +19,11 @@ type AdminNavItem = {
   onClick?: () => void;
 };
 
+type AdminNavSection = {
+  label: string;
+  items: AdminNavItem[];
+};
+
 type AdminSidebarProps = {
   pendingRequests: number;
   pendingApprovals: number;
@@ -64,65 +69,85 @@ const AdminSidebar = ({
   isOpen = false,
   onNavigate,
 }: AdminSidebarProps) => {
-  const navItems: AdminNavItem[] = [
+  // Grouped into related sections with subtle labels; items, routes, badges
+  // and handlers are unchanged.
+  const navSections: AdminNavSection[] = [
     {
-      key: "dashboard",
-      label: "Dashboard",
-      icon: dashboardIcon,
-      onClick: onDashboard,
+      label: "Main",
+      items: [
+        {
+          key: "dashboard",
+          label: "Dashboard",
+          icon: dashboardIcon,
+          onClick: onDashboard,
+        },
+        {
+          key: "residents",
+          label: "Residents",
+          icon: residentsIcon,
+          onClick: onResidents,
+        },
+        {
+          key: "document-requests",
+          label: "Document Requests",
+          icon: documentRequestsIcon,
+          badge: pendingRequests,
+          onClick: onDocumentRequests,
+        },
+        {
+          key: "request-history",
+          label: "Request History",
+          icon: requestHistoryIcon,
+          onClick: onRequestHistory,
+        },
+        {
+          key: "approvals",
+          label: "Approvals",
+          icon: approvalsIcon,
+          badge: pendingApprovals,
+          onClick: onApprovals,
+        },
+        {
+          key: "document-management",
+          label: "Document Management",
+          icon: documentManagementIcon,
+          onClick: onDocumentManagement,
+        },
+      ],
     },
     {
-      key: "residents",
-      label: "Residents",
-      icon: residentsIcon,
-      onClick: onResidents,
-    },
-    {
-      key: "document-requests",
-      label: "Document Requests",
-      icon: documentRequestsIcon,
-      badge: pendingRequests,
-      onClick: onDocumentRequests,
-    },
-    {
-      key: "request-history",
-      label: "Request History",
-      icon: requestHistoryIcon,
-      onClick: onRequestHistory,
-    },
-    {
-      key: "approvals",
-      label: "Approvals",
-      icon: approvalsIcon,
-      badge: pendingApprovals,
-      onClick: onApprovals,
-    },
-    {
-      key: "document-management",
-      label: "Document Management",
-      icon: documentManagementIcon,
-      onClick: onDocumentManagement,
-    },
-    {
-      key: "reports",
-      label: "Reports",
-      icon: reportsIcon,
-      onClick: onReports,
-    },
-    {
-      key: "notifications",
-      label: "Notifications",
-      icon: notificationsIcon,
-      badge: unreadNotifications,
-      onClick: onNotifications,
-    },
-    { key: "announcements", label: "Announcements", icon: announcementsIcon },
-    { key: "user-management", label: "User Management", icon: userManagementIcon },
-    {
-      key: "activity-logs",
-      label: "Activity Logs",
-      icon: activityLogsIcon,
-      onClick: onActivityLogs,
+      label: "Reporting & System",
+      items: [
+        {
+          key: "reports",
+          label: "Reports",
+          icon: reportsIcon,
+          onClick: onReports,
+        },
+        {
+          key: "notifications",
+          label: "Notifications",
+          icon: notificationsIcon,
+          badge: unreadNotifications,
+          onClick: onNotifications,
+        },
+        {
+          key: "announcements",
+          label: "Announcements",
+          icon: announcementsIcon,
+        },
+        {
+          key: "user-management",
+          label: "User Management",
+          icon: userManagementIcon,
+        },
+        {
+          key: "activity-logs",
+          label: "Activity Logs",
+          icon: activityLogsIcon,
+          onClick: onActivityLogs,
+        },
+      ],
     },
   ];
 
@@ -148,51 +173,59 @@ const AdminSidebar = ({
         </div>
 
         <nav className="admin-nav">
-          {navItems.map((item) => {
-            const className = `admin-nav-item${
-              item.key === activeItem ? " active" : ""
-            }`;
-            // On mobile the drawer should close before navigating.
-            const handleClick =
-              item.onClick !== undefined ? closeThen(item.onClick) : undefined;
+          {navSections.map((section) => (
+            <div className="admin-nav-section" key={section.label}>
+              <p className="admin-nav-section-label">{section.label}</p>
 
-            if (handleClick) {
-              return (
-                <button
-                  key={item.key}
-                  type="button"
-                  className={className}
-                  onClick={handleClick}
-                >
-                  <span className="admin-nav-icon" aria-hidden="true">
-                    <img src={item.icon} alt="" />
-                  </span>
-                  <span className="admin-nav-label">{item.label}</span>
-                  {item.badge !== undefined && item.badge > 0 && (
-                    <span className="admin-nav-badge">{item.badge}</span>
-                  )}
-                </button>
-              );
-            }
+              {section.items.map((item) => {
+                const className = `admin-nav-item${
+                  item.key === activeItem ? " active" : ""
+                }`;
+                // On mobile the drawer should close before navigating.
+                const handleClick =
+                  item.onClick !== undefined
+                    ? closeThen(item.onClick)
+                    : undefined;
 
-            return (
-              <button
-                key={item.key}
-                type="button"
-                className={className}
-                disabled
-                title="Coming soon"
-              >
-                <span className="admin-nav-icon" aria-hidden="true">
-                  <img src={item.icon} alt="" />
-                </span>
-                <span className="admin-nav-label">{item.label}</span>
-                {item.badge !== undefined && item.badge > 0 && (
-                  <span className="admin-nav-badge">{item.badge}</span>
-                )}
-              </button>
-            );
-          })}
+                if (handleClick) {
+                  return (
+                    <button
+                      key={item.key}
+                      type="button"
+                      className={className}
+                      onClick={handleClick}
+                    >
+                      <span className="admin-nav-icon" aria-hidden="true">
+                        <img src={item.icon} alt="" />
+                      </span>
+                      <span className="admin-nav-label">{item.label}</span>
+                      {item.badge !== undefined && item.badge > 0 && (
+                        <span className="admin-nav-badge">{item.badge}</span>
+                      )}
+                    </button>
+                  );
+                }
+
+                return (
+                  <button
+                    key={item.key}
+                    type="button"
+                    className={className}
+                    disabled
+                    title="Coming soon"
+                  >
+                    <span className="admin-nav-icon" aria-hidden="true">
+                      <img src={item.icon} alt="" />
+                    </span>
+                    <span className="admin-nav-label">{item.label}</span>
+                    {item.badge !== undefined && item.badge > 0 && (
+                      <span className="admin-nav-badge">{item.badge}</span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          ))}
         </nav>
 
         <SidebarUserFooter
