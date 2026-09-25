@@ -134,9 +134,6 @@ const AdminLogs = ({
       <main className="admin-main">
         <AdminTopbar
           fullName={fullName || "Administrator"}
-          role={roleLabel}
-          unreadCount={unreadNotifications}
-          onNotifications={onNotifications}
           onMenuToggle={toggleDrawer}
           title="Activity Logs"
           subtitle="Audit trail of all system activity."

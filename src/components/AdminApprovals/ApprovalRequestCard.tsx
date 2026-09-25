@@ -5,6 +5,7 @@ import {
   formatSubmittedDateTime,
 } from "../../Utils/AdminDocumentRequestsLogic";
 import { updateAdminDocumentRequest } from "../../Utils/api";
+import DatePickerInput from "../Shared/DatePickerInput";
 
 type ApprovalRequestCardProps = {
   request: AdminDocumentRequest;
@@ -54,7 +55,7 @@ const ApprovalRequestCard = ({
           <dd>{request.resident_name}</dd>
         </div>
         <div className="approvals-card-field">
-          <dt>Document</dt>
+          <dt>Document Type</dt>
           <dd>{request.document}</dd>
         </div>
         <div className="approvals-card-field">
@@ -66,11 +67,11 @@ const ApprovalRequestCard = ({
           <dd className="approvals-card-fee">{formatFee(request.fee)}</dd>
         </div>
         <div className="approvals-card-field">
-          <dt>Submitted</dt>
+          <dt>Submitted Date</dt>
           <dd>{formatSubmittedDateTime(request.submitted_at)}</dd>
         </div>
         <div className="approvals-card-field">
-          <dt>Reference</dt>
+          <dt>Reference Number</dt>
           <dd>{request.request_number}</dd>
         </div>
       </dl>
@@ -87,15 +88,15 @@ const ApprovalRequestCard = ({
           />
         </label>
 
-        <label className="approvals-card-input approvals-card-input-date">
+        <div className="approvals-card-input approvals-card-input-date">
           <span>Pickup Date</span>
-          <input
-            type="date"
+          <DatePickerInput
             value={pickupDate}
+            onChange={setPickupDate}
             disabled={isSubmitting}
-            onChange={(event) => setPickupDate(event.target.value)}
+            ariaLabel="Pickup date"
           />
-        </label>
+        </div>
       </div>
 
       {error && (

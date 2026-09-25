@@ -143,9 +143,6 @@ const AdminDocumentRequests = ({
       <main className="admin-main">
         <AdminTopbar
           fullName={fullName || "Administrator"}
-          role={roleLabel}
-          unreadCount={unreadNotifications}
-          onNotifications={onNotifications}
           onMenuToggle={toggleDrawer}
           title="Document Requests"
           subtitle="Review and process document requests."

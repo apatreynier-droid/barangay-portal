@@ -101,6 +101,13 @@
   opacity: 0.85;
 }
 
+/* Pie-slice hover expansion. The slice's translate is a transform only, so the
+   eased transition never shifts layout and the other slices stay put. */
+.reports-pie-slice {
+  will-change: transform;
+  transition: transform 220ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
 /* -------------------------------- Chart legend ------------------------------ */
 
 .reports-chart-legend {
@@ -237,11 +244,21 @@
   }
 }
 
+/* ---------------------------- Reduced motion -------------------------------- */
+
+/* Honor users who prefer reduced motion: the tooltip still identifies the
+   hovered slice, but the outward expansion is skipped. The transform comes from
+   the inline style, so it needs the important flag to stand down. */
+@media (prefers-reduced-motion: reduce) {
+  .reports-pie-slice {
+    transform: none !important;
+  }
+}
+
 /* ---------------------------- Printable report ------------------------------ */
 
 @media print {
   body:has(.reports-stats-grid) .admin-sidebar,
-  body:has(.reports-stats-grid) .admin-topbar-actions,
   body:has(.reports-stats-grid) .reports-generate-card {
     display: none;
   }

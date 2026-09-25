@@ -531,22 +531,22 @@
 
 .status-pending {
   background: #fff7ed;
-  color: #ea580c;
+  color: #9a3412;
 }
 
 .status-approved {
   background: #eff6ff;
-  color: #2563eb;
+  color: #1d4ed8;
 }
 
 .status-processing {
   background: #eff6ff;
-  color: #2563eb;
+  color: #1d4ed8;
 }
 
 .status-ready {
   background: #ecfdf5;
-  color: #059669;
+  color: #047857;
 }
 
 .quick-actions {

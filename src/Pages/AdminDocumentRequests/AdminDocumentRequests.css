@@ -109,14 +109,14 @@
 
 .docreq-flow-step.current {
   background: #fef3c7;
-  color: #b45309;
+  color: #92400e;
   border-color: #fde68a;
   cursor: default;
 }
 
 .docreq-flow-step.done {
   background: #ecfdf5;
-  color: #059669;
+  color: #047857;
 }
 
 .docreq-flow-step:disabled {
@@ -140,13 +140,19 @@
 .docreq-actions-field input {
   width: 100%;
   padding: 10px 12px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid #cbd5e1;
   border-radius: 9px;
   background: #ffffff;
   color: #0f172a;
   font-size: 13px;
   font-family: inherit;
+  color-scheme: light;
   resize: vertical;
+}
+
+.docreq-actions-field textarea::placeholder,
+.docreq-actions-field input::placeholder {
+  color: #94a3b8;
 }
 
 .docreq-actions-field textarea:focus,
@@ -205,6 +211,21 @@
   background: #b91c1c;
 }
 
+.docreq-approve-button:focus-visible {
+  outline: 2px solid #1d4ed8;
+  outline-offset: 2px;
+}
+
+.docreq-reject-button:focus-visible {
+  outline: 2px solid #b91c1c;
+  outline-offset: 2px;
+}
+
+.docreq-save-button:focus-visible {
+  outline: 2px solid #1e293b;
+  outline-offset: 2px;
+}
+
 .docreq-approve-button:disabled,
 .docreq-reject-button:disabled,
 .docreq-save-button:disabled {
@@ -234,7 +255,7 @@
   padding: 8px 12px;
   border-radius: 9px;
   background: #ecfdf5;
-  color: #059669;
+  color: #047857;
   font-size: 12px;
   font-weight: 600;
 }

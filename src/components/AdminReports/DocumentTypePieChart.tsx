@@ -8,13 +8,15 @@ type DocumentTypePieChartProps = {
 
 const SIZE = 200;
 const RADIUS = 90;
+// Same muted palette as the dashboard donut so document-type colors stay
+// consistent across the portal.
 const COLORS = [
-  "#2563eb",
-  "#8b5cf6",
-  "#059669",
-  "#f59e0b",
-  "#ef4444",
-  "#06b6d4",
+  "#3d6ea8",
+  "#7b6bb5",
+  "#3a8266",
+  "#9a6b2a",
+  "#b25f57",
+  "#4f8a99",
 ];
 
 // How far the hovered slice expands outward from the pie's center.
@@ -23,6 +25,7 @@ const SLICE_EXPAND = 7;
 type TooltipPosition = { x: number; y: number };
 
 const DocumentTypePieChart = ({ data }: DocumentTypePieChartProps) => {
+  const svgRef = useRef<SVGSVGElement | null>(null);
   const wrapperRef = useRef<HTMLDivElement | null>(null);
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
   const [tooltipPosition, setTooltipPosition] =
@@ -46,16 +49,82 @@ const DocumentTypePieChart = ({ data }: DocumentTypePieChartProps) => {
     ].join(" ");
   };
 
+  // Resolve the hovered slice from the pointer position instead of the slice's
+  // own mouse events. A hovered slice translates outward, so the shape slides
+  // out from under the cursor and the browser kept firing enter/leave events
+  // back and forth (visible flicker). Hit-testing the static pie geometry keeps
+  // the hover state steady while the slice animates.
+  const resolveSliceIndex = (x: number, y: number): number | null => {
+    const offsetX = x - center;
+    const offsetY = y - center;
+
+    if (total <= 0 || Math.hypot(offsetX, offsetY) > RADIUS) {
+      return null;
+    }
+
+    // Same orientation as slicePath(): 0 rad at 12 o'clock, growing clockwise.
+    let angle = Math.atan2(offsetX, -offsetY);
+    if (angle < 0) {
+      angle += Math.PI * 2;
+    }
+
+    let sweptAngle = 0;
+
+    for (let index = 0; index < data.length; index += 1) {
+      const fraction = data[index].count / total;
+      sweptAngle += fraction * Math.PI * 2;
+
+      // Document types without requests have no slice to hover.
+      if (fraction > 0 && angle <= sweptAngle) {
+        return index;
+      }
+    }
+
+    // Rounding can push the final angle just past the full circle.
+    for (let index = data.length - 1; index >= 0; index -= 1) {
+      if (data[index].count > 0) {
+        return index;
+      }
+    }
+
+    return null;
+  };
+
+  // Tooltip follows the cursor while it is over the pie.
   const handleMouseMove = (event: MouseEvent<SVGSVGElement>) => {
+    const svg = svgRef.current;
     const wrapper = wrapperRef.current;
-    if (!wrapper) {
+    if (!svg || !wrapper) {
       return;
     }
 
-    const bounds = wrapper.getBoundingClientRect();
+    const bounds = svg.getBoundingClientRect();
+    if (bounds.width === 0 || bounds.height === 0) {
+      return;
+    }
+
+    // The square viewBox is letterboxed inside the rendered box, so pointer
+    // coordinates are converted through the uniform scale the browser applies.
+    const scale = Math.min(bounds.width, bounds.height) / SIZE;
+    const offsetLeft = bounds.left + (bounds.width - SIZE * scale) / 2;
+    const offsetTop = bounds.top + (bounds.height - SIZE * scale) / 2;
+    const index = resolveSliceIndex(
+      (event.clientX - offsetLeft) / scale,
+      (event.clientY - offsetTop) / scale,
+    );
+
+    if (index === null) {
+      setHoveredIndex(null);
+      setTooltipPosition(null);
+      return;
+    }
+
+    setHoveredIndex(index);
+
+    const wrapperBounds = wrapper.getBoundingClientRect();
     setTooltipPosition({
-      x: event.clientX - bounds.left,
-      y: event.clientY - bounds.top,
+      x: event.clientX - wrapperBounds.left,
+      y: event.clientY - wrapperBounds.top,
     });
   };
 
@@ -78,6 +147,7 @@ const DocumentTypePieChart = ({ data }: DocumentTypePieChartProps) => {
         <>
           <div className="reports-pie-wrapper" ref={wrapperRef}>
             <svg
+              ref={svgRef}
               className="reports-chart reports-pie-chart"
               viewBox={`0 0 ${SIZE} ${SIZE}`}
               role="img"
@@ -95,6 +165,9 @@ const DocumentTypePieChart = ({ data }: DocumentTypePieChartProps) => {
                   cumulativeAngle = endAngle;
 
                   const midAngle = (startAngle + endAngle) / 2;
+                  // The active slice expands outward; the movement is eased by
+                  // CSS (.reports-pie-slice) so it glides out and back instead
+                  // of jumping, and only this slice's transform changes.
                   const isHovered = hoveredIndex === index;
                   const dx = isHovered
                     ? Math.sin(midAngle) * SLICE_EXPAND
@@ -106,15 +179,10 @@ const DocumentTypePieChart = ({ data }: DocumentTypePieChartProps) => {
                   return (
                     <path
                       key={item.document_name}
+                      className="reports-pie-slice"
                       d={slicePath(startAngle, endAngle)}
                       fill={COLORS[index % COLORS.length]}
                       style={{ transform: `translate(${dx}px, ${dy}px)` }}
-                      onMouseEnter={() => setHoveredIndex(index)}
-                      onMouseLeave={() =>
-                        setHoveredIndex((current) =>
-                          current === index ? null : current,
-                        )
-                      }
                       aria-label={`${item.document_name}: ${item.count}`}
                     />
                   );

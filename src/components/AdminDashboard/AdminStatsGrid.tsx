@@ -1,3 +1,9 @@
+import residentsIcon from "../../assets/icons/Residents.png";
+import hourglassIcon from "../../assets/icons/hourglass.png";
+import acceptIcon from "../../assets/icons/accept.png";
+import clockIcon from "../../assets/icons/clock.png";
+import stampIcon from "../../assets/icons/stamp.png";
+import rejectIcon from "../../assets/icons/reject.png";
 import type { AdminStats } from "../../Types/AdminDashboardType";
 
 type StatCard = {
@@ -18,7 +24,7 @@ const AdminStatsGrid = ({ stats }: AdminStatsGridProps) => {
   const cards: StatCard[] = [
     {
       key: "residents",
-      icon: "👥",
+      icon: residentsIcon,
       value: stats.total_residents,
       label: "Total Residents",
       note: `+${stats.new_residents_this_month} this month`,
@@ -27,7 +33,7 @@ const AdminStatsGrid = ({ stats }: AdminStatsGridProps) => {
     },
     {
       key: "pending",
-      icon: "⏳",
+      icon: hourglassIcon,
       value: stats.pending,
       label: "Pending Requests",
       note: "Action needed",
@@ -36,7 +42,7 @@ const AdminStatsGrid = ({ stats }: AdminStatsGridProps) => {
     },
     {
       key: "approved",
-      icon: "✅",
+      icon: acceptIcon,
       value: stats.approved,
       label: "Approved",
       note: "Awaiting processing",
@@ -44,7 +50,7 @@ const AdminStatsGrid = ({ stats }: AdminStatsGridProps) => {
     },
     {
       key: "processing",
-      icon: "⚙️",
+      icon: clockIcon,
       value: stats.processing,
       label: "Processing",
       note: "In progress",
@@ -53,7 +59,7 @@ const AdminStatsGrid = ({ stats }: AdminStatsGridProps) => {
     },
     {
       key: "completed",
-      icon: "🏁",
+      icon: stampIcon,
       value: stats.completed,
       label: "Completed",
       note: "This month",
@@ -61,7 +67,7 @@ const AdminStatsGrid = ({ stats }: AdminStatsGridProps) => {
     },
     {
       key: "rejected",
-      icon: "❌",
+      icon: rejectIcon,
       value: stats.rejected,
       label: "Rejected",
       note: "This month",
@@ -75,7 +81,7 @@ const AdminStatsGrid = ({ stats }: AdminStatsGridProps) => {
       {cards.map((card) => (
         <article key={card.key} className="admin-stat-card">
           <span className={`admin-stat-icon ${card.tone}`} aria-hidden="true">
-            {card.icon}
+            <img src={card.icon} alt="" />
           </span>
 
           <div className="admin-stat-body">

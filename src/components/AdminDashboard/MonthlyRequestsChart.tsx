@@ -15,7 +15,11 @@ const PADDING_BOTTOM = 34;
 const BAR_WIDTH = 14;
 const BAR_GAP = 5;
 const GRID_INTERVALS = 4;
-const VALUE_STEP = 15;
+
+// Whole-number Y-axis intervals: the axis picks the smallest "nice" step
+// (1, 2, 5, 10, 15, 20, …) that keeps every gridline label an integer, e.g.
+// 0, 5, 10, 15, 20 for a peak of 12. Decimal labels are never produced.
+const NICE_STEPS = [1, 2, 5, 10, 15, 20, 25, 50, 100, 150, 200, 250, 500, 1000];
 
 // Entrance animation settings (Recharts-equivalent):
 // isAnimationActive={true}
@@ -52,10 +56,9 @@ const MonthlyRequestsChart = ({ data }: MonthlyRequestsChartProps) => {
     ),
   );
 
-  const topValue = Math.max(
-    VALUE_STEP,
-    Math.ceil(maxValue / VALUE_STEP) * VALUE_STEP,
-  );
+  const minStep = Math.max(1, Math.ceil(maxValue / GRID_INTERVALS));
+  const valueStep = NICE_STEPS.find((step) => step >= minStep) ?? minStep;
+  const topValue = valueStep * GRID_INTERVALS;
   const plotWidth = WIDTH - PADDING_LEFT - PADDING_RIGHT;
   const plotHeight = HEIGHT - PADDING_TOP - PADDING_BOTTOM;
   const groupWidth = BAR_WIDTH * SERIES.length + BAR_GAP * (SERIES.length - 1);
@@ -186,7 +189,7 @@ const MonthlyRequestsChart = ({ data }: MonthlyRequestsChartProps) => {
           onMouseLeave={handleMouseLeave}
         >
           {Array.from({ length: GRID_INTERVALS + 1 }, (_, index) => {
-            const value = (topValue / GRID_INTERVALS) * index;
+            const value = valueStep * index;
             const y = valueToY(value);
 
             return (

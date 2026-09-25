@@ -141,9 +141,6 @@ const AdminDocumentManagement = ({
       <main className="admin-main">
         <AdminTopbar
           fullName={fullName || "Administrator"}
-          role={roleLabel}
-          unreadCount={unreadNotifications}
-          onNotifications={onNotifications}
           onMenuToggle={toggleDrawer}
           title="Document Management"
           subtitle="Generate and manage official barangay documents."

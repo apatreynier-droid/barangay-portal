@@ -144,9 +144,20 @@
   font: inherit;
   font-size: 13px;
   cursor: pointer;
+  color-scheme: light;
   transition:
     border-color 0.15s ease,
     box-shadow 0.15s ease;
+}
+
+/* Keep Chrome's native date control consistent with the other fields. */
+.history-date-input::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  opacity: 0.65;
+}
+
+.history-date-input::-webkit-calendar-picker-indicator:hover {
+  opacity: 1;
 }
 
 .history-date-input:hover {

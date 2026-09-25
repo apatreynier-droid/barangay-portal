@@ -108,9 +108,6 @@ const AdminApprovals = ({
       <main className="admin-main">
         <AdminTopbar
           fullName={fullName || "Administrator"}
-          role={roleLabel}
-          unreadCount={unreadNotifications}
-          onNotifications={onNotifications}
           onMenuToggle={toggleDrawer}
           title="Approvals"
           subtitle="Requests awaiting your approval."

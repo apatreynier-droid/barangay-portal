@@ -335,7 +335,6 @@ function PortalRoutes() {
                   }
                   onReports={() => navigate(ADMIN_REPORTS_PATH)}
                   onActivityLogs={() => navigate(ADMIN_ACTIVITY_LOGS_PATH)}
-                  onNotifications={() => navigate(NOTIFICATIONS_PATH)}
                   onLogout={handleLogout}
                 />
               ) : (

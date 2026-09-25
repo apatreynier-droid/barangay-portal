@@ -6,7 +6,7 @@
   padding: 7px 16px;
   border-radius: 999px;
   background: #fef3c7;
-  color: #b45309;
+  color: #92400e;
   font-size: 13px;
   font-weight: 700;
 }
@@ -40,10 +40,16 @@
   font-weight: 700;
 }
 
+/* Two-column Key → Value grid on larger screens. `grid-auto-flow: column`
+   with three explicit rows keeps the suggested grouping:
+   left  → Resident / Document Type / Purpose
+   right → Fee / Submitted Date / Reference Number */
 .approvals-card-grid {
   display: grid;
-  grid-template-columns: 1.1fr 1.2fr 1.2fr 0.6fr 1fr 1fr;
-  gap: 18px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-rows: repeat(3, auto);
+  grid-auto-flow: column;
+  gap: 14px 32px;
   margin: 0;
 }
 
@@ -52,9 +58,12 @@
 }
 
 .approvals-card-field dt {
-  margin-bottom: 5px;
-  color: #94a3b8;
-  font-size: 12px;
+  margin-bottom: 4px;
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
 }
 
 .approvals-card-field dd {
@@ -89,14 +98,21 @@
 .approvals-card-input input {
   width: 100%;
   padding: 10px 12px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid #cbd5e1;
   border-radius: 9px;
   background: #ffffff;
   color: #0f172a;
   font-size: 13px;
   font-family: inherit;
+  color-scheme: light;
 }
 
+.approvals-card-input input::placeholder {
+  color: #94a3b8;
+}
+
+/* The pickup date uses the shared DatePickerInput dropdown (see
+   components/Shared/DatePickerInput.css) while keeping this field styling. */
 .approvals-card-input input:focus {
   outline: 2px solid #bfdbfe;
   border-color: #2563eb;
@@ -147,6 +163,16 @@
   background: #b91c1c;
 }
 
+.approvals-approve-button:focus-visible {
+  outline: 2px solid #1d4ed8;
+  outline-offset: 2px;
+}
+
+.approvals-reject-button:focus-visible {
+  outline: 2px solid #b91c1c;
+  outline-offset: 2px;
+}
+
 .approvals-approve-button:disabled,
 .approvals-reject-button:disabled {
   opacity: 0.6;
@@ -179,25 +205,20 @@
 
 /* -------------------------------- Responsive -------------------------------- */
 
-@media (max-width: 1100px) {
-  .approvals-card-grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-}
-
 @media (max-width: 760px) {
+  /* Stack the Key → Value grid on smaller screens. */
+  .approvals-card-grid {
+    grid-template-columns: 1fr;
+    grid-template-rows: none;
+    grid-auto-flow: row;
+    gap: 12px;
+  }
+
   .approvals-card-inputs {
     grid-template-columns: 1fr;
   }
 
   .approvals-card-actions {
     flex-wrap: wrap;
-  }
-}
-
-@media (max-width: 560px) {
-  .approvals-card-grid {
-    grid-template-columns: 1fr;
-    gap: 12px;
   }
 }
