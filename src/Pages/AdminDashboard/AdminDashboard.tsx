@@ -25,6 +25,7 @@ type AdminDashboardProps = {
   onDocumentManagement: () => void;
   onReports: () => void;
   onActivityLogs: () => void;
+  onUserManagement: () => void;
   onLogout: () => void;
 };
 
@@ -38,6 +39,7 @@ const AdminDashboard = ({
   onDocumentManagement,
   onReports,
   onActivityLogs,
+  onUserManagement,
   onLogout,
 }: AdminDashboardProps) => {
   const [data, setData] = useState<AdminDashboardData | null>(null);
@@ -84,6 +86,7 @@ const AdminDashboard = ({
         onDocumentManagement={onDocumentManagement}
         onReports={onReports}
         onActivityLogs={onActivityLogs}
+        onUserManagement={onUserManagement}
         onNotifications={onNotifications}
         onLogout={onLogout}
         isOpen={isDrawerOpen}

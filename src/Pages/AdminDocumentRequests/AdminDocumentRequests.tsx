@@ -32,6 +32,7 @@ type AdminDocumentRequestsProps = {
   onNotifications: () => void;
   onReports: () => void;
   onActivityLogs: () => void;
+  onUserManagement: () => void;
   onLogout: () => void;
 };
 
@@ -45,6 +46,7 @@ const AdminDocumentRequests = ({
   onNotifications,
   onReports,
   onActivityLogs,
+  onUserManagement,
   onLogout,
 }: AdminDocumentRequestsProps) => {
   const [requests, setRequests] = useState<AdminDocumentRequest[]>([]);
@@ -125,6 +127,7 @@ const AdminDocumentRequests = ({
         onDocumentManagement={onDocumentManagement}
         onReports={onReports}
         onActivityLogs={onActivityLogs}
+        onUserManagement={onUserManagement}
         onNotifications={onNotifications}
         onLogout={onLogout}
         isOpen={isDrawerOpen}

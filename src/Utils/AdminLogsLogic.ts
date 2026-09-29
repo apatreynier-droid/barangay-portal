@@ -58,6 +58,14 @@ export function formatLogActorRole(role: string): string {
     return "Administrator";
   }
 
+  if (role === "super_admin") {
+    return "Super Admin";
+  }
+
+  if (role === "staff") {
+    return "Staff";
+  }
+
   if (role === "resident") {
     return "Resident";
   }

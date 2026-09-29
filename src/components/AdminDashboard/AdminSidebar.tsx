@@ -40,6 +40,8 @@ type AdminSidebarProps = {
   onDocumentManagement?: () => void;
   onReports?: () => void;
   onActivityLogs?: () => void;
+  /** Opens the User Management page (staff accounts and roles). */
+  onUserManagement?: () => void;
   onNotifications: () => void;
   onLogout: () => void;
   /** Mobile drawer state (see useResponsiveSidebar); ignored on desktop. */
@@ -64,6 +66,7 @@ const AdminSidebar = ({
   onDocumentManagement,
   onReports,
   onActivityLogs,
+  onUserManagement,
   onNotifications,
   onLogout,
   isOpen = false,
@@ -140,6 +143,7 @@ const AdminSidebar = ({
           key: "user-management",
           label: "User Management",
           icon: userManagementIcon,
+          onClick: onUserManagement,
         },
         {
           key: "activity-logs",

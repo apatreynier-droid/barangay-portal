@@ -11,6 +11,7 @@ import AdminDocumentManagement from "./Pages/AdminDocumentManagement/AdminDocume
 import AdminApprovals from "./Pages/AdminApprovals/AdminApprovals";
 import AdminReports from "./Pages/AdminReports/AdminReports";
 import AdminLogs from "./Pages/AdminLogs/AdminLogs";
+import AdminUserManagement from "./Pages/AdminUserManagement/AdminUserManagement";
 import AdminNotification from "./Pages/AdminNotification/AdminNotification";
 import MyRequests from "./Pages/MyRequests/MyRequests";
 import RequestHistory from "./Pages/RequestHistory/RequestHistory";
@@ -38,6 +39,7 @@ import {
   ADMIN_REPORTS_PATH,
   ADMIN_RESIDENTS_PATH,
   ADMIN_ACTIVITY_LOGS_PATH,
+  ADMIN_USER_MANAGEMENT_PATH,
   CREATE_ACCOUNT_PATH,
   FORGOT_PASSWORD_PATH,
   getHomePath,
@@ -319,6 +321,7 @@ function PortalRoutes() {
                   user={authUser}
                   notifications={notifications}
                   unreadNotifications={unreadCount}
+                  onUserManagement={() => navigate(ADMIN_USER_MANAGEMENT_PATH)}
                   onNotificationsChanged={loadUserData}
                   onSessionExpired={handleSessionExpired}
                   onDashboard={() => navigate(ADMIN_HOME_PATH)}
@@ -367,6 +370,7 @@ function PortalRoutes() {
               <AdminDashboard
                 user={authUser}
                 unreadNotifications={unreadCount}
+                onUserManagement={() => navigate(ADMIN_USER_MANAGEMENT_PATH)}
                 onReports={() => navigate(ADMIN_REPORTS_PATH)}
                 onActivityLogs={() => navigate(ADMIN_ACTIVITY_LOGS_PATH)}
                 onNotifications={() => navigate(NOTIFICATIONS_PATH)}
@@ -394,6 +398,7 @@ function PortalRoutes() {
               <AdminResidents
                 user={authUser}
                 unreadNotifications={unreadCount}
+                onUserManagement={() => navigate(ADMIN_USER_MANAGEMENT_PATH)}
                 onDashboard={() => navigate(ADMIN_HOME_PATH)}
                 onReports={() => navigate(ADMIN_REPORTS_PATH)}
                 onActivityLogs={() => navigate(ADMIN_ACTIVITY_LOGS_PATH)}
@@ -421,6 +426,7 @@ function PortalRoutes() {
               <AdminApprovals
                 user={authUser}
                 unreadNotifications={unreadCount}
+                onUserManagement={() => navigate(ADMIN_USER_MANAGEMENT_PATH)}
                 onDashboard={() => navigate(ADMIN_HOME_PATH)}
                 onResidents={() => navigate(ADMIN_RESIDENTS_PATH)}
                 onReports={() => navigate(ADMIN_REPORTS_PATH)}
@@ -448,6 +454,7 @@ function PortalRoutes() {
               <AdminDocumentRequests
                 user={authUser}
                 unreadNotifications={unreadCount}
+                onUserManagement={() => navigate(ADMIN_USER_MANAGEMENT_PATH)}
                 onDashboard={() => navigate(ADMIN_HOME_PATH)}
                 onResidents={() => navigate(ADMIN_RESIDENTS_PATH)}
                 onReports={() => navigate(ADMIN_REPORTS_PATH)}
@@ -473,6 +480,7 @@ function PortalRoutes() {
               <AdminRequestHistory
                 user={authUser}
                 unreadNotifications={unreadCount}
+                onUserManagement={() => navigate(ADMIN_USER_MANAGEMENT_PATH)}
                 onDashboard={() => navigate(ADMIN_HOME_PATH)}
                 onResidents={() => navigate(ADMIN_RESIDENTS_PATH)}
                 onDocumentRequests={() =>
@@ -500,6 +508,7 @@ function PortalRoutes() {
               <AdminDocumentManagement
                 user={authUser}
                 unreadNotifications={unreadCount}
+                onUserManagement={() => navigate(ADMIN_USER_MANAGEMENT_PATH)}
                 onDashboard={() => navigate(ADMIN_HOME_PATH)}
                 onResidents={() => navigate(ADMIN_RESIDENTS_PATH)}
                 onDocumentRequests={() =>
@@ -525,6 +534,7 @@ function PortalRoutes() {
               <AdminLogs
                 user={authUser}
                 unreadNotifications={unreadCount}
+                onUserManagement={() => navigate(ADMIN_USER_MANAGEMENT_PATH)}
                 onDashboard={() => navigate(ADMIN_HOME_PATH)}
                 onResidents={() => navigate(ADMIN_RESIDENTS_PATH)}
                 onDocumentRequests={() =>
@@ -545,6 +555,34 @@ function PortalRoutes() {
       />
 
       <Route
+        path={ADMIN_USER_MANAGEMENT_PATH}
+        element={
+          <RequireAdmin user={user}>
+            {(authUser) => (
+              <AdminUserManagement
+                user={authUser}
+                unreadNotifications={unreadCount}
+                onDashboard={() => navigate(ADMIN_HOME_PATH)}
+                onResidents={() => navigate(ADMIN_RESIDENTS_PATH)}
+                onDocumentRequests={() =>
+                  navigate(ADMIN_DOCUMENT_REQUESTS_PATH)
+                }
+                onRequestHistory={() => navigate(ADMIN_REQUEST_HISTORY_PATH)}
+                onApprovals={() => navigate(ADMIN_APPROVALS_PATH)}
+                onDocumentManagement={() =>
+                  navigate(ADMIN_DOCUMENT_MANAGEMENT_PATH)
+                }
+                onReports={() => navigate(ADMIN_REPORTS_PATH)}
+                onActivityLogs={() => navigate(ADMIN_ACTIVITY_LOGS_PATH)}
+                onNotifications={() => navigate(NOTIFICATIONS_PATH)}
+                onLogout={handleLogout}
+              />
+            )}
+          </RequireAdmin>
+        }
+      />
+
+      <Route
         path={ADMIN_REPORTS_PATH}
         element={
           <RequireAdmin user={user}>
@@ -552,6 +590,7 @@ function PortalRoutes() {
               <AdminReports
                 user={authUser}
                 unreadNotifications={unreadCount}
+                onUserManagement={() => navigate(ADMIN_USER_MANAGEMENT_PATH)}
                 onDashboard={() => navigate(ADMIN_HOME_PATH)}
                 onResidents={() => navigate(ADMIN_RESIDENTS_PATH)}
                 onDocumentRequests={() =>

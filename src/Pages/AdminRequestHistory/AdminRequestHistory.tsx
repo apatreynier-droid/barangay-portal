@@ -34,6 +34,7 @@ type AdminRequestHistoryProps = {
   onNotifications: () => void;
   onReports: () => void;
   onActivityLogs: () => void;
+  onUserManagement: () => void;
   onLogout: () => void;
 };
 
@@ -47,6 +48,7 @@ const AdminRequestHistory = ({
   onNotifications,
   onReports,
   onActivityLogs,
+  onUserManagement,
   onLogout,
 }: AdminRequestHistoryProps) => {
   const [requests, setRequests] = useState<AdminRequestHistoryEntry[]>([]);
@@ -128,6 +130,7 @@ const AdminRequestHistory = ({
         onDocumentManagement={onDocumentManagement}
         onReports={onReports}
         onActivityLogs={onActivityLogs}
+        onUserManagement={onUserManagement}
         onNotifications={onNotifications}
         onLogout={onLogout}
         isOpen={isDrawerOpen}

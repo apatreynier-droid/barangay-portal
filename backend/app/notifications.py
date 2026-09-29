@@ -11,9 +11,10 @@ existing system:
                     -> row in ``notifications`` for every active admin
                     -> Admin Notification page (GET /api/notifications)
 
-Nothing here is hardcoded: recipients are resolved from
-``users.role = 'admin'`` and every message is built from the data the endpoint
-just read or wrote (resident name, document name, request number, status).
+Nothing here is hardcoded: recipients are resolved from the administrator
+roles in ``users.role`` (``admin``, ``super_admin``) and every message is
+built from the data the endpoint just read or wrote (resident name, document
+name, request number, status).
 
 Guarantees relied on by the endpoints:
 
@@ -270,7 +271,7 @@ def _load_admin_ids(connection: MySQLConnection) -> list[int]:
             """
             SELECT id
             FROM users
-            WHERE role = 'admin' AND account_status = 'active'
+            WHERE role IN ('admin', 'super_admin') AND account_status = 'active'
             ORDER BY id ASC
             """
         )
