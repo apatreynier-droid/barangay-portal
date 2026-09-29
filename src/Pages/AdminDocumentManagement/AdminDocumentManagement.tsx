@@ -32,6 +32,7 @@ type AdminDocumentManagementProps = {
   onNotifications: () => void;
   onReports: () => void;
   onActivityLogs: () => void;
+  onUserManagement: () => void;
   onLogout: () => void;
 };
 
@@ -45,6 +46,7 @@ const AdminDocumentManagement = ({
   onNotifications,
   onReports,
   onActivityLogs,
+  onUserManagement,
   onLogout,
 }: AdminDocumentManagementProps) => {
   const [templates, setTemplates] = useState<DocumentTypeOption[]>([]);
@@ -123,6 +125,7 @@ const AdminDocumentManagement = ({
         onDocumentManagement={() => undefined}
         onReports={onReports}
         onActivityLogs={onActivityLogs}
+        onUserManagement={onUserManagement}
         onNotifications={onNotifications}
         onLogout={onLogout}
         isOpen={isDrawerOpen}

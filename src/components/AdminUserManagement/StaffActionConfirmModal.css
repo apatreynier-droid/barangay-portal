@@ -1,0 +1,137 @@
+/* Same dialog pattern as the residents status confirmation (see
+   components/AdminResidents/ResidentStatusConfirmModal.css). */
+
+.staff-confirm-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  display: grid;
+  place-items: center;
+  padding: clamp(16px, 3vw, 28px);
+  background: rgba(17, 24, 39, 0.45);
+}
+
+.staff-confirm-dialog {
+  width: min(100%, 430px);
+  padding: 28px 26px 24px;
+  border-radius: 14px;
+  background: #ffffff;
+  text-align: center;
+  box-shadow: 0 24px 60px rgba(17, 24, 39, 0.25);
+}
+
+.staff-confirm-icon {
+  width: 48px;
+  height: 48px;
+  margin: 0 auto 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.staff-confirm-icon.danger {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+.staff-confirm-icon.info {
+  background: #dbeafe;
+  color: #2563eb;
+}
+
+.staff-confirm-icon.warning {
+  background: #fef3c7;
+  color: #b45309;
+}
+
+.staff-confirm-dialog h2 {
+  margin: 0 0 8px;
+  color: #0f172a;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.staff-confirm-dialog p {
+  margin: 0 0 22px;
+  color: #64748b;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.staff-confirm-error {
+  margin: -12px 0 18px !important;
+  padding: 9px 12px;
+  border: 1px solid #fecaca;
+  border-radius: 9px;
+  background: #fef2f2;
+  color: #b91c1c !important;
+  font-size: 12px !important;
+  text-align: left;
+}
+
+.staff-confirm-actions {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+}
+
+.staff-confirm-cancel {
+  padding: 9px 22px;
+  border: 1px solid #e2e8f0;
+  border-radius: 999px;
+  background: #ffffff;
+  color: #334155;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.staff-confirm-cancel:hover:not(:disabled) {
+  background: #f8fafc;
+}
+
+.staff-confirm-accept {
+  padding: 9px 22px;
+  border: 0;
+  border-radius: 999px;
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.staff-confirm-accept.danger {
+  background: #dc2626;
+}
+
+.staff-confirm-accept.danger:hover:not(:disabled) {
+  background: #b91c1c;
+}
+
+.staff-confirm-accept.info {
+  background: #2563eb;
+}
+
+.staff-confirm-accept.info:hover:not(:disabled) {
+  background: #1d4ed8;
+}
+
+.staff-confirm-accept.warning {
+  background: #d97706;
+}
+
+.staff-confirm-accept.warning:hover:not(:disabled) {
+  background: #b45309;
+}
+
+.staff-confirm-cancel:disabled,
+.staff-confirm-accept:disabled {
+  opacity: 0.6;
+  cursor: default;
+}

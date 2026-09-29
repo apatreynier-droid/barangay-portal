@@ -12,6 +12,11 @@ from .security import hash_access_token
 
 bearer_scheme = HTTPBearer(auto_error=False)
 
+#: Roles that may use the Admin Portal. ``staff`` and ``resident`` accounts are
+#: never part of this list, so they can neither reach the admin pages nor call
+#: the administrator-only endpoints (including User Management).
+ADMINISTRATOR_ROLES = ("admin", "super_admin")
+
 
 def get_current_user(
     credentials: HTTPAuthorizationCredentials | None = Depends(bearer_scheme),
@@ -53,7 +58,14 @@ def get_current_user(
 def get_current_admin_user(
     current_user: dict[str, object] = Depends(get_current_user),
 ) -> dict[str, object]:
-    if current_user.get("role") != "admin":
+    """Allow administrators (``admin`` and ``super_admin``) only.
+
+    Everything an administrator can do is decided in the endpoint itself, so
+    the User Management endpoints reuse this dependency: a ``staff`` or
+    ``resident`` account can never create, edit, activate, deactivate or reset
+    another account, regardless of what the frontend shows.
+    """
+    if current_user.get("role") not in ADMINISTRATOR_ROLES:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Administrator access is required.",

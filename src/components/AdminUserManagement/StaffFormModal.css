@@ -1,0 +1,227 @@
+/* Add/Edit Staff form. Layout follows the residents edit modal
+   (components/AdminResidents/EditResidentModal.css) so both feel the same. */
+
+.staff-form-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  display: grid;
+  place-items: center;
+  padding: clamp(16px, 3vw, 28px);
+  background: rgba(17, 24, 39, 0.45);
+}
+
+.staff-form-modal {
+  width: min(100%, 620px);
+  max-height: calc(100dvh - clamp(32px, 6vw, 56px));
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-radius: 14px;
+  background: #ffffff;
+  box-shadow: 0 24px 60px rgba(17, 24, 39, 0.25);
+}
+
+.staff-form-header {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 22px 26px 18px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.staff-form-label {
+  margin: 0 0 4px;
+  color: #2563eb;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.staff-form-header h2 {
+  margin: 0;
+  color: #0f172a;
+  font-size: 19px;
+  font-weight: 700;
+}
+
+.staff-form-close {
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #64748b;
+  font-size: 15px;
+  line-height: 1;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.staff-form-close:hover {
+  background: #f1f5f9;
+}
+
+.staff-form-body {
+  flex: 1;
+  padding: 20px 26px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.staff-form-error {
+  margin: 0 0 16px;
+  padding: 10px 14px;
+  border: 1px solid #fecaca;
+  border-radius: 10px;
+  background: #fef2f2;
+  color: #b91c1c;
+  font-size: 12px;
+}
+
+.staff-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px 18px;
+}
+
+.staff-form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.staff-form-field-wide,
+.staff-form-note {
+  grid-column: 1 / -1;
+}
+
+.staff-form-field > span {
+  color: #475569;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.staff-form-field input,
+.staff-form-field select {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 9px;
+  background: #ffffff;
+  color: #0f172a;
+  font-size: 13px;
+  font-family: inherit;
+}
+
+.staff-form-field input:focus,
+.staff-form-field select:focus {
+  outline: 2px solid #bfdbfe;
+  border-color: #2563eb;
+}
+
+.staff-form-field select:disabled,
+.staff-form-field input:disabled {
+  background: #f1f5f9;
+  color: #64748b;
+  cursor: not-allowed;
+}
+
+.staff-form-hint {
+  color: #b45309;
+  font-size: 11px;
+  font-style: normal;
+}
+
+.staff-form-note {
+  padding: 11px 14px;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  background: #f8fafc;
+  color: #64748b;
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.staff-form-note strong {
+  color: #334155;
+}
+
+.staff-form-footer {
+  flex-shrink: 0;
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 16px 26px;
+  border-top: 1px solid #e5e7eb;
+}
+
+.staff-form-cancel {
+  padding: 10px 22px;
+  border: 1px solid #e2e8f0;
+  border-radius: 999px;
+  background: #ffffff;
+  color: #334155;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.staff-form-cancel:hover:not(:disabled) {
+  background: #f8fafc;
+}
+
+.staff-form-save {
+  padding: 10px 24px;
+  border: 0;
+  border-radius: 999px;
+  background: #2563eb;
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.staff-form-save:hover:not(:disabled) {
+  background: #1d4ed8;
+}
+
+.staff-form-cancel:disabled,
+.staff-form-save:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+@media (max-width: 600px) {
+  .staff-form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .staff-form-header,
+  .staff-form-body,
+  .staff-form-footer {
+    padding-left: 18px;
+    padding-right: 18px;
+  }
+
+  .staff-form-footer {
+    flex-direction: column-reverse;
+  }
+
+  .staff-form-cancel,
+  .staff-form-save {
+    width: 100%;
+  }
+}

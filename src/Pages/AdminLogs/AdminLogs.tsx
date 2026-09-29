@@ -26,6 +26,7 @@ type AdminLogsProps = {
   onApprovals: () => void;
   onDocumentManagement: () => void;
   onReports: () => void;
+  onUserManagement: () => void;
   onNotifications: () => void;
   onLogout: () => void;
 };
@@ -39,6 +40,7 @@ const AdminLogs = ({
   onApprovals,
   onDocumentManagement,
   onReports,
+  onUserManagement,
   onNotifications,
   onLogout,
 }: AdminLogsProps) => {
@@ -116,6 +118,7 @@ const AdminLogs = ({
         onApprovals={onApprovals}
         onDocumentManagement={onDocumentManagement}
         onReports={onReports}
+        onUserManagement={onUserManagement}
         onNotifications={onNotifications}
         onLogout={onLogout}
         isOpen={isDrawerOpen}

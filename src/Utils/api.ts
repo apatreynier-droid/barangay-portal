@@ -14,6 +14,12 @@ import type {
 import type { AdminRequestHistoryEntry } from "../Types/AdminRequestHistoryType";
 import type { AdminReportsData } from "../Types/AdminReportsType";
 import type { AdminActivityLog } from "../Types/AdminLogsType";
+import type {
+  AdminStaffAccount,
+  AdminStaffAccountStatus,
+  AdminStaffCreatePayload,
+  AdminStaffUpdatePayload,
+} from "../Types/AdminUserManagementType";
 
 const API_BASE_URL = "http://127.0.0.1:8000";
 
@@ -481,6 +487,106 @@ export const updateResidentStatus = async (
   }
 
   return body as AdminResidentDetail;
+};
+
+export const fetchStaffAccounts = async (): Promise<AdminStaffAccount[]> => {
+  const response = await authedFetch("/api/admin/staff");
+  const body: unknown = await response.json().catch(() => null);
+
+  if (!response.ok) {
+    throw new ApiError(
+      response.status,
+      parseErrorMessage(body, "Could not load the staff accounts."),
+    );
+  }
+
+  return (body as AdminStaffAccount[]) ?? [];
+};
+
+export const createStaffAccount = async (
+  payload: AdminStaffCreatePayload,
+): Promise<AdminStaffAccount> => {
+  const response = await authedFetch("/api/admin/staff", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  const body: unknown = await response.json().catch(() => null);
+
+  if (!response.ok) {
+    throw new ApiError(
+      response.status,
+      parseErrorMessage(body, "Could not create the staff account."),
+      "email",
+    );
+  }
+
+  return body as AdminStaffAccount;
+};
+
+export const updateStaffAccount = async (
+  staffId: number,
+  payload: AdminStaffUpdatePayload,
+): Promise<AdminStaffAccount> => {
+  const response = await authedFetch(`/api/admin/staff/${staffId}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  const body: unknown = await response.json().catch(() => null);
+
+  if (!response.ok) {
+    throw new ApiError(
+      response.status,
+      parseErrorMessage(body, "Could not update the staff account."),
+      "email",
+    );
+  }
+
+  return body as AdminStaffAccount;
+};
+
+export const updateStaffAccountStatus = async (
+  staffId: number,
+  accountStatus: AdminStaffAccountStatus,
+): Promise<AdminStaffAccount> => {
+  const response = await authedFetch(`/api/admin/staff/${staffId}/status`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ account_status: accountStatus }),
+  });
+  const body: unknown = await response.json().catch(() => null);
+
+  if (!response.ok) {
+    throw new ApiError(
+      response.status,
+      parseErrorMessage(body, "Could not update the account status."),
+    );
+  }
+
+  return body as AdminStaffAccount;
+};
+
+/**
+ * Asks the backend to email the account's existing password-reset link.
+ * Nothing is returned but the confirmation message: passwords are never sent
+ * to (or chosen by) the administrator.
+ */
+export const resetStaffPassword = async (staffId: number): Promise<string> => {
+  const response = await authedFetch(
+    `/api/admin/staff/${staffId}/reset-password`,
+    { method: "POST" },
+  );
+  const body: unknown = await response.json().catch(() => null);
+
+  if (!response.ok) {
+    throw new ApiError(
+      response.status,
+      parseErrorMessage(body, "Could not send the password reset link."),
+    );
+  }
+
+  return (body as { message?: string } | null)?.message ?? "";
 };
 
 export const fetchAdminDocumentRequests = async (): Promise<

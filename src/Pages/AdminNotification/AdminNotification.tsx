@@ -30,6 +30,7 @@ type AdminNotificationProps = {
   onDocumentManagement: () => void;
   onReports: () => void;
   onActivityLogs: () => void;
+  onUserManagement: () => void;
   onLogout: () => void;
 };
 
@@ -104,6 +105,7 @@ function AdminNotification({
   onDocumentManagement,
   onReports,
   onActivityLogs,
+  onUserManagement,
   onLogout,
 }: AdminNotificationProps) {
   const [filter, setFilter] = useState<NotificationFilter>("all");
@@ -199,6 +201,7 @@ function AdminNotification({
         onDocumentManagement={onDocumentManagement}
         onReports={onReports}
         onActivityLogs={onActivityLogs}
+        onUserManagement={onUserManagement}
         onNotifications={() => undefined}
         onLogout={onLogout}
         isOpen={isDrawerOpen}

@@ -22,9 +22,17 @@ export const ADMIN_DOCUMENT_MANAGEMENT_PATH = "/AdminDocumentManagement";
 export const ADMIN_APPROVALS_PATH = "/AdminApprovals";
 export const ADMIN_REPORTS_PATH = "/AdminReports";
 export const ADMIN_ACTIVITY_LOGS_PATH = "/AdminLogs";
+export const ADMIN_USER_MANAGEMENT_PATH = "/AdminUserManagement";
+
+/**
+ * Roles that may use the Admin Portal. Matches ADMINISTRATOR_ROLES in the
+ * backend (app/dependencies.py); `staff` and `resident` accounts are never
+ * administrators, so they cannot reach the admin pages or endpoints.
+ */
+const ADMIN_ROLES = ["admin", "super_admin"];
 
 export const isAdminUser = (user: AuthUser | null): boolean =>
-  user?.role === "admin";
+  user !== null && ADMIN_ROLES.includes(user.role);
 
 /** The authorized landing path for the given user (login when logged out). */
 export const getHomePath = (user: AuthUser | null): string => {
