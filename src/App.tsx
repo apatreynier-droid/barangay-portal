@@ -43,7 +43,7 @@ import {
   CREATE_ACCOUNT_PATH,
   FORGOT_PASSWORD_PATH,
   getHomePath,
-  isAdminUser,
+  isAdminPortalUser,
   LEGACY_RESIDENT_HOME_PATH,
   LOGIN_PATH,
   NOTIFICATIONS_PATH,
@@ -56,7 +56,8 @@ import {
 import {
   HomeRoute,
   PublicOnly,
-  RequireAdmin,
+  RequireAdministrator,
+  RequireAdminPortal,
   RequireAuth,
   RequireResident,
 } from "./Utils/guards";
@@ -316,7 +317,7 @@ function PortalRoutes() {
         element={
           <RequireAuth user={user}>
             {(authUser) =>
-              isAdminUser(authUser) ? (
+              isAdminPortalUser(authUser) ? (
                 <AdminNotification
                   user={authUser}
                   notifications={notifications}
@@ -365,7 +366,7 @@ function PortalRoutes() {
       <Route
         path={ADMIN_HOME_PATH}
         element={
-          <RequireAdmin user={user}>
+          <RequireAdminPortal user={user}>
             {(authUser) => (
               <AdminDashboard
                 user={authUser}
@@ -386,14 +387,14 @@ function PortalRoutes() {
                 onLogout={handleLogout}
               />
             )}
-          </RequireAdmin>
+          </RequireAdminPortal>
         }
       />
 
       <Route
         path={ADMIN_RESIDENTS_PATH}
         element={
-          <RequireAdmin user={user}>
+          <RequireAdminPortal user={user}>
             {(authUser) => (
               <AdminResidents
                 user={authUser}
@@ -414,14 +415,14 @@ function PortalRoutes() {
                 onLogout={handleLogout}
               />
             )}
-          </RequireAdmin>
+          </RequireAdminPortal>
         }
       />
 
       <Route
         path={ADMIN_APPROVALS_PATH}
         element={
-          <RequireAdmin user={user}>
+          <RequireAdministrator user={user}>
             {(authUser) => (
               <AdminApprovals
                 user={authUser}
@@ -442,14 +443,14 @@ function PortalRoutes() {
                 onLogout={handleLogout}
               />
             )}
-          </RequireAdmin>
+          </RequireAdministrator>
         }
       />
 
       <Route
         path={ADMIN_DOCUMENT_REQUESTS_PATH}
         element={
-          <RequireAdmin user={user}>
+          <RequireAdminPortal user={user}>
             {(authUser) => (
               <AdminDocumentRequests
                 user={authUser}
@@ -468,14 +469,14 @@ function PortalRoutes() {
                 onLogout={handleLogout}
               />
             )}
-          </RequireAdmin>
+          </RequireAdminPortal>
         }
       />
 
       <Route
         path={ADMIN_REQUEST_HISTORY_PATH}
         element={
-          <RequireAdmin user={user}>
+          <RequireAdminPortal user={user}>
             {(authUser) => (
               <AdminRequestHistory
                 user={authUser}
@@ -496,14 +497,14 @@ function PortalRoutes() {
                 onLogout={handleLogout}
               />
             )}
-          </RequireAdmin>
+          </RequireAdminPortal>
         }
       />
 
       <Route
         path={ADMIN_DOCUMENT_MANAGEMENT_PATH}
         element={
-          <RequireAdmin user={user}>
+          <RequireAdminPortal user={user}>
             {(authUser) => (
               <AdminDocumentManagement
                 user={authUser}
@@ -522,14 +523,14 @@ function PortalRoutes() {
                 onLogout={handleLogout}
               />
             )}
-          </RequireAdmin>
+          </RequireAdminPortal>
         }
       />
 
       <Route
         path={ADMIN_ACTIVITY_LOGS_PATH}
         element={
-          <RequireAdmin user={user}>
+          <RequireAdministrator user={user}>
             {(authUser) => (
               <AdminLogs
                 user={authUser}
@@ -550,14 +551,14 @@ function PortalRoutes() {
                 onLogout={handleLogout}
               />
             )}
-          </RequireAdmin>
+          </RequireAdministrator>
         }
       />
 
       <Route
         path={ADMIN_USER_MANAGEMENT_PATH}
         element={
-          <RequireAdmin user={user}>
+          <RequireAdministrator user={user}>
             {(authUser) => (
               <AdminUserManagement
                 user={authUser}
@@ -578,14 +579,14 @@ function PortalRoutes() {
                 onLogout={handleLogout}
               />
             )}
-          </RequireAdmin>
+          </RequireAdministrator>
         }
       />
 
       <Route
         path={ADMIN_REPORTS_PATH}
         element={
-          <RequireAdmin user={user}>
+          <RequireAdministrator user={user}>
             {(authUser) => (
               <AdminReports
                 user={authUser}
@@ -606,7 +607,7 @@ function PortalRoutes() {
                 onLogout={handleLogout}
               />
             )}
-          </RequireAdmin>
+          </RequireAdministrator>
         }
       />
     </Routes>

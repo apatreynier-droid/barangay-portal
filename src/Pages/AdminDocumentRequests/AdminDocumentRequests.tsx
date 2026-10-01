@@ -8,7 +8,8 @@ import {
   fetchAdminDocumentRequests,
 } from "../../Utils/api";
 import type { AdminDocumentRequest } from "../../Types/AdminDocumentRequestsType";
-import { ADMIN_DISPLAY_NAME } from "../../Utils/AdminDisplay";
+import { getPortalProfileName } from "../../Utils/AdminDisplay";
+import { isAdministrator } from "../../Utils/routePaths";
 import AdminSidebar from "../../components/AdminDashboard/AdminSidebar";
 import useResponsiveSidebar from "../../Utils/useResponsiveSidebar";
 import AdminTopbar from "../../components/AdminDashboard/AdminTopbar";
@@ -37,6 +38,7 @@ type AdminDocumentRequestsProps = {
 };
 
 const AdminDocumentRequests = ({
+  user,
   unreadNotifications,
   onDashboard,
   onResidents,
@@ -104,8 +106,7 @@ const AdminDocumentRequests = ({
     [requests, filters],
   );
 
-  const fullName = ADMIN_DISPLAY_NAME;
-  const roleLabel = "Brgy. Administrator";
+  const fullName = getPortalProfileName(user);
 
   const { isDrawerOpen, closeDrawer, toggleDrawer } = useResponsiveSidebar();
 
@@ -115,9 +116,7 @@ const AdminDocumentRequests = ({
         pendingRequests={sidebarStats.pending}
         pendingApprovals={sidebarStats.pending}
         unreadNotifications={unreadNotifications}
-        firstName={ADMIN_DISPLAY_NAME}
-        lastName=""
-        role={roleLabel}
+        user={user}
         activeItem="document-requests"
         onDashboard={onDashboard}
         onResidents={onResidents}
@@ -163,6 +162,7 @@ const AdminDocumentRequests = ({
         {selectedRequestId !== null ? (
           <RequestDetailsView
             requestId={selectedRequestId}
+            canReview={isAdministrator(user)}
             onBack={() => setSelectedRequestId(null)}
             onChanged={() => void loadRequests()}
           />

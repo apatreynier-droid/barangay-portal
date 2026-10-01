@@ -12,9 +12,15 @@ from .security import hash_access_token
 
 bearer_scheme = HTTPBearer(auto_error=False)
 
-#: Roles that may use the Admin Portal. ``staff`` and ``resident`` accounts are
-#: never part of this list, so they can neither reach the admin pages nor call
-#: the administrator-only endpoints (including User Management).
+#: Roles that may sign in to the Admin Portal. A ``staff`` account is an
+#: administrative/operational user (document processing), while ``resident``
+#: accounts only ever reach the Resident Portal.
+ADMIN_PORTAL_ROLES = ("staff", "admin", "super_admin")
+
+#: Roles with full administrator privileges. Only these may manage accounts
+#: (User Management), read the audit trail (Activity Logs) or run Reports.
+#: Staff accounts get the operational endpoints only, enforced server-side by
+#: the dependency split below - never by the frontend alone.
 ADMINISTRATOR_ROLES = ("admin", "super_admin")
 
 
@@ -55,15 +61,33 @@ def get_current_user(
     return user
 
 
+def get_current_admin_portal_user(
+    current_user: dict[str, object] = Depends(get_current_user),
+) -> dict[str, object]:
+    """Allow every Admin Portal role: ``staff``, ``admin`` and ``super_admin``.
+
+    Used by the operational endpoints Staff needs: the dashboard, the resident
+    list/detail, the document-request workflow and the request history. A
+    ``resident`` account receives HTTP 403 here.
+    """
+    if current_user.get("role") not in ADMIN_PORTAL_ROLES:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Staff or administrator access is required.",
+        )
+
+    return current_user
+
+
 def get_current_admin_user(
     current_user: dict[str, object] = Depends(get_current_user),
 ) -> dict[str, object]:
     """Allow administrators (``admin`` and ``super_admin``) only.
 
     Everything an administrator can do is decided in the endpoint itself, so
-    the User Management endpoints reuse this dependency: a ``staff`` or
-    ``resident`` account can never create, edit, activate, deactivate or reset
-    another account, regardless of what the frontend shows.
+    the administrator-only endpoints (User Management, Reports, Activity Logs,
+    resident editing) reuse this dependency: a ``staff`` or ``resident``
+    account can never call them, regardless of what the frontend shows.
     """
     if current_user.get("role") not in ADMINISTRATOR_ROLES:
         raise HTTPException(

@@ -3,7 +3,7 @@ import { useCallback, useEffect, useState } from "react";
 import type { AuthUser } from "../../Utils/api";
 import { fetchAdminDashboard } from "../../Utils/api";
 import type { AdminDashboardData } from "../../Types/AdminDashboardType";
-import { ADMIN_DISPLAY_NAME } from "../../Utils/AdminDisplay";
+import { getPortalProfileName } from "../../Utils/AdminDisplay";
 import AdminSidebar from "../../components/AdminDashboard/AdminSidebar";
 import AdminTopbar from "../../components/AdminDashboard/AdminTopbar";
 import AdminStatsGrid from "../../components/AdminDashboard/AdminStatsGrid";
@@ -30,6 +30,7 @@ type AdminDashboardProps = {
 };
 
 const AdminDashboard = ({
+  user,
   unreadNotifications,
   onNotifications,
   onResidents,
@@ -63,8 +64,7 @@ const AdminDashboard = ({
     void loadDashboard();
   }, [loadDashboard]);
 
-  const fullName = ADMIN_DISPLAY_NAME;
-  const roleLabel = "Brgy. Administrator";
+  const fullName = getPortalProfileName(user);
 
   const { isDrawerOpen, closeDrawer, toggleDrawer } = useResponsiveSidebar();
 
@@ -74,9 +74,7 @@ const AdminDashboard = ({
         pendingRequests={data?.stats.pending ?? 0}
         pendingApprovals={data?.stats.pending ?? 0}
         unreadNotifications={unreadNotifications}
-        firstName={ADMIN_DISPLAY_NAME}
-        lastName=""
-        role={roleLabel}
+        user={user}
         activeItem="dashboard"
         onDashboard={() => undefined}
         onResidents={onResidents}

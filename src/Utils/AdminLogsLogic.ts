@@ -73,6 +73,17 @@ export function formatLogActorRole(role: string): string {
   return role.charAt(0).toUpperCase() + role.slice(1);
 }
 
+/**
+ * Display name shown in the Activity Logs "Actor" column.
+ *
+ * Display-only mapping: the admin account's stored personal name
+ * ("Elena Reyes") is presented as "Administrator". The underlying log rows,
+ * profile, credentials, role, and permissions are not modified.
+ */
+export function formatLogActorName(actorName: string): string {
+  return actorName === "Elena Reyes" ? "Administrator" : actorName;
+}
+
 export function filterActivityLogs(
   logs: AdminActivityLog[],
   filters: ActivityLogsFiltersState,

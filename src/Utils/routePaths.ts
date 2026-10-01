@@ -25,14 +25,25 @@ export const ADMIN_ACTIVITY_LOGS_PATH = "/AdminLogs";
 export const ADMIN_USER_MANAGEMENT_PATH = "/AdminUserManagement";
 
 /**
- * Roles that may use the Admin Portal. Matches ADMINISTRATOR_ROLES in the
- * backend (app/dependencies.py); `staff` and `resident` accounts are never
- * administrators, so they cannot reach the admin pages or endpoints.
+ * Roles that may sign in to the Admin Portal (Staff and Administrators).
+ * Matches ADMIN_PORTAL_ROLES in the backend (app/dependencies.py).
  */
-const ADMIN_ROLES = ["admin", "super_admin"];
+const ADMIN_PORTAL_ROLES = ["staff", "admin", "super_admin"];
 
-export const isAdminUser = (user: AuthUser | null): boolean =>
-  user !== null && ADMIN_ROLES.includes(user.role);
+/**
+ * Roles with full administrator privileges (User Management, Reports, Activity
+ * Logs, resident editing). Matches ADMINISTRATOR_ROLES in the backend
+ * (app/dependencies.py); a `staff` account is never part of this list.
+ */
+const ADMINISTRATOR_ROLES = ["admin", "super_admin"];
+
+/** True for every Admin Portal account: Staff, Administrator, Super Admin. */
+export const isAdminPortalUser = (user: AuthUser | null): boolean =>
+  user !== null && ADMIN_PORTAL_ROLES.includes(user.role);
+
+/** True for administrators only (administrator-only pages and actions). */
+export const isAdministrator = (user: AuthUser | null): boolean =>
+  user !== null && ADMINISTRATOR_ROLES.includes(user.role);
 
 /** The authorized landing path for the given user (login when logged out). */
 export const getHomePath = (user: AuthUser | null): string => {
@@ -40,5 +51,7 @@ export const getHomePath = (user: AuthUser | null): string => {
     return LOGIN_PATH;
   }
 
-  return isAdminUser(user) ? ADMIN_HOME_PATH : RESIDENT_HOME_PATH;
+  // Staff accounts are operational Admin Portal users: they must never be
+  // sent to the Resident Portal.
+  return isAdminPortalUser(user) ? ADMIN_HOME_PATH : RESIDENT_HOME_PATH;
 };

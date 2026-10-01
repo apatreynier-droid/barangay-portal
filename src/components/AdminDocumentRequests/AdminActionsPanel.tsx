@@ -8,6 +8,12 @@ import DatePickerInput from "../Shared/DatePickerInput";
 
 type AdminActionsPanelProps = {
   request: AdminDocumentRequestDetail;
+  /**
+   * True for administrator accounts. Rejecting a request (and approving a
+   * pending one) is an administrator action; Staff accounts process approved
+   * work forward. The backend rejects the request with HTTP 403 otherwise.
+   */
+  canReview: boolean;
   onUpdated: (updated: AdminDocumentRequestDetail) => void;
 };
 
@@ -21,6 +27,7 @@ const STATUS_FLOW = [
 
 const AdminActionsPanel = ({
   request,
+  canReview,
   onUpdated,
 }: AdminActionsPanelProps) => {
   const [remarks, setRemarks] = useState(request.admin_remarks ?? "");
@@ -183,14 +190,16 @@ const AdminActionsPanel = ({
           >
             Mark as Processing
           </button>
-          <button
-            type="button"
-            className="docreq-reject-button"
-            onClick={() => applyStatus("Rejected")}
-            disabled={isSaving}
-          >
-            Reject
-          </button>
+          {canReview && (
+            <button
+              type="button"
+              className="docreq-reject-button"
+              onClick={() => applyStatus("Rejected")}
+              disabled={isSaving}
+            >
+              Reject
+            </button>
+          )}
         </div>
       )}
 
@@ -204,14 +213,16 @@ const AdminActionsPanel = ({
           >
             Mark as Ready for Pickup
           </button>
-          <button
-            type="button"
-            className="docreq-reject-button"
-            onClick={() => applyStatus("Rejected")}
-            disabled={isSaving}
-          >
-            Reject
-          </button>
+          {canReview && (
+            <button
+              type="button"
+              className="docreq-reject-button"
+              onClick={() => applyStatus("Rejected")}
+              disabled={isSaving}
+            >
+              Reject
+            </button>
+          )}
         </div>
       )}
 

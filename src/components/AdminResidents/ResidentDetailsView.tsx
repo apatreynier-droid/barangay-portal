@@ -15,12 +15,15 @@ import ResidentStatusConfirmModal from "./ResidentStatusConfirmModal";
 
 type ResidentDetailsViewProps = {
   residentId: number;
+  /** Administrator accounts may edit/deactivate; Staff only view the profile. */
+  canManage: boolean;
   onBack: () => void;
   onResidentChanged: () => void;
 };
 
 const ResidentDetailsView = ({
   residentId,
+  canManage,
   onBack,
   onResidentChanged,
 }: ResidentDetailsViewProps) => {
@@ -110,6 +113,7 @@ const ResidentDetailsView = ({
           <div className="residents-detail-grid">
             <ResidentProfileCard
               resident={resident}
+              canManage={canManage}
               onEdit={() => setIsEditOpen(true)}
               onToggleStatus={() => setIsStatusConfirmOpen(true)}
             />

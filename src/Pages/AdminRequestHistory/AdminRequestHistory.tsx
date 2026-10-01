@@ -8,7 +8,10 @@ import {
   fetchAdminRequestHistory,
 } from "../../Utils/api";
 import type { AdminRequestHistoryEntry } from "../../Types/AdminRequestHistoryType";
-import { ADMIN_DISPLAY_NAME } from "../../Utils/AdminDisplay";
+import {
+  ADMIN_DISPLAY_NAME,
+  getPortalProfileName,
+} from "../../Utils/AdminDisplay";
 import AdminSidebar from "../../components/AdminDashboard/AdminSidebar";
 import useResponsiveSidebar from "../../Utils/useResponsiveSidebar";
 import AdminTopbar from "../../components/AdminDashboard/AdminTopbar";
@@ -39,6 +42,7 @@ type AdminRequestHistoryProps = {
 };
 
 const AdminRequestHistory = ({
+  user,
   unreadNotifications,
   onDashboard,
   onResidents,
@@ -108,8 +112,7 @@ const AdminRequestHistory = ({
     [requests],
   );
 
-  const fullName = ADMIN_DISPLAY_NAME;
-  const roleLabel = "Brgy. Administrator";
+  const fullName = getPortalProfileName(user);
 
   const { isDrawerOpen, closeDrawer, toggleDrawer } = useResponsiveSidebar();
 
@@ -119,9 +122,7 @@ const AdminRequestHistory = ({
         pendingRequests={sidebarStats.pending}
         pendingApprovals={sidebarStats.pending}
         unreadNotifications={unreadNotifications}
-        firstName={ADMIN_DISPLAY_NAME}
-        lastName=""
-        role={roleLabel}
+        user={user}
         activeItem="request-history"
         onDashboard={onDashboard}
         onResidents={onResidents}

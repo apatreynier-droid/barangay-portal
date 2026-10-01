@@ -10,12 +10,15 @@ import AdminActionsPanel from "./AdminActionsPanel";
 
 type RequestDetailsViewProps = {
   requestId: number;
+  /** Administrator accounts may also reject; Staff only process forward. */
+  canReview: boolean;
   onBack: () => void;
   onChanged: () => void;
 };
 
 const RequestDetailsView = ({
   requestId,
+  canReview,
   onBack,
   onChanged,
 }: RequestDetailsViewProps) => {
@@ -125,6 +128,7 @@ const RequestDetailsView = ({
             <AdminActionsPanel
               key={request.id}
               request={request}
+              canReview={canReview}
               onUpdated={handleUpdated}
             />
           </div>

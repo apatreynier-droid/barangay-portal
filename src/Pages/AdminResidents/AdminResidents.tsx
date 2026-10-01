@@ -4,7 +4,8 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import type { AuthUser } from "../../Utils/api";
 import { fetchAdminDashboard, fetchResidents } from "../../Utils/api";
 import type { AdminResident } from "../../Types/AdminResidentsType";
-import { ADMIN_DISPLAY_NAME } from "../../Utils/AdminDisplay";
+import { getPortalProfileName } from "../../Utils/AdminDisplay";
+import { isAdministrator } from "../../Utils/routePaths";
 import AdminSidebar from "../../components/AdminDashboard/AdminSidebar";
 import useResponsiveSidebar from "../../Utils/useResponsiveSidebar";
 import AdminTopbar from "../../components/AdminDashboard/AdminTopbar";
@@ -33,6 +34,7 @@ type AdminResidentsProps = {
 };
 
 const AdminResidents = ({
+  user,
   unreadNotifications,
   onDashboard,
   onDocumentRequests,
@@ -100,8 +102,7 @@ const AdminResidents = ({
     [residents, filters],
   );
 
-  const fullName = ADMIN_DISPLAY_NAME;
-  const roleLabel = "Brgy. Administrator";
+  const fullName = getPortalProfileName(user);
 
   const { isDrawerOpen, closeDrawer, toggleDrawer } = useResponsiveSidebar();
 
@@ -111,9 +112,7 @@ const AdminResidents = ({
         pendingRequests={sidebarStats.pending}
         pendingApprovals={sidebarStats.approved}
         unreadNotifications={unreadNotifications}
-        firstName={ADMIN_DISPLAY_NAME}
-        lastName=""
-        role={roleLabel}
+        user={user}
         activeItem="residents"
         onDashboard={onDashboard}
         onResidents={() => undefined}
@@ -150,6 +149,7 @@ const AdminResidents = ({
         {selectedResidentId !== null ? (
           <ResidentDetailsView
             residentId={selectedResidentId}
+            canManage={isAdministrator(user)}
             onBack={() => setSelectedResidentId(null)}
             onResidentChanged={() => void loadResidents()}
           />

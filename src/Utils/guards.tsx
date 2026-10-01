@@ -3,7 +3,8 @@ import { Navigate } from "react-router-dom";
 import {
   ADMIN_HOME_PATH,
   getHomePath,
-  isAdminUser,
+  isAdminPortalUser,
+  isAdministrator,
   LOGIN_PATH,
   RESIDENT_HOME_PATH,
 } from "./routePaths";
@@ -27,16 +28,17 @@ export function RequireAuth({ user, children }: GuardProps) {
 }
 
 /**
- * Allows access to administrators only.
- * Logged-out visitors go to Login; authenticated residents are sent to their
- * own dashboard instead of the requested Admin page.
+ * Allows access to the Admin Portal pages shared by Staff and Administrators
+ * (dashboard, residents, document requests, request history...).
+ * Logged-out visitors go to Login; residents are sent back to their own
+ * dashboard instead of the requested Admin page.
  */
-export function RequireAdmin({ user, children }: GuardProps) {
+export function RequireAdminPortal({ user, children }: GuardProps) {
   if (!user) {
     return <Navigate to={LOGIN_PATH} replace />;
   }
 
-  if (!isAdminUser(user)) {
+  if (!isAdminPortalUser(user)) {
     return <Navigate to={RESIDENT_HOME_PATH} replace />;
   }
 
@@ -44,16 +46,38 @@ export function RequireAdmin({ user, children }: GuardProps) {
 }
 
 /**
+ * Allows access to administrator-only pages (User Management, Reports,
+ * Activity Logs). A Staff account is redirected to the Admin Dashboard, never
+ * to the Resident Portal.
+ */
+export function RequireAdministrator({ user, children }: GuardProps) {
+  if (!user) {
+    return <Navigate to={LOGIN_PATH} replace />;
+  }
+
+  if (!isAdministrator(user)) {
+    return (
+      <Navigate
+        to={isAdminPortalUser(user) ? ADMIN_HOME_PATH : RESIDENT_HOME_PATH}
+        replace
+      />
+    );
+  }
+
+  return <>{children(user)}</>;
+}
+
+/**
  * Allows access to residents only.
- * Logged-out visitors go to Login; administrators are sent to the Admin
- * Dashboard instead of the requested Resident page.
+ * Logged-out visitors go to Login; Staff and Administrators are sent to the
+ * Admin Portal instead of the requested Resident page.
  */
 export function RequireResident({ user, children }: GuardProps) {
   if (!user) {
     return <Navigate to={LOGIN_PATH} replace />;
   }
 
-  if (isAdminUser(user)) {
+  if (isAdminPortalUser(user)) {
     return <Navigate to={ADMIN_HOME_PATH} replace />;
   }
 

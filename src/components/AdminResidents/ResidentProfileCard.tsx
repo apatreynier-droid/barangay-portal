@@ -6,12 +6,19 @@ import {
 
 type ResidentProfileCardProps = {
   resident: AdminResidentDetail;
+  /**
+   * True for administrator accounts. Editing resident records and
+   * deactivating accounts are administrator actions; Staff only view the
+   * profile. The backend returns HTTP 403 for those calls anyway.
+   */
+  canManage: boolean;
   onEdit: () => void;
   onToggleStatus: () => void;
 };
 
 const ResidentProfileCard = ({
   resident,
+  canManage,
   onEdit,
   onToggleStatus,
 }: ResidentProfileCardProps) => {
@@ -30,21 +37,25 @@ const ResidentProfileCard = ({
         {statusMeta.label}
       </span>
 
-      <button
-        type="button"
-        className="residents-edit-button"
-        onClick={onEdit}
-      >
-        Edit Information
-      </button>
+      {canManage && (
+        <>
+          <button
+            type="button"
+            className="residents-edit-button"
+            onClick={onEdit}
+          >
+            Edit Information
+          </button>
 
-      <button
-        type="button"
-        className="residents-deactivate-button"
-        onClick={onToggleStatus}
-      >
-        {isActive ? "Deactivate Account" : "Activate Account"}
-      </button>
+          <button
+            type="button"
+            className="residents-deactivate-button"
+            onClick={onToggleStatus}
+          >
+            {isActive ? "Deactivate Account" : "Activate Account"}
+          </button>
+        </>
+      )}
     </aside>
   );
 };
