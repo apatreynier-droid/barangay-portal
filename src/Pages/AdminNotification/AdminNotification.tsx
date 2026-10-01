@@ -9,7 +9,7 @@ import {
   markNotificationRead,
 } from "../../Utils/api";
 import { getPendingApprovals } from "../../Utils/AdminApprovalsLogic";
-import { ADMIN_DISPLAY_NAME } from "../../Utils/AdminDisplay";
+import { getPortalProfileName } from "../../Utils/AdminDisplay";
 import { formatRelativeTime } from "../../Utils/AdminDashboardLogic";
 import AdminSidebar from "../../components/AdminDashboard/AdminSidebar";
 import AdminTopbar from "../../components/AdminDashboard/AdminTopbar";
@@ -93,6 +93,7 @@ const toUtcTimestamp = (value: string): string => {
 };
 
 function AdminNotification({
+  user,
   notifications,
   unreadNotifications,
   onNotificationsChanged,
@@ -181,17 +182,13 @@ function AdminNotification({
     }
   };
 
-  const roleLabel = "Brgy. Administrator";
-
   return (
     <div className="admin-dashboard">
       <AdminSidebar
         pendingRequests={pendingRequests}
         pendingApprovals={pendingRequests}
         unreadNotifications={unreadNotifications}
-        firstName={ADMIN_DISPLAY_NAME}
-        lastName=""
-        role={roleLabel}
+        user={user}
         activeItem="notifications"
         onDashboard={onDashboard}
         onResidents={onResidents}
@@ -219,7 +216,7 @@ function AdminNotification({
 
       <main className="admin-main">
         <AdminTopbar
-          fullName={ADMIN_DISPLAY_NAME}
+          fullName={getPortalProfileName(user)}
           onMenuToggle={toggleDrawer}
           title="Notifications"
           subtitle="Alerts and system notifications."

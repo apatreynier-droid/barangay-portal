@@ -9,7 +9,7 @@ import {
   updateStaffAccountStatus,
 } from "../../Utils/api";
 import type { AdminStaffAccount } from "../../Types/AdminUserManagementType";
-import { ADMIN_DISPLAY_NAME } from "../../Utils/AdminDisplay";
+import { getPortalProfileName } from "../../Utils/AdminDisplay";
 import AdminSidebar from "../../components/AdminDashboard/AdminSidebar";
 import AdminTopbar from "../../components/AdminDashboard/AdminTopbar";
 import useResponsiveSidebar from "../../Utils/useResponsiveSidebar";
@@ -159,7 +159,6 @@ const AdminUserManagement = ({
     }
   };
 
-  const roleLabel = user.role === "super_admin" ? "Super Admin" : "Brgy. Administrator";
   const staffCountLabel = `${accounts.length} staff account${
     accounts.length === 1 ? "" : "s"
   }`;
@@ -172,9 +171,7 @@ const AdminUserManagement = ({
         pendingRequests={sidebarStats.pending}
         pendingApprovals={sidebarStats.approved}
         unreadNotifications={unreadNotifications}
-        firstName={ADMIN_DISPLAY_NAME}
-        lastName=""
-        role={roleLabel}
+        user={user}
         activeItem="user-management"
         onDashboard={onDashboard}
         onResidents={onResidents}
@@ -202,7 +199,7 @@ const AdminUserManagement = ({
 
       <main className="admin-main">
         <AdminTopbar
-          fullName={ADMIN_DISPLAY_NAME || "Administrator"}
+          fullName={getPortalProfileName(user)}
           onMenuToggle={toggleDrawer}
           title="User Management"
           subtitle="Manage staff accounts and roles."

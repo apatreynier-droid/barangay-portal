@@ -11,10 +11,10 @@ existing system:
                     -> row in ``notifications`` for every active admin
                     -> Admin Notification page (GET /api/notifications)
 
-Nothing here is hardcoded: recipients are resolved from the administrator
-roles in ``users.role`` (``admin``, ``super_admin``) and every message is
-built from the data the endpoint just read or wrote (resident name, document
-name, request number, status).
+Nothing here is hardcoded: recipients are resolved from the Admin Portal
+roles in ``users.role`` (``staff``, ``admin``, ``super_admin``) and every
+message is built from the data the endpoint just read or wrote (resident name,
+document name, request number, status).
 
 Guarantees relied on by the endpoints:
 
@@ -264,14 +264,20 @@ def _scope_key(dedupe_key: str, user_id: int) -> str:
 
 
 def _load_admin_ids(connection: MySQLConnection) -> list[int]:
-    """Return the ids of every active administrator account."""
+    """Return the ids of every active Admin Portal account.
+
+    Staff accounts are included: they process the same document requests, so
+    they need the same operational notifications (new requests, registrations,
+    status changes) as the administrators.
+    """
     cursor = connection.cursor(dictionary=True)
     try:
         cursor.execute(
             """
             SELECT id
             FROM users
-            WHERE role IN ('admin', 'super_admin') AND account_status = 'active'
+            WHERE role IN ('staff', 'admin', 'super_admin')
+              AND account_status = 'active'
             ORDER BY id ASC
             """
         )

@@ -8,7 +8,7 @@ import {
   type AuthUser,
 } from "../../Utils/api";
 import { RESIDENT_ROLE_LABEL } from "../../Utils/ResidentDisplay";
-import { isAdminUser } from "../../Utils/routePaths";
+import { isAdminPortalUser } from "../../Utils/routePaths";
 import useResponsiveSidebar from "../../Utils/useResponsiveSidebar";
 import MobileMenuButton from "../../components/Shared/MobileMenuButton";
 import "../Dashboard/Dashboard.css";
@@ -135,7 +135,7 @@ function NotificationPage({
         onLogout={onLogout}
         firstName={user.first_name}
         lastName={user.last_name}
-        role={isAdminUser(user) ? "Brgy. Administrator" : RESIDENT_ROLE_LABEL}
+        role={isAdminPortalUser(user) ? "Brgy. Administrator" : RESIDENT_ROLE_LABEL}
         isOpen={isDrawerOpen}
         onNavigate={closeDrawer}
       />

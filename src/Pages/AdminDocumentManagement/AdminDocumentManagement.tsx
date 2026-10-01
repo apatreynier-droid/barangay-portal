@@ -9,7 +9,7 @@ import {
 } from "../../Utils/api";
 import type { AdminRequestHistoryEntry } from "../../Types/AdminRequestHistoryType";
 import type { DocumentTypeOption } from "../../Utils/api";
-import { ADMIN_DISPLAY_NAME } from "../../Utils/AdminDisplay";
+import { getPortalProfileName } from "../../Utils/AdminDisplay";
 import AdminSidebar from "../../components/AdminDashboard/AdminSidebar";
 import AdminTopbar from "../../components/AdminDashboard/AdminTopbar";
 import useResponsiveSidebar from "../../Utils/useResponsiveSidebar";
@@ -37,6 +37,7 @@ type AdminDocumentManagementProps = {
 };
 
 const AdminDocumentManagement = ({
+  user,
   unreadNotifications,
   onDashboard,
   onResidents,
@@ -102,8 +103,7 @@ const AdminDocumentManagement = ({
     };
   }, []);
 
-  const fullName = ADMIN_DISPLAY_NAME;
-  const roleLabel = "Brgy. Administrator";
+  const fullName = getPortalProfileName(user);
 
   const { isDrawerOpen, closeDrawer, toggleDrawer } = useResponsiveSidebar();
 
@@ -113,9 +113,7 @@ const AdminDocumentManagement = ({
         pendingRequests={sidebarStats.pending}
         pendingApprovals={sidebarStats.pending}
         unreadNotifications={unreadNotifications}
-        firstName={ADMIN_DISPLAY_NAME}
-        lastName=""
-        role={roleLabel}
+        user={user}
         activeItem="document-management"
         onDashboard={onDashboard}
         onResidents={onResidents}

@@ -5,7 +5,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import type { AuthUser } from "../../Utils/api";
 import { fetchAdminDocumentRequests } from "../../Utils/api";
 import type { AdminDocumentRequest } from "../../Types/AdminDocumentRequestsType";
-import { ADMIN_DISPLAY_NAME } from "../../Utils/AdminDisplay";
+import { getPortalProfileName } from "../../Utils/AdminDisplay";
 import AdminSidebar from "../../components/AdminDashboard/AdminSidebar";
 import AdminTopbar from "../../components/AdminDashboard/AdminTopbar";
 import useResponsiveSidebar from "../../Utils/useResponsiveSidebar";
@@ -31,6 +31,7 @@ type AdminApprovalsProps = {
 };
 
 const AdminApprovals = ({
+  user,
   unreadNotifications,
   onDashboard,
   onResidents,
@@ -69,8 +70,7 @@ const AdminApprovals = ({
     [requests],
   );
 
-  const fullName = ADMIN_DISPLAY_NAME;
-  const roleLabel = "Brgy. Administrator";
+  const fullName = getPortalProfileName(user);
 
   const { isDrawerOpen, closeDrawer, toggleDrawer } = useResponsiveSidebar();
 
@@ -80,9 +80,7 @@ const AdminApprovals = ({
         pendingRequests={pendingApprovals.length}
         pendingApprovals={pendingApprovals.length}
         unreadNotifications={unreadNotifications}
-        firstName={ADMIN_DISPLAY_NAME}
-        lastName=""
-        role={roleLabel}
+        user={user}
         activeItem="approvals"
         onDashboard={onDashboard}
         onResidents={onResidents}

@@ -16,7 +16,11 @@ from urllib.parse import quote
 from .config import settings
 from .database import create_connection, get_db
 from .activity_logs import record_activity_log
-from .dependencies import get_current_admin_user, get_current_user
+from .dependencies import (
+    get_current_admin_portal_user,
+    get_current_admin_user,
+    get_current_user,
+)
 from .notifications import (
     NOTIFICATION_TYPE_REQUEST,
     action_time_bucket,
@@ -125,6 +129,20 @@ def user_display_name(user: dict[str, object]) -> str:
     call site can use this instead of re-reading the profile from the database.
     """
     return f"{user['first_name']} {user['last_name']}".strip()
+
+
+def actor_role_label(user: dict[str, object]) -> str:
+    """Short role label of the acting account for audit/notification messages.
+
+    Both Staff and Administrator accounts can move a document request through
+    the processing workflow, so the message names the role that really did it.
+    """
+    role = user.get("role")
+    if role == "staff":
+        return "Staff"
+    if role == "super_admin":
+        return "Super Admin"
+    return "Administrator"
 
 
 def raise_rate_limited(retry_after: float, message: str) -> None:
@@ -994,7 +1012,7 @@ def dashboard_summary(
 @app.get("/api/admin/dashboard", response_model=AdminDashboardResponse)
 def admin_dashboard(
     connection: MySQLConnection = Depends(get_db),
-    current_user: dict[str, object] = Depends(get_current_admin_user),
+    current_user: dict[str, object] = Depends(get_current_admin_portal_user),
 ) -> AdminDashboardResponse:
     cursor = connection.cursor(dictionary=True)
 
@@ -1321,7 +1339,7 @@ def admin_reports(
 @app.get("/api/admin/residents", response_model=list[AdminResidentResponse])
 def list_residents(
     connection: MySQLConnection = Depends(get_db),
-    current_user: dict[str, object] = Depends(get_current_admin_user),
+    current_user: dict[str, object] = Depends(get_current_admin_portal_user),
 ) -> list[AdminResidentResponse]:
     cursor = connection.cursor(dictionary=True)
     cursor.execute(
@@ -1439,7 +1457,7 @@ def load_resident_detail(
 def get_resident_detail(
     resident_id: int,
     connection: MySQLConnection = Depends(get_db),
-    current_user: dict[str, object] = Depends(get_current_admin_user),
+    current_user: dict[str, object] = Depends(get_current_admin_portal_user),
 ) -> AdminResidentDetailResponse:
     return load_resident_detail(connection, resident_id)
 
@@ -1663,7 +1681,7 @@ def set_resident_status(
 @app.get("/api/admin/document-requests", response_model=list[AdminDocumentRequestResponse])
 def list_document_requests(
     connection: MySQLConnection = Depends(get_db),
-    current_user: dict[str, object] = Depends(get_current_admin_user),
+    current_user: dict[str, object] = Depends(get_current_admin_portal_user),
 ) -> list[AdminDocumentRequestResponse]:
     cursor = connection.cursor(dictionary=True)
     cursor.execute(
@@ -1704,7 +1722,7 @@ def list_document_requests(
 )
 def list_request_history(
     connection: MySQLConnection = Depends(get_db),
-    current_user: dict[str, object] = Depends(get_current_admin_user),
+    current_user: dict[str, object] = Depends(get_current_admin_portal_user),
 ) -> list[AdminRequestHistoryResponse]:
     cursor = connection.cursor(dictionary=True)
     cursor.execute(
@@ -1746,8 +1764,8 @@ def list_request_history(
     return history_requests
 
 
-# Allowed admin status transitions for document requests. Requests that are
-# Completed or Rejected are final and cannot be changed anymore.
+#: Allowed admin status transitions for document requests. Requests that are
+#: Completed or Rejected are final and cannot be changed anymore.
 VALID_STATUS_TRANSITIONS: dict[str, set[str]] = {
     "Pending": {"Approved", "Rejected"},
     "Approved": {"Processing", "Rejected"},
@@ -1756,6 +1774,12 @@ VALID_STATUS_TRANSITIONS: dict[str, set[str]] = {
     "Completed": set(),
     "Rejected": set(),
 }
+
+#: Statuses a Staff account may set through the document-request workflow
+#: (process approved work: start processing, ready for pickup, completed).
+#: Approving a pending request or rejecting one stays with the administrator
+#: roles, so a staff request for any other status is rejected with HTTP 403.
+STAFF_PERMITTED_REQUEST_STATUSES = ("Processing", "Ready for Pickup", "Completed")
 
 
 def load_document_request_detail(
@@ -1819,7 +1843,7 @@ def load_document_request_detail(
 def get_document_request_detail(
     request_id: int,
     connection: MySQLConnection = Depends(get_db),
-    current_user: dict[str, object] = Depends(get_current_admin_user),
+    current_user: dict[str, object] = Depends(get_current_admin_portal_user),
 ) -> AdminDocumentRequestDetailResponse:
     return load_document_request_detail(connection, request_id)
 
@@ -1833,12 +1857,28 @@ def update_document_request(
     payload: AdminRequestActionInput,
     request: Request,
     connection: MySQLConnection = Depends(get_db),
-    current_user: dict[str, object] = Depends(get_current_admin_user),
+    current_user: dict[str, object] = Depends(get_current_admin_portal_user),
 ) -> AdminDocumentRequestDetailResponse:
     if payload.status is None and payload.admin_remarks is None and payload.pickup_date is None:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail="Provide a status, remarks, or a pickup date.",
+        )
+
+    # Staff accounts process approved work forward; approving a pending
+    # request or rejecting a request is an administrator action. Enforced here
+    # so calling the API directly cannot bypass the frontend guards.
+    if (
+        current_user.get("role") == "staff"
+        and payload.status is not None
+        and payload.status not in STAFF_PERMITTED_REQUEST_STATUSES
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=(
+                "Only an administrator can approve or reject a document "
+                "request. Staff accounts can process approved requests."
+            ),
         )
 
     cursor = connection.cursor(dictionary=True)
@@ -1936,14 +1976,15 @@ def update_document_request(
                 ),
             )
 
-            # Keep the admin feed in step with the resident notification: every
-            # administrator sees that this request moved to a new status, who
-            # moved it, and for which resident.
+            # Keep the portal feed in step with the resident notification: every
+            # administrator and staff account sees that this request moved to a
+            # new status, who moved it, and for which resident.
             notify_admins(
                 connection,
                 title=f"Request status: {payload.status}",
                 message=(
-                    f"Administrator {user_display_name(current_user)} changed "
+                    f"{actor_role_label(current_user)} "
+                    f"{user_display_name(current_user)} changed "
                     f"{row['request_number']} ({row['document']}) from "
                     f"{current_status} to {payload.status} for "
                     f"{row['resident_name']}."

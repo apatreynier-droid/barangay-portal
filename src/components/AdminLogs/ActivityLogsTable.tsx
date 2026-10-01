@@ -1,5 +1,6 @@
 import type { AdminActivityLog } from "../../Types/AdminLogsType";
 import {
+  formatLogActorName,
   formatLogActorRole,
   formatLogTimestamp,
   getActivityLogTypeMeta,
@@ -33,6 +34,8 @@ const ActivityLogsTable = ({ logs }: ActivityLogsTableProps) => {
           ) : (
             logs.map((log) => {
               const typeMeta = getActivityLogTypeMeta(log.action_type);
+              const actorName = formatLogActorName(log.actor_name);
+              const actorRole = formatLogActorRole(log.actor_role);
 
               return (
                 <tr key={log.id}>
@@ -49,8 +52,10 @@ const ActivityLogsTable = ({ logs }: ActivityLogsTableProps) => {
                   </td>
                   <td>
                     <div className="admin-logs-actor">
-                      <strong>{log.actor_name}</strong>
-                      <span>{formatLogActorRole(log.actor_role)}</span>
+                      <strong>{actorName}</strong>
+                      {/* Skip the badge when it repeats the displayed name
+                          (e.g. Actor: "Administrator"). */}
+                      {actorRole !== actorName && <span>{actorRole}</span>}
                     </div>
                   </td>
                   <td>{log.action}</td>

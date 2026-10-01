@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import type { AuthUser } from "../../Utils/api";
 import { fetchAdminDashboard, fetchActivityLogs } from "../../Utils/api";
 import type { AdminActivityLog } from "../../Types/AdminLogsType";
-import { ADMIN_DISPLAY_NAME } from "../../Utils/AdminDisplay";
+import { getPortalProfileName } from "../../Utils/AdminDisplay";
 import AdminSidebar from "../../components/AdminDashboard/AdminSidebar";
 import AdminTopbar from "../../components/AdminDashboard/AdminTopbar";
 import ActivityLogsToolbar from "../../components/AdminLogs/ActivityLogsToolbar";
@@ -32,6 +32,7 @@ type AdminLogsProps = {
 };
 
 const AdminLogs = ({
+  user,
   unreadNotifications,
   onDashboard,
   onResidents,
@@ -96,8 +97,7 @@ const AdminLogs = ({
     [logs, filters],
   );
 
-  const fullName = ADMIN_DISPLAY_NAME;
-  const roleLabel = "Brgy. Administrator";
+  const fullName = getPortalProfileName(user);
 
   const { isDrawerOpen, closeDrawer, toggleDrawer } = useResponsiveSidebar();
 
@@ -107,9 +107,7 @@ const AdminLogs = ({
         pendingRequests={sidebarStats.pending}
         pendingApprovals={sidebarStats.approved}
         unreadNotifications={unreadNotifications}
-        firstName={ADMIN_DISPLAY_NAME}
-        lastName=""
-        role={roleLabel}
+        user={user}
         activeItem="activity-logs"
         onDashboard={onDashboard}
         onResidents={onResidents}

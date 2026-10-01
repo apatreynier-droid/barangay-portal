@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import type { AuthUser } from "../../Utils/api";
 import { fetchAdminDashboard, fetchAdminReports } from "../../Utils/api";
 import type { AdminReportsData } from "../../Types/AdminReportsType";
-import { ADMIN_DISPLAY_NAME } from "../../Utils/AdminDisplay";
+import { getPortalProfileName } from "../../Utils/AdminDisplay";
 import AdminSidebar from "../../components/AdminDashboard/AdminSidebar";
 import AdminTopbar from "../../components/AdminDashboard/AdminTopbar";
 import useResponsiveSidebar from "../../Utils/useResponsiveSidebar";
@@ -35,6 +35,7 @@ type AdminReportsProps = {
 };
 
 const AdminReports = ({
+  user,
   unreadNotifications,
   onDashboard,
   onResidents,
@@ -91,8 +92,7 @@ const AdminReports = ({
     };
   }, []);
 
-  const fullName = ADMIN_DISPLAY_NAME;
-  const roleLabel = "Brgy. Administrator";
+  const fullName = getPortalProfileName(user);
 
   const { isDrawerOpen, closeDrawer, toggleDrawer } = useResponsiveSidebar();
 
@@ -102,9 +102,7 @@ const AdminReports = ({
         pendingRequests={sidebarStats.pending}
         pendingApprovals={sidebarStats.pending}
         unreadNotifications={unreadNotifications}
-        firstName={ADMIN_DISPLAY_NAME}
-        lastName=""
-        role={roleLabel}
+        user={user}
         activeItem="reports"
         onDashboard={onDashboard}
         onResidents={onResidents}

@@ -1,4 +1,11 @@
 import SidebarUserFooter from "../SidebarUserFooter/SidebarUserFooter";
+import type { AuthUser } from "../../Utils/api";
+import {
+  getPortalFirstName,
+  getPortalLastName,
+  getPortalRoleLabel,
+} from "../../Utils/AdminDisplay";
+import { isAdministrator } from "../../Utils/routePaths";
 import dashboardIcon from "../../assets/icons/ADash.png";
 import residentsIcon from "../../assets/icons/Residents.png";
 import documentRequestsIcon from "../../assets/icons/DR.png";
@@ -24,13 +31,24 @@ type AdminNavSection = {
   items: AdminNavItem[];
 };
 
+/**
+ * Nav items that stay administrator-only. A Staff account uses the same Admin
+ * Portal layout but never sees (and never gets access to) User Management,
+ * Reports, Activity Logs or the Approvals review queue.
+ */
+const ADMINISTRATOR_ONLY_NAV_KEYS = [
+  "approvals",
+  "reports",
+  "user-management",
+  "activity-logs",
+];
+
 type AdminSidebarProps = {
   pendingRequests: number;
   pendingApprovals: number;
   unreadNotifications: number;
-  firstName: string;
-  lastName: string;
-  role: string;
+  /** Signed-in Admin Portal account: drives the footer and the visible items. */
+  user: AuthUser;
   activeItem?: string;
   onDashboard?: () => void;
   onResidents?: () => void;
@@ -54,9 +72,7 @@ const AdminSidebar = ({
   pendingRequests,
   pendingApprovals,
   unreadNotifications,
-  firstName,
-  lastName,
-  role,
+  user,
   activeItem = "dashboard",
   onDashboard,
   onResidents,
@@ -72,6 +88,7 @@ const AdminSidebar = ({
   isOpen = false,
   onNavigate,
 }: AdminSidebarProps) => {
+  const isAdministratorAccount = isAdministrator(user);
   // Grouped into related sections with subtle labels; items, routes, badges
   // and handlers are unchanged.
   const navSections: AdminNavSection[] = [
@@ -155,6 +172,19 @@ const AdminSidebar = ({
     },
   ];
 
+  // Staff accounts use the same portal shell but only see the operational
+  // items their role is allowed to open (the backend re-checks every call).
+  const visibleSections = isAdministratorAccount
+    ? navSections
+    : navSections
+        .map((section) => ({
+          ...section,
+          items: section.items.filter(
+            (item) => !ADMINISTRATOR_ONLY_NAV_KEYS.includes(item.key),
+          ),
+        }))
+        .filter((section) => section.items.length > 0);
+
   const closeThen = (action: () => void) => () => {
     onNavigate?.();
     action();
@@ -177,7 +207,7 @@ const AdminSidebar = ({
         </div>
 
         <nav className="admin-nav">
-          {navSections.map((section) => (
+          {visibleSections.map((section) => (
             <div className="admin-nav-section" key={section.label}>
               <p className="admin-nav-section-label">{section.label}</p>
 
@@ -233,9 +263,9 @@ const AdminSidebar = ({
         </nav>
 
         <SidebarUserFooter
-          firstName={firstName}
-          lastName={lastName}
-          role={role}
+          firstName={getPortalFirstName(user)}
+          lastName={getPortalLastName(user)}
+          role={getPortalRoleLabel(user)}
           onLogout={onLogout}
         />
       </aside>
