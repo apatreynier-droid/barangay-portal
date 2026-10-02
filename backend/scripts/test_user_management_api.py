@@ -245,8 +245,8 @@ def main() -> None:
         "an administrator cannot promote a staff account (Super Admin only)",
     )
 
-    admin_first = (admin_row or {}).get("first_name") or "Elena"
-    admin_last = (admin_row or {}).get("last_name") or "Reyes"
+    admin_first = (admin_row or {}).get("first_name") or "Administrator"
+    admin_last = (admin_row or {}).get("last_name") or "Administrator"
     admin_role = str((admin_row or {}).get("role") or "admin")
     status, _ = request_json(
         f"/api/admin/staff/{admin_id}",

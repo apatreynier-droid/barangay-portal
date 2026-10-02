@@ -76,8 +76,8 @@ def _resolve_actor(
     cursor = connection.cursor(dictionary=True)
     cursor.execute(
         """
-        SELECT CONCAT(resident_profiles.first_name, ' ',
-                      resident_profiles.last_name) AS actor_name,
+        SELECT TRIM(CONCAT(resident_profiles.first_name, ' ',
+                           resident_profiles.last_name)) AS actor_name,
                users.role AS actor_role
         FROM users
         JOIN resident_profiles ON resident_profiles.user_id = users.id

@@ -10,20 +10,33 @@
   box-sizing: border-box;
 }
 
+/* `display: block` keeps the wrapper a predictable block-level box even when
+   it must be a `<span>` (for example inside a `<label>` on forms where the
+   native `type="date"` input keeps its implicit label association), so the
+   absolutely positioned calendar image still centres against the field. */
 .date-picker {
   position: relative;
+  display: block;
   width: 100%;
 }
 
 .date-picker-control {
   position: relative;
+  display: block;
   width: 100%;
 }
 
 /* `.date-picker .date-picker-input` outranks the page-level input rules, so
    the field keeps its branding while reserving room for the calendar button. */
 .date-picker .date-picker-input {
+  /* `display: block` removes the inline-level baseline gap so
+     `.date-picker-control` is exactly as tall as the field itself — that is
+     what the absolutely positioned calendar image centres against. */
+  display: block;
   width: 100%;
+  /* Right padding reserves the icon column: 8px inset + 28px button (the
+     20px image ends up 12px from the right border) with room to spare, so
+     the typed `mm/dd/yyyy` text never runs underneath the calendar image. */
   padding: 10px 40px 10px 12px;
   border: 1px solid #cbd5e1;
   border-radius: 9px;
@@ -35,7 +48,10 @@
 }
 
 .date-picker .date-picker-input::placeholder {
-  color: #94a3b8;
+  /* Readable placeholder rather than a washed-out one; `opacity: 1` stops
+     Firefox from fading it further. */
+  color: #64748b;
+  opacity: 1;
 }
 
 .date-picker .date-picker-input:focus {
@@ -57,27 +73,66 @@
   border-color: #dc2626;
 }
 
+/* ---------------------------------------------------------------------------
+   Calendar image wrapper.
+
+   ROOT CAUSE of the icon hanging outside / against the input border: this rule
+   used to centre itself with `top: 50%` + `transform: translateY(-50%)`, but
+   the `.date-picker button { transform: none; }` rule further down has a higher
+   specificity (class + element = 0,1,1 beats class = 0,1,0) and therefore
+   silently cancelled the `translateY(-50%)`. The button's top edge stayed
+   pinned at the field's midpoint, so its 28px box spilled past the bottom
+   border.
+
+   Centring now uses `top: 0` + `bottom: 0` + fixed `height` + `margin: auto`,
+   which resolves to equal top/bottom margins and is completely immune to any
+   `transform` reset. No transform is involved, so no specificity conflict can
+   push the image out of the field again.
+--------------------------------------------------------------------------- */
 .date-picker-toggle {
   position: absolute;
-  top: 50%;
-  right: 6px;
+  /* Top/bottom stretched + fixed height + auto margins == dead-centre the
+     control vertically, without relying on `transform`. */
+  top: 0;
+  bottom: 0;
+  right: 8px;
+  height: 28px;
+  margin: auto 0;
   display: grid;
   place-items: center;
   width: 28px;
-  height: 28px;
-  margin: 0;
   padding: 0;
-  transform: translateY(-50%);
   border: 0;
   border-radius: 7px;
   background: transparent;
-  color: #64748b;
   cursor: pointer;
 }
 
 .date-picker-toggle:hover:not(:disabled) {
   background: #eff6ff;
-  color: #2563eb;
+}
+
+/* The `calendar` asset itself: original colours, original proportions, ~20px,
+   centred in its 28px button. Because the button sits 8px from the right edge,
+   the image's right edge lands exactly 12px from the input's right border —
+   clear of both the border and the date text (which stops 40px from the edge). */
+.date-picker-toggle-icon {
+  display: block;
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
+  pointer-events: none;
+}
+
+/* Safety net: this field is a `type="text"` input (so it never renders a
+   native indicator), but if a native date control is ever substituted, hide
+   the browser's own calendar icon so only the `calendar` image ever shows —
+   never two calendar icons at once. */
+.date-picker .date-picker-input::-webkit-calendar-picker-indicator,
+.date-picker .date-picker-input::-webkit-calendar-picker-indicator:hover {
+  display: none;
+  -webkit-appearance: none;
+  appearance: none;
 }
 
 .date-picker-toggle:focus-visible {
@@ -108,7 +163,10 @@
 
 .date-picker-panel {
   position: absolute;
-  z-index: 30;
+  /* Layering: above the sticky top bar (z-index 10), modal backdrops (20-30),
+     the mobile navigation drawer (40) and dialogs (50), so the calendar is
+     never painted behind AdminTopBar, sidebars or modals. */
+  z-index: 100;
   top: calc(100% + 8px);
   left: 0;
   width: min(19rem, calc(100vw - 1.5rem));
@@ -117,6 +175,11 @@
   border-radius: 12px;
   background: #ffffff;
   box-shadow: 0 18px 38px rgba(15, 23, 42, 0.16);
+  /* When the component caps the height to the room on the chosen side of the
+     field, the calendar scrolls inside itself instead of overflowing the
+     viewport; contain stops scroll chaining to the page. */
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
 /* Viewport-aware placement applied by the component. */

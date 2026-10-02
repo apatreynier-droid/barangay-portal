@@ -27,9 +27,10 @@
   color: #94a3b8;
 }
 
+/* The date field's focus ring comes from the shared calendar design
+   (DatePickerInput.css), so only the search and select fields are listed. */
 .reqhist-search:focus,
-.reqhist-select:focus,
-.reqhist-date:focus {
+.reqhist-select:focus {
   outline: 2px solid #bfdbfe;
   border-color: #2563eb;
 }
@@ -50,27 +51,14 @@
   white-space: nowrap;
 }
 
+/* Date fields use the shared DatePickerInput component (the same dropdown
+   calendar shown by AdminActions' Pickup Date): the component root supplies
+   the field, calendar icon and popup panel. This wrapper only keeps the
+   toolbar layout (fixed compact width, no shrinking); the inner
+   `.date-picker` root fills the wrapper via its shared `width: 100%`. */
 .reqhist-date {
   flex-shrink: 0;
   width: 150px;
-  padding: 10px 12px;
-  border: 1px solid #e2e8f0;
-  border-radius: 10px;
-  background: #ffffff;
-  color: #0f172a;
-  font-size: 13px;
-  font-family: inherit;
-  color-scheme: light;
-}
-
-/* Keep Chrome's native date control consistent with the other fields. */
-.reqhist-date::-webkit-calendar-picker-indicator {
-  cursor: pointer;
-  opacity: 0.65;
-}
-
-.reqhist-date::-webkit-calendar-picker-indicator:hover {
-  opacity: 1;
 }
 
 .reqhist-date-separator {
@@ -226,6 +214,9 @@
 }
 
 @media (max-width: 600px) {
+  /* Full-width date wrappers on phones; same specificity as the base rule
+     above, so this later rule wins and the calendar panel stays aligned with
+     its field either way. */
   .reqhist-date {
     width: 100%;
   }

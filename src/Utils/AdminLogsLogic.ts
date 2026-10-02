@@ -1,4 +1,5 @@
 import type { AdminActivityLog } from "../Types/AdminLogsType";
+import { ADMIN_DISPLAY_NAME } from "./AdminDisplay";
 
 export type ActivityLogsFiltersState = {
   search: string;
@@ -76,12 +77,18 @@ export function formatLogActorRole(role: string): string {
 /**
  * Display name shown in the Activity Logs "Actor" column.
  *
- * Display-only mapping: the admin account's stored personal name
- * ("Elena Reyes") is presented as "Administrator". The underlying log rows,
+ * Display-only mapping: administrator accounts (admin and super_admin) are
+ * presented as "Administrator", mirroring getPortalProfileName in AdminDisplay;
+ * staff and resident actors keep their stored name. The underlying log rows,
  * profile, credentials, role, and permissions are not modified.
  */
-export function formatLogActorName(actorName: string): string {
-  return actorName === "Elena Reyes" ? "Administrator" : actorName;
+export function formatLogActorName(
+  actorName: string,
+  actorRole: string,
+): string {
+  return actorRole === "admin" || actorRole === "super_admin"
+    ? ADMIN_DISPLAY_NAME
+    : actorName;
 }
 
 export function filterActivityLogs(

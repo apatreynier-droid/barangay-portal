@@ -25,6 +25,8 @@ import {
   getUniqueHistoryDocuments,
 } from "../../Utils/AdminRequestHistoryLogic";
 import type { AdminRequestHistoryFiltersState } from "../../Utils/AdminRequestHistoryLogic";
+import DatePickerInput from "../../components/Shared/DatePickerInput";
+import "../../components/Shared/DatePickerInput.css";
 
 type AdminRequestHistoryProps = {
   user: AuthUser;
@@ -217,33 +219,33 @@ const AdminRequestHistory = ({
             ))}
           </select>
 
-          <input
-            type="date"
-            className="reqhist-date"
-            value={filters.dateFrom}
-            onChange={(event) =>
-              setFilters((previous) => ({
-                ...previous,
-                dateFrom: event.target.value,
-              }))
-            }
-            aria-label="Submitted from date"
-          />
+          <div className="reqhist-date">
+            <DatePickerInput
+              value={filters.dateFrom}
+              onChange={(value) =>
+                setFilters((previous) => ({
+                  ...previous,
+                  dateFrom: value,
+                }))
+              }
+              ariaLabel="Submitted from date"
+            />
+          </div>
 
           <span className="reqhist-date-separator">to</span>
 
-          <input
-            type="date"
-            className="reqhist-date"
-            value={filters.dateTo}
-            onChange={(event) =>
-              setFilters((previous) => ({
-                ...previous,
-                dateTo: event.target.value,
-              }))
-            }
-            aria-label="Submitted to date"
-          />
+          <div className="reqhist-date">
+            <DatePickerInput
+              value={filters.dateTo}
+              onChange={(value) =>
+                setFilters((previous) => ({
+                  ...previous,
+                  dateTo: value,
+                }))
+              }
+              ariaLabel="Submitted to date"
+            />
+          </div>
 
           <span className="reqhist-count">
             {filteredRequests.length} records

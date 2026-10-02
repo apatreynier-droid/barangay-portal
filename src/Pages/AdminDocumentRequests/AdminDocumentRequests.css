@@ -130,9 +130,11 @@
   margin-bottom: 16px;
 }
 
-.docreq-actions-field span {
-  color: #64748b;
-  font-size: 11px;
+/* Field labels (Remarks / Notes, Pickup Date). The child combinator keeps the
+   rule off the spans inside the shared date picker (its year-range label). */
+.docreq-actions-field > span {
+  color: #333333;
+  font-size: 12px;
   font-weight: 600;
 }
 
@@ -159,6 +161,13 @@
 .docreq-actions-field input:focus {
   outline: 2px solid #bfdbfe;
   border-color: #2563eb;
+}
+
+/* A mm/dd/yyyy value needs far less room than the card offers, so the pickup
+   field stays compact instead of stretching edge to edge. */
+.docreq-pickup-date .date-picker {
+  width: 100%;
+  max-width: 14rem;
 }
 
 .docreq-actions-error {
@@ -222,7 +231,7 @@
 }
 
 .docreq-save-button:focus-visible {
-  outline: 2px solid #1e293b;
+  outline: 2px solid #1d4ed8;
   outline-offset: 2px;
 }
 
@@ -233,21 +242,33 @@
   cursor: default;
 }
 
+/* Save actions (remarks + pickup date) use the page's primary blue so an armed
+   button reads as the main action instead of a grey, disabled-looking control. */
 .docreq-save-button {
   padding: 8px 18px;
   border: 0;
   border-radius: 9px;
-  background: #334155;
+  background: #2563eb;
   color: #ffffff;
   font-size: 12px;
   font-weight: 700;
   font-family: inherit;
   cursor: pointer;
-  transition: background 0.2s ease;
+  transition:
+    background 0.2s ease,
+    box-shadow 0.2s ease;
 }
 
 .docreq-save-button:hover:not(:disabled) {
-  background: #1e293b;
+  background: #1d4ed8;
+}
+
+/* Nothing to save yet (no pickup date picked, or the value is unchanged): stay
+   visibly disabled and refuse clicks, so an empty or invalid date can never be
+   submitted. Declared after the shared `:disabled` rule above so it wins. */
+.docreq-save-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .docreq-actions-success {
@@ -277,6 +298,14 @@
 @media (max-width: 900px) {
   .docreq-detail-grid {
     grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 480px) {
+  /* Phones: give the date field the full card width so it stays an easy tap
+     target, while the calendar icon keeps its 12px inset. */
+  .docreq-pickup-date .date-picker {
+    max-width: 100%;
   }
 }
 

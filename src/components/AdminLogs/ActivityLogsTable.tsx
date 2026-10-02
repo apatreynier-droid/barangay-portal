@@ -34,7 +34,10 @@ const ActivityLogsTable = ({ logs }: ActivityLogsTableProps) => {
           ) : (
             logs.map((log) => {
               const typeMeta = getActivityLogTypeMeta(log.action_type);
-              const actorName = formatLogActorName(log.actor_name);
+              const actorName = formatLogActorName(
+                log.actor_name,
+                log.actor_role,
+              );
               const actorRole = formatLogActorRole(log.actor_role);
 
               return (

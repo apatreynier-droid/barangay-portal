@@ -5,6 +5,9 @@ import type {
   AdminResidentUpdatePayload,
 } from "../../Types/AdminResidentsType";
 import { updateResident } from "../../Utils/api";
+import calendarIcon from "../../assets/icons/calendar.png";
+import { openNativeDatePicker } from "../Shared/openNativeDatePicker";
+import "../Shared/DatePickerInput.css";
 
 type EditResidentModalProps = {
   resident: AdminResidentDetail;
@@ -228,13 +231,34 @@ const EditResidentModal = ({
 
             <label className="residents-edit-field">
               <span>Birthday</span>
-              <input
-                type="date"
-                value={form.date_of_birth}
-                onChange={(event) =>
-                  updateField("date_of_birth", event.target.value)
-                }
-              />
+              {/* Span wrappers keep the `<label>` valid (phrasing content only)
+                  while adopting the shared calendar-in-input design; the input
+                  stays the label's implicit control. */}
+              <span className="date-picker">
+                <span className="date-picker-control">
+                  <input
+                    type="date"
+                    className="date-picker-input"
+                    value={form.date_of_birth}
+                    onChange={(event) =>
+                      updateField("date_of_birth", event.target.value)
+                    }
+                  />
+                  <button
+                    type="button"
+                    className="date-picker-toggle"
+                    aria-label="Open calendar"
+                    onClick={openNativeDatePicker}
+                  >
+                    <img
+                      src={calendarIcon}
+                      alt=""
+                      className="date-picker-toggle-icon"
+                      aria-hidden="true"
+                    />
+                  </button>
+                </span>
+              </span>
             </label>
 
             <label className="residents-edit-field">

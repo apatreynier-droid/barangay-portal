@@ -15,8 +15,10 @@ from app.security import hash_password  # noqa: E402
 # Default administrator account used to access the Admin Dashboard.
 ADMIN_EMAIL = "admin@barangaylagab.com"
 ADMIN_PASSWORD = "Admin@123"
-ADMIN_FIRST_NAME = "Elena"
-ADMIN_LAST_NAME = "Reyes"
+# Shown as the generic "Administrator" across the portal (see
+# src/Utils/AdminDisplay.ts), so the profile keeps an empty last name.
+ADMIN_FIRST_NAME = "Administrator"
+ADMIN_LAST_NAME = ""
 
 
 def main() -> None:
