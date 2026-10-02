@@ -114,16 +114,10 @@
   border-color: #2563eb;
 }
 
-/* Keep Chrome's native date control consistent with the other fields. */
-.residents-edit-field input[type="date"]::-webkit-calendar-picker-indicator {
-  cursor: pointer;
-  opacity: 0.65;
-}
-
-.residents-edit-field
-  input[type="date"]::-webkit-calendar-picker-indicator:hover {
-  opacity: 1;
-}
+/* The Birthday field adopts the shared calendar-in-input design from
+   components/Shared/DatePickerInput.css: the custom `calendar` image sits
+   inside the input (12px from the right edge) and the browser's native
+   indicator is hidden there, so these native-indicator rules are gone. */
 
 .residents-edit-error {
   flex-shrink: 0;

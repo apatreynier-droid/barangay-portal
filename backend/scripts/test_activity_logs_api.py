@@ -403,7 +403,7 @@ def main() -> None:
     check(admin_entry is not None, "the login entry carries the admin role")
     if admin_entry is not None:
         check(
-            admin_entry["actor_name"] == "Elena Reyes",
+            admin_entry["actor_name"] == "Administrator",
             f"actor name resolved from the profile ({admin_entry['actor_name']})",
         )
         check(

@@ -33,6 +33,7 @@ import {
   moveIsoByMonths,
   parseDateText,
 } from "../../Utils/DatePickerLogic";
+import calendarIcon from "../../assets/icons/calendar.png";
 import "./DatePickerInput.css";
 
 /* -------------------------------------------------------------------------- */
@@ -43,6 +44,16 @@ type DatePickerView = "days" | "months" | "years";
 type FocusTarget = "grid" | "months" | "years" | null;
 type PanelAlignment = "left" | "right";
 type PanelPlacement = "above" | "below";
+
+/**
+ * Smallest panel height we ever cap to. Only reachable in degenerate windows
+ * (a couple hundred pixels tall) where some content must scroll regardless.
+ */
+const MIN_PANEL_HEIGHT = 96;
+/** Gap between the field edge and the panel when placed below/above it. */
+const PANEL_GAP = 8;
+/** Distance the panel keeps from the viewport edges. */
+const PANEL_EDGE_MARGIN = 12;
 
 export type DatePickerInputProps = {
   /** ISO `yyyy-mm-dd` value, or "" when the field is empty. */
@@ -55,26 +66,6 @@ export type DatePickerInputProps = {
   placeholder?: string;
   id?: string;
 };
-
-const CalendarIcon = () => (
-  <svg
-    width="15"
-    height="15"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    aria-hidden="true"
-    focusable="false"
-  >
-    <rect x="3" y="5" width="18" height="16" rx="2.5" />
-    <path d="M3 10h18" />
-    <path d="M8 3v4" />
-    <path d="M16 3v4" />
-  </svg>
-);
 
 const ChevronIcon = ({
   direction,
@@ -130,6 +121,7 @@ const DatePickerInput = ({
   const [focusTarget, setFocusTarget] = useState<FocusTarget>(null);
   const [placement, setPlacement] = useState<PanelPlacement>("below");
   const [alignment, setAlignment] = useState<PanelAlignment>("left");
+  const [panelMaxHeight, setPanelMaxHeight] = useState<number | null>(null);
 
   const selectedIso = /^\d{4}-\d{2}-\d{2}/.test(value) ? value.slice(0, 10) : "";
   const weeks = useMemo(
@@ -228,8 +220,14 @@ const DatePickerInput = ({
       document.removeEventListener("pointerdown", handlePointerDown, true);
   }, [isOpen, closeCalendar]);
 
-  // Keep the dropdown inside the viewport: flip above the field when there is
-  // no room below and align to the right edge when it would overflow.
+  // Keep the dropdown inside the viewport: open below the field whenever it
+  // fits, flip above only when it fits there (or when above is simply the
+  // roomier side), and cap the panel to the free room on the chosen side so
+  // it is never clipped by the viewport or by `body` - which, with
+  // `height: 100%` + `overflow-x: hidden`, is a scroll container whose box
+  // matches the viewport exactly. scrollHeight (not offsetHeight) is used so
+  // the panel's natural height is still measured after a cap was applied and
+  // the panel can grow back when more room becomes available.
   const updatePanelPosition = useCallback(() => {
     const root = rootRef.current;
     const panel = panelRef.current;
@@ -237,19 +235,35 @@ const DatePickerInput = ({
 
     const rect = root.getBoundingClientRect();
     const panelWidth = panel.offsetWidth;
-    const panelHeight = panel.offsetHeight;
-    const margin = 12;
-    const spaceBelow = window.innerHeight - rect.bottom;
-    const spaceAbove = rect.top;
+    // max-height applies to the border box (box-sizing: border-box), while
+    // scrollHeight excludes the borders - add them back so an uncapped panel
+    // keeps its exact natural height and never grows a stray scrollbar.
+    const borderWidth =
+      parseFloat(window.getComputedStyle(panel).borderTopWidth) +
+      parseFloat(window.getComputedStyle(panel).borderBottomWidth);
+    const panelHeight = panel.scrollHeight + borderWidth;
+    const roomBelow =
+      window.innerHeight - PANEL_EDGE_MARGIN - (rect.bottom + PANEL_GAP);
+    const roomAbove = rect.top - PANEL_GAP - PANEL_EDGE_MARGIN;
 
-    setPlacement(
-      spaceBelow < panelHeight + margin && spaceAbove > spaceBelow
+    const fitsBelow = roomBelow >= panelHeight;
+    const fitsAbove = roomAbove >= panelHeight;
+    const nextPlacement: PanelPlacement = fitsBelow
+      ? "below"
+      : fitsAbove
         ? "above"
-        : "below",
+        : roomBelow >= roomAbove
+          ? "below"
+          : "above";
+    const room = nextPlacement === "below" ? roomBelow : roomAbove;
+
+    setPlacement(nextPlacement);
+    setPanelMaxHeight(
+      Math.max(Math.min(panelHeight, room), MIN_PANEL_HEIGHT),
     );
     setAlignment(
-      rect.left + panelWidth > window.innerWidth - margin &&
-        rect.right - panelWidth > margin
+      rect.left + panelWidth > window.innerWidth - PANEL_EDGE_MARGIN &&
+        rect.right - panelWidth > PANEL_EDGE_MARGIN
         ? "right"
         : "left",
     );
@@ -562,6 +576,14 @@ const DatePickerInput = ({
           aria-controls={isOpen ? panelId : undefined}
           onChange={handleInputChange}
           onKeyDown={handleInputKeyDown}
+          onClick={() => {
+            // Clicking the field itself opens the calendar as well (the icon
+            // and ArrowDown already do). Clicking while open keeps it open so
+            // caret placement and typing stay natural.
+            if (!isOpen) {
+              openCalendar();
+            }
+          }}
         />
 
         <button
@@ -572,7 +594,14 @@ const DatePickerInput = ({
           disabled={disabled}
           onClick={toggleCalendar}
         >
-          <CalendarIcon />
+          {/* The original `calendar` asset keeps its own colours (no CSS
+              filters) and sits inside the field, right of the date text. */}
+          <img
+            src={calendarIcon}
+            alt=""
+            className="date-picker-toggle-icon"
+            aria-hidden="true"
+          />
         </button>
       </div>
 
@@ -581,6 +610,11 @@ const DatePickerInput = ({
           id={panelId}
           ref={panelRef}
           className={`date-picker-panel date-picker-panel--${placement} date-picker-panel--${alignment}`}
+          style={
+            panelMaxHeight === null
+              ? undefined
+              : { maxHeight: `${panelMaxHeight}px` }
+          }
           role="dialog"
           aria-label="Choose a date"
           onKeyDown={handlePanelKeyDown}

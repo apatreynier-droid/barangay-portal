@@ -145,6 +145,18 @@ def actor_role_label(user: dict[str, object]) -> str:
     return "Administrator"
 
 
+def actor_display_name(
+    user: dict[str, object], label: str = "Administrator"
+) -> str:
+    """Actor prefix for a notification message: ``"<label> <name>"``.
+
+    The label is dropped when the display name already is the label, so the
+    generic "Administrator" name never produces "Administrator Administrator".
+    """
+    name = user_display_name(user)
+    return name if name == label else f"{label} {name}"
+
+
 def raise_rate_limited(retry_after: float, message: str) -> None:
     """Raise HTTP 429 for an active rate limit, with a Retry-After header."""
     retry_seconds = max(1, math.ceil(retry_after))
@@ -1565,7 +1577,7 @@ def update_resident(
         connection,
         title="Resident profile updated",
         message=(
-            f"Administrator {user_display_name(current_user)} updated the "
+            f"{actor_display_name(current_user)} updated the "
             f"profile of {payload.first_name.strip()} "
             f"{payload.last_name.strip()} (RES-{resident_id:03d})."
         ),
@@ -1666,7 +1678,7 @@ def set_resident_status(
             else "Resident account reactivated"
         ),
         message=(
-            f"Administrator {user_display_name(current_user)} "
+            f"{actor_display_name(current_user)} "
             f"{'deactivated' if deactivated else 'reactivated'} the account "
             f"of {resident['resident_name']} (RES-{resident_id:03d})."
         ),
@@ -1732,8 +1744,8 @@ def list_request_history(
                       resident_profiles.last_name) AS resident_name,
                document_types.document_name AS document,
                requests.status, requests.submitted_at,
-               (SELECT CONCAT(admin_profile.first_name, ' ',
-                              admin_profile.last_name)
+               (SELECT TRIM(CONCAT(admin_profile.first_name, ' ',
+                                   admin_profile.last_name))
                 FROM request_status_history history
                 JOIN resident_profiles admin_profile
                      ON admin_profile.user_id = history.changed_by
@@ -1796,8 +1808,8 @@ def load_document_request_detail(
                CONCAT(resident_profiles.first_name, ' ',
                       resident_profiles.last_name) AS resident_name,
                users.email,
-               (SELECT CONCAT(admin_profile.first_name, ' ',
-                              admin_profile.last_name)
+               (SELECT TRIM(CONCAT(admin_profile.first_name, ' ',
+                                   admin_profile.last_name))
                 FROM request_status_history history
                 JOIN resident_profiles admin_profile
                      ON admin_profile.user_id = history.changed_by
@@ -1983,9 +1995,8 @@ def update_document_request(
                 connection,
                 title=f"Request status: {payload.status}",
                 message=(
-                    f"{actor_role_label(current_user)} "
-                    f"{user_display_name(current_user)} changed "
-                    f"{row['request_number']} ({row['document']}) from "
+                    f"{actor_display_name(current_user, actor_role_label(current_user))} "
+                    f"changed {row['request_number']} ({row['document']}) from "
                     f"{current_status} to {payload.status} for "
                     f"{row['resident_name']}."
                 ),
@@ -2307,7 +2318,7 @@ def create_staff_account(
         connection,
         title="Staff account created",
         message=(
-            f"Administrator {user_display_name(current_user)} created the "
+            f"{actor_display_name(current_user)} created the "
             f"{role_label(str(account['role']))} account {account_name} "
             f"(ADM-{user_id:03d}, {email})."
         ),
@@ -2405,7 +2416,7 @@ def update_staff_account(
         connection,
         title="Staff account updated",
         message=(
-            f"Administrator {user_display_name(current_user)} updated the "
+            f"{actor_display_name(current_user)} updated the "
             f"account information of {updated_name} (ADM-{user_id:03d})."
         ),
         dedupe_key=build_dedupe_key(
@@ -2500,7 +2511,7 @@ def set_staff_account_status(
             "Staff account reactivated" if activated else "Staff account deactivated"
         ),
         message=(
-            f"Administrator {user_display_name(current_user)} "
+            f"{actor_display_name(current_user)} "
             f"{'reactivated' if activated else 'deactivated'} the account of "
             f"{updated_name} (ADM-{user_id:03d})."
         ),
@@ -2617,7 +2628,7 @@ def send_staff_password_reset(
         connection,
         title="Staff password reset",
         message=(
-            f"Administrator {user_display_name(current_user)} sent a password "
+            f"{actor_display_name(current_user)} sent a password "
             f"reset link to {updated_name} (ADM-{user_id:03d}, {email})."
         ),
         dedupe_key=build_dedupe_key(

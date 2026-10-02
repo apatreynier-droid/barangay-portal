@@ -5,7 +5,6 @@ import {
   formatSubmittedDateTime,
 } from "../../Utils/AdminDocumentRequestsLogic";
 import { updateAdminDocumentRequest } from "../../Utils/api";
-import DatePickerInput from "../Shared/DatePickerInput";
 
 type ApprovalRequestCardProps = {
   request: AdminDocumentRequest;
@@ -16,8 +15,6 @@ const ApprovalRequestCard = ({
   request,
   onProcessed,
 }: ApprovalRequestCardProps) => {
-  const [remarks, setRemarks] = useState("");
-  const [pickupDate, setPickupDate] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
 
@@ -26,11 +23,7 @@ const ApprovalRequestCard = ({
     setError("");
 
     try {
-      await updateAdminDocumentRequest(request.id, {
-        status,
-        admin_remarks: remarks.trim() ? remarks.trim() : undefined,
-        pickup_date: status === "Approved" && pickupDate ? pickupDate : undefined,
-      });
+      await updateAdminDocumentRequest(request.id, { status });
       onProcessed(request.id);
     } catch (submitError) {
       setError(
@@ -75,29 +68,6 @@ const ApprovalRequestCard = ({
           <dd>{request.request_number}</dd>
         </div>
       </dl>
-
-      <div className="approvals-card-inputs">
-        <label className="approvals-card-input approvals-card-input-remarks">
-          <span>Remarks</span>
-          <input
-            type="text"
-            placeholder="Add remarks (optional)…"
-            value={remarks}
-            disabled={isSubmitting}
-            onChange={(event) => setRemarks(event.target.value)}
-          />
-        </label>
-
-        <div className="approvals-card-input approvals-card-input-date">
-          <span>Pickup Date</span>
-          <DatePickerInput
-            value={pickupDate}
-            onChange={setPickupDate}
-            disabled={isSubmitting}
-            ariaLabel="Pickup date"
-          />
-        </div>
-      </div>
 
       {error && (
         <p className="approvals-card-error" role="alert">

@@ -140,13 +140,13 @@ const AdminActionsPanel = ({
       )}
 
       {status === "Ready for Pickup" && (
-        <div className="docreq-actions-field">
-          <span>Set Pickup Date</span>
+        <div className="docreq-actions-field docreq-pickup-date">
+          <span>Pickup Date</span>
           <DatePickerInput
             value={pickupDate}
             onChange={setPickupDate}
             disabled={isSaving}
-            ariaLabel="Set pickup date"
+            ariaLabel="Pickup date"
           />
           <div className="docreq-actions-buttons">
             <button
@@ -155,7 +155,7 @@ const AdminActionsPanel = ({
               onClick={savePickupDate}
               disabled={isSaving || !pickupDateChanged}
             >
-              {isSaving ? "Saving…" : "Save Pickup Date"}
+              {isSaving ? "Saving…" : "Save"}
             </button>
           </div>
         </div>

@@ -134,40 +134,20 @@
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23667eea' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
 }
 
+/* Date fields reuse the shared calendar-in-input design from
+   components/Shared/DatePickerInput.css (imported with the component): same
+   border, focus ring, 40px right padding, hidden native indicator and the
+   custom `calendar` image sitting 12px from the right edge. Only the
+   toolbar-specific sizing is kept here so the row stays aligned. */
 .history-date-input {
   height: 40px;
-  padding: 0 12px;
-  border: 1px solid #e5e7eb;
-  border-radius: 10px;
-  background: #ffffff;
-  color: #374151;
-  font: inherit;
-  font-size: 13px;
-  cursor: pointer;
-  color-scheme: light;
-  transition:
-    border-color 0.15s ease,
-    box-shadow 0.15s ease;
 }
 
-/* Keep Chrome's native date control consistent with the other fields. */
-.history-date-input::-webkit-calendar-picker-indicator {
-  cursor: pointer;
-  opacity: 0.65;
-}
-
-.history-date-input::-webkit-calendar-picker-indicator:hover {
-  opacity: 1;
-}
-
-.history-date-input:hover {
-  border-color: #c7d2fe;
-}
-
-.history-date-input:focus {
-  outline: none;
-  border-color: #667eea;
-  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.15);
+/* Fixed width for the wrapper so the field keeps its compact date width
+   inside the flex toolbar (the compound selector outranks the shared
+   `.date-picker { width: 100% }` rule regardless of stylesheet order). */
+.date-picker.history-date-field {
+  width: 150px;
 }
 
 .history-table-wrapper {

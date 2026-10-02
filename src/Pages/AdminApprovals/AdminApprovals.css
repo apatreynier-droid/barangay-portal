@@ -78,46 +78,6 @@
   font-weight: 700;
 }
 
-.approvals-card-inputs {
-  display: grid;
-  grid-template-columns: 1.7fr 1fr;
-  gap: 18px;
-}
-
-.approvals-card-input {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.approvals-card-input span {
-  color: #64748b;
-  font-size: 12px;
-}
-
-.approvals-card-input input {
-  width: 100%;
-  padding: 10px 12px;
-  border: 1px solid #cbd5e1;
-  border-radius: 9px;
-  background: #ffffff;
-  color: #0f172a;
-  font-size: 13px;
-  font-family: inherit;
-  color-scheme: light;
-}
-
-.approvals-card-input input::placeholder {
-  color: #94a3b8;
-}
-
-/* The pickup date uses the shared DatePickerInput dropdown (see
-   components/Shared/DatePickerInput.css) while keeping this field styling. */
-.approvals-card-input input:focus {
-  outline: 2px solid #bfdbfe;
-  border-color: #2563eb;
-}
-
 .approvals-card-error {
   margin: 0;
   padding: 8px 12px;
@@ -212,10 +172,6 @@
     grid-template-rows: none;
     grid-auto-flow: row;
     gap: 12px;
-  }
-
-  .approvals-card-inputs {
-    grid-template-columns: 1fr;
   }
 
   .approvals-card-actions {

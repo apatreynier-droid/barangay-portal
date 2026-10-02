@@ -14,6 +14,9 @@ import {
   generateReferenceNumber,
 } from "../../Utils/CreateAccountLogic";
 
+import DatePickerInput from "../Shared/DatePickerInput";
+import "../Shared/DatePickerInput.css";
+
 import "./CreateAccountForm.css";
 
 const TOTAL_STEPS = 3;
@@ -321,14 +324,31 @@ const CreateAccountForm = ({
                 required
                 error={errors.dateOfBirth}
               >
-                <input
+                {/* Shared dropdown calendar (same design as AdminActions'
+                    Pickup Date). `id` keeps the label's htmlFor association,
+                    and the handler mirrors handleChange: update the value,
+                    clear the banner and this field's validation error. */}
+                <DatePickerInput
                   id="dateOfBirth"
-                  name="dateOfBirth"
-                  type="date"
                   value={formData.dateOfBirth}
-                  onChange={handleChange}
+                  onChange={(value) => {
+                    setFormData((previous) => ({
+                      ...previous,
+                      dateOfBirth: value,
+                    }));
+
+                    if (formError) {
+                      setFormError("");
+                    }
+
+                    if (errors.dateOfBirth) {
+                      setErrors((previous) => ({
+                        ...previous,
+                        dateOfBirth: undefined,
+                      }));
+                    }
+                  }}
                   disabled={isLoading}
-                  className={inputClass(errors.dateOfBirth)}
                 />
               </FormField>
 

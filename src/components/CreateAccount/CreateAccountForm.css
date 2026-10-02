@@ -23,7 +23,9 @@
   background: #ffffff;
   border-radius: 12px;
   box-shadow: 0 24px 60px rgba(0, 0, 0, 0.35);
-  overflow: hidden;
+  /* Intentionally no `overflow: hidden`: it would clip the Date of Birth
+     calendar popup (an absolutely positioned panel inside this card). The
+     footer below carries the bottom corner radius instead. */
   animation: registrationCardIn 0.45s ease-out;
 }
 
@@ -114,6 +116,14 @@
 
 .field-input.input-error {
   border-color: #dc2626;
+}
+
+/* Date of Birth renders the shared DatePickerInput (the AdminActions-style
+   dropdown calendar). Match the sibling fields' 42px height so the grid row
+   stays aligned; the popup panel itself comes from the shared
+   DatePickerInput.css. */
+.form-field .date-picker .date-picker-input {
+  height: 42px;
 }
 
 /* Custom select arrow */
@@ -214,6 +224,9 @@
   padding: 16px 24px;
   background: #f7f8fb;
   border-top: 1px solid #edf0f5;
+  /* Matches the card's rounded bottom corners now that the card no longer
+     clips its children (overflow was removed for the calendar popup). */
+  border-radius: 0 0 12px 12px;
 }
 
 .wizard-button {
