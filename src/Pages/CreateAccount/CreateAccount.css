@@ -22,6 +22,7 @@ body {
 
 .create-account-page {
   min-height: 100vh;
+  min-height: 100dvh; /* accurate height while mobile URL bars collapse */
   background: #0d1a30;
 }
 

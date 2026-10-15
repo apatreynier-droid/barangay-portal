@@ -1,5 +1,9 @@
-import { useState } from "react";
-import type { FormEvent, ChangeEvent } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import type {
+  ChangeEvent,
+  FormEvent,
+  MouseEvent as ReactMouseEvent,
+} from "react";
 import type { FormData, FormErrors } from "../../Types/LoginType";
 import { validateForm, authenticateUser } from "../../Utils/LoginLogic";
 import logo from "../../assets/logo-256.png";
@@ -135,6 +139,64 @@ const DirectoryIcon = () => (
   </svg>
 );
 
+const CloseIcon = () => (
+  <svg
+    width="18"
+    height="18"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden="true"
+  >
+    <path d="M18 6 6 18" />
+    <path d="m6 6 12 12" />
+  </svg>
+);
+
+/**
+ * Breakpoint (px) below which the landing page switches to the mobile layout
+ * (centered hero + Sign In / Sign Up buttons + login modal). Must match the
+ * `@media (max-width: 920px)` rules in LoginPage.css.
+ */
+const MOBILE_BREAKPOINT = "(max-width: 920px)";
+
+/**
+ * Tracks whether the viewport is in the mobile landing-page layout.
+ *
+ * Uses `window.matchMedia` (same approach as useResponsiveSidebar) so the JS
+ * and CSS breakpoints can never drift apart: when the viewport crosses the
+ * breakpoint the value updates and callers can reset any mobile-only state
+ * (e.g. close the login modal when the viewport grows back to desktop).
+ */
+const useIsMobile = (): boolean => {
+  const [isMobile, setIsMobile] = useState<boolean>(() => {
+    if (typeof window === "undefined" || !window.matchMedia) {
+      return false;
+    }
+
+    return window.matchMedia(MOBILE_BREAKPOINT).matches;
+  });
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia(MOBILE_BREAKPOINT);
+    const handleChange = (event: MediaQueryListEvent): void => {
+      setIsMobile(event.matches);
+    };
+
+    setIsMobile(mediaQuery.matches);
+    mediaQuery.addEventListener("change", handleChange);
+
+    return () => {
+      mediaQuery.removeEventListener("change", handleChange);
+    };
+  }, []);
+
+  return isMobile;
+};
+
 const BRAND_FEATURES = [
   { label: "Resident Records", Icon: RecordsIcon },
   { label: "Barangay Clearance", Icon: ShieldIcon },
@@ -158,6 +220,110 @@ const LoginPage = ({
   const [isLoading, setIsLoading] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
+
+  const isMobile = useIsMobile();
+  const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
+
+  const dialogRef = useRef<HTMLElement>(null);
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
+  const signInButtonRef = useRef<HTMLButtonElement>(null);
+  const hasModalOpenedRef = useRef(false);
+
+  const closeLoginModal = useCallback((): void => {
+    setIsLoginModalOpen(false);
+  }, []);
+
+  // The modal only exists in the mobile layout. If the viewport grows past
+  // the breakpoint (rotate a tablet, resize a window) while it is open, drop
+  // the state so it cannot get stuck "open" against a desktop layout that
+  // renders the form as a normal panel.
+  useEffect(() => {
+    if (!isMobile && isLoginModalOpen) {
+      setIsLoginModalOpen(false);
+    }
+  }, [isMobile, isLoginModalOpen]);
+
+  /**
+   * On mobile the landing page is the hero; the login form lives in a modal.
+   * Closing it (button, backdrop, Escape) returns focus to the Sign In button
+   * so keyboard users do not lose their place on the page.
+   */
+  useEffect(() => {
+    if (!isLoginModalOpen) {
+      if (hasModalOpenedRef.current) {
+        hasModalOpenedRef.current = false;
+        signInButtonRef.current?.focus();
+      }
+
+      return;
+    }
+
+    hasModalOpenedRef.current = true;
+
+    const previouslyFocused = document.activeElement as HTMLElement | null;
+    closeButtonRef.current?.focus();
+
+    const handleKeyDown = (event: KeyboardEvent): void => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        setIsLoginModalOpen(false);
+        return;
+      }
+
+      // Keep Tab navigation inside the modal (focus trap) while it is open.
+      if (event.key !== "Tab") {
+        return;
+      }
+
+      const dialog = dialogRef.current;
+
+      if (!dialog) {
+        return;
+      }
+
+      const focusable = Array.from(
+        dialog.querySelectorAll<HTMLElement>(
+          'button:not([disabled]), input:not([disabled]), a[href], [tabindex]:not([tabindex="-1"])',
+        ),
+      );
+
+      if (focusable.length === 0) {
+        return;
+      }
+
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      const active = document.activeElement;
+
+      if (event.shiftKey) {
+        if (active === first || !dialog.contains(active)) {
+          event.preventDefault();
+          last.focus();
+        }
+      } else if (active === last || !dialog.contains(active)) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+
+    // Lock background scrolling while the modal is open (same pattern as
+    // useResponsiveSidebar) so the page behind never scrolls with the modal.
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+      document.body.style.overflow = previousOverflow;
+
+      // If the viewport grows past the mobile breakpoint the modal disappears
+      // from the layout; put focus back somewhere sensible instead of <body>.
+      if (!isMobile && previouslyFocused) {
+        previouslyFocused.focus();
+      }
+    };
+  }, [isLoginModalOpen, isMobile]);
 
   const handleChange = (e: ChangeEvent<HTMLInputElement>): void => {
     const { name, value } = e.target;
@@ -214,8 +380,33 @@ const LoginPage = ({
     setShowPassword((prev) => !prev);
   };
 
+  /**
+   * Clicking the dimmed area around the modal card (i.e. the panel itself,
+   * not any of its children) closes the modal, matching the Escape behaviour.
+   */
+  const handleModalBackdropClick = (event: ReactMouseEvent<HTMLElement>) => {
+    if (event.target === event.currentTarget) {
+      closeLoginModal();
+    }
+  };
+
+  // A modal is only a modal on mobile; on desktop the form is a normal panel,
+  // so the dialog semantics must never leak into the desktop layout.
+  const modalProps =
+    isMobile && isLoginModalOpen
+      ? ({
+          role: "dialog",
+          "aria-modal": true,
+          "aria-labelledby": "login-title",
+        } as const)
+      : {};
+
   return (
-    <div className="login-container">
+    <div
+      className={`login-container${isLoginModalOpen ? " login-modal-open" : ""}`}
+    >
+      {/* The open modal is marked `aria-modal`, which hides the rest of the
+          page from assistive tech; no extra aria-hidden needed here. */}
       <aside className="brand-panel">
         <div className="brand-inner">
           <header className="brand-header">
@@ -256,6 +447,27 @@ const LoginPage = ({
             ))}
           </ul>
 
+          {/* Mobile-only call to action: replaces the five feature chips with
+              two large, easy-to-tap buttons stacked vertically. */}
+          <div className="brand-cta">
+            <button
+              type="button"
+              className="brand-cta-button brand-cta-button--primary"
+              onClick={() => setIsLoginModalOpen(true)}
+              ref={signInButtonRef}
+            >
+              Sign In
+            </button>
+
+            <button
+              type="button"
+              className="brand-cta-button brand-cta-button--secondary"
+              onClick={onCreateAccount}
+            >
+              Sign Up
+            </button>
+          </div>
+
           <hr className="brand-divider" />
 
           <p className="brand-footer">
@@ -265,10 +477,27 @@ const LoginPage = ({
         </div>
       </aside>
 
-      <main className="login-panel">
+      <main
+        className="login-panel"
+        onMouseDown={handleModalBackdropClick}
+        ref={dialogRef}
+        {...modalProps}
+      >
+        <button
+          type="button"
+          className="login-modal-close"
+          onClick={closeLoginModal}
+          ref={closeButtonRef}
+          aria-label="Close sign in form"
+        >
+          <CloseIcon />
+        </button>
+
         <div className="login-content">
           <section className="auth-card">
-            <h2 className="login-title">Welcome back</h2>
+            <h2 className="login-title" id="login-title">
+              Welcome back
+            </h2>
             <p className="login-subtitle">Sign in to your official account</p>
 
             {successMessage && (

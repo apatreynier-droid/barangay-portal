@@ -14,7 +14,6 @@ import approvalsIcon from "../../assets/icons/AP.png";
 import documentManagementIcon from "../../assets/icons/Dm.png";
 import reportsIcon from "../../assets/icons/Reports.png";
 import notificationsIcon from "../../assets/icons/notification-bell.png";
-import announcementsIcon from "../../assets/icons/announcement.png";
 import userManagementIcon from "../../assets/icons/UM.png";
 import activityLogsIcon from "../../assets/icons/Logs.png";
 
@@ -150,11 +149,6 @@ const AdminSidebar = ({
           icon: notificationsIcon,
           badge: unreadNotifications,
           onClick: onNotifications,
-        },
-        {
-          key: "announcements",
-          label: "Announcements",
-          icon: announcementsIcon,
         },
         {
           key: "user-management",
