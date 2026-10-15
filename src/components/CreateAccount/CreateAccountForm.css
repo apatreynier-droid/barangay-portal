@@ -305,4 +305,33 @@
   .form-banner-error {
     margin: 0 12px 16px;
   }
+
+  /* 16px avoids iOS/Android auto-zooming the page when a field is focused */
+  .field-input,
+  .form-field .date-picker .date-picker-input {
+    font-size: 16px;
+  }
+}
+
+/* Small phones: stack the wizard footer so Previous/Next stay full-width
+   and tappable instead of crowding the progress dots. */
+@media (max-width: 480px) {
+  .registration-card-footer {
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 12px;
+    padding: 16px 18px;
+  }
+
+  .registration-card-footer .wizard-button {
+    flex: 1 1 140px;
+    min-height: 46px;
+    padding: 12px 16px;
+  }
+
+  .wizard-progress {
+    order: -1;
+    flex-basis: 100%;
+    justify-content: center;
+  }
 }

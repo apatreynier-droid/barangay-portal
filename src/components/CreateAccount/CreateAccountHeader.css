@@ -148,3 +148,29 @@
     display: inline;
   }
 }
+
+/* Small phones: tighten the header so the logo + title fit on one row
+   without pushing the form far down the screen. */
+@media (max-width: 374px) {
+  .registration-header {
+    gap: 16px;
+    padding: 16px 14px 12px;
+  }
+
+  .registration-header-top {
+    gap: 12px;
+  }
+
+  .registration-logo {
+    width: 48px;
+    height: 48px;
+  }
+
+  .registration-heading {
+    font-size: 19px;
+  }
+
+  .registration-subheading {
+    font-size: 12px;
+  }
+}
