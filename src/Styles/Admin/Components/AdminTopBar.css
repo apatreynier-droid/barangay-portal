@@ -1,0 +1,127 @@
+.admin-topbar {
+  /* Sticky: stays in flow until the page scrolls, then pins to the top of
+     the viewport. Opaque page background so content scrolls underneath
+     without showing through; z-index sits above page content but below
+     modals/backdrops (z-index 20+). */
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: #f1f5f9;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 18px;
+  /* Light divider (the old dark #595a5b line looked harsh under the header);
+     it only reads as a hairline and keeps the pinned bar separated. */
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.admin-topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+/* Notification bell: same asset and hit target as the resident top bar,
+   with an unread-count badge instead of a bare dot. */
+.admin-notif-button {
+  position: relative;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  background: #ffffff;
+  cursor: pointer;
+}
+
+.admin-notif-button:focus-visible {
+  outline: 2px solid #1d4ed8;
+  outline-offset: 2px;
+}
+
+.admin-notif-icon {
+  display: block;
+  width: 18px;
+  height: 18px;
+  object-fit: contain;
+  pointer-events: none;
+}
+
+.admin-notif-badge {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid #f1f5f9;
+  border-radius: 999px;
+  background: #dc2626;
+  color: #ffffff;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+/* Profile avatar (initials); the account itself lives in the sidebar
+   footer, which the hamburger opens on mobile. */
+.admin-topbar-avatar {
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: #2563eb;
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 700;
+  user-select: none;
+}
+
+.admin-topbar-heading {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.admin-topbar-heading > div {
+  min-width: 0;
+}
+
+.admin-topbar-heading h1 {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.admin-topbar-heading h1 {
+  margin: 0;
+  font-size: 20px;
+  color: #0f172a;
+}
+
+.admin-topbar-heading p {
+  margin: 3px 0 0;
+  font-size: 13px;
+  color: #64748b;
+}
+
+/* The dashboard greeting swaps to a single short line on phones so the app
+   bar never eats three rows; other admin pages pass their own `subtitle`,
+   which renders in both modes. Only one variant is ever displayed, so the
+   hidden one stays out of the accessibility tree (display: none). */
+.admin-welcome--short {
+  display: none;
+}

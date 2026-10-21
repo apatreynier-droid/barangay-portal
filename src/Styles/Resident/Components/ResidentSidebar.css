@@ -1,0 +1,157 @@
+.sidebar {
+  position: fixed;
+  left: 0;
+  top: 0;
+  width: 250px;
+  height: 100vh;
+  background: #1d3468;
+  border-right: 1px solid rgba(255, 255, 255, 0.12);
+  display: flex;
+  flex-direction: column;
+  padding: 24px 16px;
+}
+
+.sidebar-logo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 8px;
+  margin-bottom: 40px;
+}
+
+.sidebar-logo-circle {
+  width: 64px;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.sidebar-logo-circle img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+
+.sidebar-logo h2 {
+  margin: 0;
+  font-size: 18px;
+  color: #ffffff;
+}
+
+.sidebar-logo span {
+  display: block;
+  margin-top: 2px;
+  font-size: 11px;
+  color: #cbd5e1;
+}
+
+.sidebar-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  color: #d1d5db;
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 500;
+  /* Explicit property list: never animate layout properties (padding,
+     font-size, font-weight) — animating "all" caused stutter and wobble. */
+  transition:
+    background-color 0.18s cubic-bezier(0.4, 0, 0.2, 1),
+    color 0.18s cubic-bezier(0.4, 0, 0.2, 1),
+    transform 0.12s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.nav-button {
+  width: 100%;
+  border: 0;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+}
+
+.nav-button:disabled {
+  cursor: default;
+}
+
+.nav-item:hover {
+  background-color: rgba(255, 255, 255, 0.12);
+  color: #ffffff;
+}
+
+/* Keep the active item visually stable while hovered (including the
+   disabled active buttons): it keeps its stronger highlight. */
+.nav-item.active:hover {
+  background-color: rgba(255, 255, 255, 0.18);
+  color: #ffffff;
+}
+
+/* Subtle press feedback: transform only, so layout never shifts. */
+.nav-item:not(:disabled):active {
+  transform: scale(0.98);
+}
+
+.nav-item.active {
+  background: rgba(255, 255, 255, 0.18);
+  color: #ffffff;
+  font-weight: 600;
+}
+
+.nav-item:focus-visible {
+  outline: 2px solid #ffffff;
+  outline-offset: 2px;
+}
+
+.nav-icon {
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.nav-icon img {
+  width: 18px;
+  height: 18px;
+  object-fit: contain;
+  /* Render icons with their original PNG colors (no recoloring to match
+     the sidebar text or active/hover color). */
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  transition: transform 0.18s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Compositor-only scale: immediate response, no repaint-driven lag,
+   and no layout shift since transforms do not affect flow. */
+.nav-item:hover .nav-icon img {
+  transform: translateZ(0) scale(1.08);
+}
+
+/* The old ".sidebar-bottom" Logout button was replaced by the shared
+   SidebarUserFooter component (see SidebarUserFooter.css). */
+/* ---------------------- Sidebar motion preferences ------------------------- */
+
+/* Honor users who prefer reduced motion: hover feedback stays (color only),
+   but movement and transitions are disabled. */
+@media (prefers-reduced-motion: reduce) {
+  .nav-item,
+  .nav-item .nav-icon img {
+    transition: none;
+  }
+
+  .nav-item:not(:disabled):active,
+  .nav-item:hover .nav-icon img {
+    transform: none;
+  }
+}
+

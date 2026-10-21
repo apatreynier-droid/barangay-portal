@@ -9,7 +9,7 @@ import { validateForm, authenticateUser } from "../../Utils/LoginLogic";
 import logo from "../../assets/logo-256.png";
 import showIcon from "../../assets/show.png";
 import hideIcon from "../../assets/hide.png";
-import "./LoginPage.css";
+import "../../Styles/Shared/Pages/LoginPage.css";
 
 type LoginPageProps = {
   onLoginSuccess: () => void;

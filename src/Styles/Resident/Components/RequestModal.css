@@ -1,0 +1,128 @@
+.request-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(17, 24, 39, 0.5);
+}
+
+.request-modal {
+  width: min(100%, 480px);
+  padding: 28px;
+  border-radius: 18px;
+  background: #ffffff;
+  box-shadow: 0 24px 60px rgba(17, 24, 39, 0.24);
+}
+
+.request-modal-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.request-modal-header p {
+  margin: 0 0 5px;
+  color: #667eea;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.request-modal-header h2 {
+  margin: 0;
+  color: #111827;
+  font-size: 22px;
+}
+
+.modal-close-button {
+  width: 32px;
+  height: 32px;
+  border: 0;
+  border-radius: 8px;
+  background: #f3f4f6;
+  color: #4b5563;
+  cursor: pointer;
+  font-size: 24px;
+  line-height: 1;
+}
+
+.request-form {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+
+.request-form label {
+  margin-top: 8px;
+  color: #374151;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.request-form select,
+.request-form textarea {
+  width: 100%;
+  border: 1px solid #d1d5db;
+  border-radius: 10px;
+  background: #ffffff;
+  color: #111827;
+  font: inherit;
+  font-size: 14px;
+  outline: none;
+}
+
+.request-form select {
+  height: 44px;
+  padding: 0 12px;
+}
+
+.request-form textarea {
+  min-height: 110px;
+  padding: 12px;
+  resize: vertical;
+}
+
+.request-form select:focus,
+.request-form textarea:focus {
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.14);
+}
+
+.form-error {
+  margin: 3px 0 0;
+  color: #dc2626;
+  font-size: 12px;
+}
+
+.request-form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.cancel-button,
+.submit-request-button {
+  padding: 10px 15px;
+  border-radius: 9px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.cancel-button {
+  border: 1px solid #d1d5db;
+  background: #ffffff;
+  color: #4b5563;
+}
+
+.submit-request-button {
+  border: 1px solid #667eea;
+  background: #667eea;
+  color: #ffffff;
+}

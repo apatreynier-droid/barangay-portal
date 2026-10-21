@@ -1,5 +1,5 @@
 import logo from "../../assets/logo-256.png";
-import "./CreateAccountHeader.css";
+import "../../Styles/Shared/Components/CreateAccountHeader.css";
 
 const STEPS = ["Personal Info", "Address & Contact", "Emergency Contact"];
 

@@ -15,9 +15,9 @@ import {
 } from "../../Utils/CreateAccountLogic";
 
 import DatePickerInput from "../Shared/DatePickerInput";
-import "../Shared/DatePickerInput.css";
+import "../../Styles/Shared/Components/DatePickerInput.css";
 
-import "./CreateAccountForm.css";
+import "../../Styles/Shared/Components/CreateAccountForm.css";
 
 const TOTAL_STEPS = 3;
 

@@ -1,5 +1,5 @@
 import { createPortal } from "react-dom";
-import "./LogoutConfirmation.css";
+import "../../Styles/Shared/Components/LogoutConfirmation.css";
 
 type LogoutConfirmationProps = {
   isOpen: boolean;

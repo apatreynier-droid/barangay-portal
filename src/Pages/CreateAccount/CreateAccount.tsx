@@ -3,7 +3,7 @@ import { useState } from "react";
 import CreateAccountHeader from "../../components/CreateAccount/CreateAccountHeader";
 import CreateAccountForm from "../../components/CreateAccount/CreateAccountForm";
 
-import "./CreateAccount.css";
+import "../../Styles/Shared/Pages/CreateAccount.css";
 
 type CreateAccountProps = {
   onBackToLogin: () => void;
