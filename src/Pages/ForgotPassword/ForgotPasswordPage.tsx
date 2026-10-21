@@ -6,7 +6,7 @@ import {
   validateForm,
 } from "../../Utils/ForgotPasswordLogic";
 import logo from "../../assets/logo-256.png";
-import "./ForgotPasswordPage.css";
+import "../../Styles/Shared/Pages/ForgotPasswordPage.css";
 
 type ForgotPasswordPageProps = {
   onBackToLogin: () => void;

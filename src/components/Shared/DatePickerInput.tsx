@@ -34,7 +34,7 @@ import {
   parseDateText,
 } from "../../Utils/DatePickerLogic";
 import calendarIcon from "../../assets/icons/calendar.png";
-import "./DatePickerInput.css";
+import "../../Styles/Shared/Components/DatePickerInput.css";
 
 /* -------------------------------------------------------------------------- */
 /*  Types and icons                                                           */

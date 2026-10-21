@@ -9,7 +9,7 @@ import {
 import logo from "../../assets/logo-256.png";
 import showIcon from "../../assets/show.png";
 import hideIcon from "../../assets/hide.png";
-import "./ResetPasswordPage.css";
+import "../../Styles/Shared/Pages/ResetPasswordPage.css";
 
 type ResetPasswordPageProps = {
   onBackToLogin: () => void;

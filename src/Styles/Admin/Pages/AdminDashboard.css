@@ -1,0 +1,1191 @@
+.admin-dashboard {
+  min-height: 100vh;
+  display: flex;
+  background: #f1f5f9;
+  color: #1f2937;
+}
+
+/* The project has no global box-sizing reset, so `.admin-main` (a fixed
+   width of calc(100% - sidebar) plus horizontal padding) used to be dozens
+   of pixels wider than the viewport — masked by html/body overflow-x: hidden
+   as clipped right edges. Scope the standard border-box rule to every admin
+   page (all of them root themselves in .admin-dashboard) so widths include
+   their own padding and nothing can push past the viewport. */
+.admin-dashboard,
+.admin-dashboard * {
+  box-sizing: border-box;
+}
+
+
+/* ----------------------------------- Main ----------------------------------- */
+
+.admin-main {
+  width: calc(100% - 250px);
+  margin-left: 250px;
+  min-width: 0;
+  padding: 24px 28px 32px;
+}
+
+
+@media (max-width: 768px) {
+  .admin-welcome--short {
+    display: block;
+  }
+
+  .admin-welcome--long {
+    display: none;
+  }
+}
+
+.admin-error-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 18px;
+  padding: 12px 16px;
+  border: 1px solid #fecaca;
+  border-radius: 12px;
+  background: #fef2f2;
+  color: #b91c1c;
+  font-size: 13px;
+}
+
+.admin-error-banner button {
+  padding: 7px 14px;
+  border: 0;
+  border-radius: 8px;
+  background: #b91c1c;
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.admin-loading-state {
+  padding: 48px 0;
+  text-align: center;
+  color: #64748b;
+  font-size: 14px;
+}
+
+/* -------------------------------- Stat cards -------------------------------- */
+
+.admin-stats-grid {
+  display: grid;
+  /* Mobile-first: a compact two-column grid everywhere below the desktop
+     layout so six cards take three rows instead of six full-width stacks.
+     At >=1025px the two half-grids dissolve into .admin-dashboard-layout
+     (three cards per row again) — see the desktop rules below. */
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  min-width: 0;
+}
+
+.admin-stat-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  min-width: 0;
+  padding: 16px;
+  border-radius: 14px;
+  background: #ffffff;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
+}
+
+/* Pending/Approved are the admin's primary workflow numbers: a thin accent
+   ring sets them apart without changing the card design or layout. */
+.admin-stat-card--highlight {
+  box-shadow:
+    0 0 0 1px rgba(37, 99, 235, 0.35),
+    0 1px 2px rgba(15, 23, 42, 0.06);
+}
+
+.admin-stat-body {
+  min-width: 0;
+}
+
+.admin-stat-icon {
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  font-size: 17px;
+}
+
+.admin-stat-icon img {
+  width: 22px;
+  height: 22px;
+  object-fit: contain;
+}
+
+.admin-stat-icon.blue {
+  background: #eff6ff;
+}
+
+.admin-stat-icon.amber {
+  background: #fef3c7;
+}
+
+.admin-stat-icon.green {
+  background: #d1fae5;
+}
+
+.admin-stat-icon.purple {
+  background: #ede9fe;
+}
+
+.admin-stat-icon.teal {
+  background: #ccfbf1;
+}
+
+.admin-stat-icon.red {
+  background: #fee2e2;
+}
+
+.admin-stat-value {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 800;
+  color: #0f172a;
+  line-height: 1.1;
+}
+
+.admin-stat-label {
+  margin: 3px 0 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: #334155;
+}
+
+.admin-stat-note {
+  margin: 4px 0 0;
+  font-size: 12px;
+  /* #94a3b8 only reaches 2.5:1 on white; #64748b clears 4.5:1. */
+  color: #64748b;
+}
+
+.admin-stat-note-muted {
+  color: #64748b;
+}
+
+.admin-stat-note-warning {
+  color: #c2410c;
+  font-weight: 600;
+}
+
+.admin-stat-note-purple {
+  color: #6d28d9;
+}
+
+.admin-stat-note-danger {
+  color: #b91c1c;
+}
+
+/* ---------------------------------- Panels ---------------------------------- */
+
+.admin-panel {
+  min-width: 0;
+  padding: 20px;
+  border-radius: 14px;
+  background: #ffffff;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
+}
+
+.admin-panel-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 16px;
+  font-size: 15px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+/* Title + optional "View all" action on one row (Recent Requests and
+   Notifications). The header owns the bottom margin there. */
+.admin-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 0 0 14px;
+  min-width: 0;
+}
+
+.admin-panel-header .admin-panel-title {
+  margin: 0;
+  min-width: 0;
+}
+
+.admin-panel-link {
+  flex-shrink: 0;
+  min-height: 36px;
+  padding: 7px 10px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: #1d4ed8;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background-color 0.18s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.admin-panel-link:hover {
+  background: #eff6ff;
+  /* Counteract the global App.css button hover lift for inline text links. */
+  transform: none;
+  box-shadow: none;
+}
+
+.admin-panel-link:focus-visible {
+  outline: 2px solid #1d4ed8;
+  outline-offset: 2px;
+}
+
+.admin-panel-badge {
+  min-width: 20px;
+  height: 20px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: #b45309;
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.admin-empty-note {
+  margin: 8px 0;
+  color: #64748b;
+  font-size: 13px;
+}
+
+/* ------------------------- Dashboard section layout ------------------------- */
+
+/* Mobile-first: a single stacked column in the priority order the sections
+   appear in the DOM (status summary → Pending/Approved → Recent Requests →
+   remaining stats → charts → registrations → notifications). Desktop
+   re-places the same sections into the analytics-oriented grid at >=1025px. */
+.admin-dashboard-layout {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+
+.admin-charts-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 340px;
+  gap: 20px;
+  min-width: 0;
+}
+
+.admin-side-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  min-width: 0;
+}
+
+/* --------------------------- Request status strip -------------------------- */
+
+.admin-status-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-width: 0;
+}
+
+.admin-status-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 8px 14px;
+  border: 1px solid #e2e8f0;
+  border-radius: 999px;
+  background: #ffffff;
+  color: #334155;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background-color 0.18s cubic-bezier(0.4, 0, 0.2, 1),
+    border-color 0.18s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.admin-status-chip:hover {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+  /* Neutralize the global App.css button hover lift for these chips. */
+  transform: none;
+  box-shadow: none;
+}
+
+.admin-status-chip:focus-visible {
+  outline: 2px solid #1d4ed8;
+  outline-offset: 2px;
+}
+
+/* Active chip: matches the sidebar's active-item blue; the count flips to a
+   translucent badge so the state is obvious without relying on color alone
+   (aria-pressed carries it for assistive tech as well). */
+.admin-status-chip.is-active {
+  background: #2563eb;
+  border-color: #2563eb;
+  color: #ffffff;
+}
+
+.admin-status-chip-icon {
+  display: flex;
+  flex-shrink: 0;
+}
+
+.admin-status-chip-icon img {
+  width: 16px;
+  height: 16px;
+  object-fit: contain;
+}
+
+.admin-status-chip-label {
+  white-space: nowrap;
+}
+
+.admin-status-chip-count {
+  min-width: 22px;
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: #f1f5f9;
+  color: #475569;
+  font-size: 12px;
+  font-weight: 700;
+  text-align: center;
+}
+
+.admin-status-chip.is-active .admin-status-chip-count {
+  background: rgba(255, 255, 255, 0.25);
+  color: #ffffff;
+}
+
+/* -------------------------------- Bar chart --------------------------------- */
+
+.admin-chart-panel {
+  min-width: 0;
+}
+
+.admin-bar-chart {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.admin-bar-chart-wrapper {
+  position: relative;
+}
+
+/* Hover highlight band behind the active month group (Recharts-style cursor) */
+.admin-chart-cursor {
+  fill: rgba(37, 99, 235, 0.06);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 180ms ease-out;
+}
+
+.admin-chart-cursor.is-visible {
+  opacity: 1;
+}
+
+/* Smooth transition on the bars themselves when highlighting */
+.admin-chart-bar {
+  transition:
+    filter 180ms ease-out,
+    opacity 180ms ease-out;
+}
+
+.admin-chart-bar.is-active {
+  filter: brightness(1.12) saturate(1.08);
+}
+
+/* Shared hover tooltip (bar chart + donut chart) */
+.admin-chart-tooltip {
+  position: absolute;
+  z-index: 20;
+  min-width: 130px;
+  max-width: 230px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.12);
+  font-size: 12px;
+  line-height: 1.4;
+  color: #334155;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.admin-chart-tooltip-title {
+  margin: 0 0 4px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.admin-chart-tooltip-row {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-top: 2px;
+  opacity: 0.75;
+  transition: opacity 180ms ease-out;
+}
+
+.admin-chart-tooltip-row.is-active {
+  opacity: 1;
+}
+
+.admin-chart-tooltip-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  flex-shrink: 0;
+}
+
+.admin-chart-tooltip-label {
+  flex: 1;
+  padding-right: 12px;
+}
+
+.admin-chart-tooltip-value {
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.admin-chart-gridline {
+  stroke: #e2e8f0;
+  stroke-width: 1;
+}
+
+.admin-chart-axis-label {
+  /* #64748b clears 4.5:1 on the white panel (the old #94a3b8 did not). */
+  fill: #64748b;
+  font-size: 11px;
+}
+
+/* The bar chart maps its viewBox 1:1 to the measured container width, so no
+   viewBox down-scaling happens and the labels render at their literal px
+   size: 11px on phones, 12px once there is room. (The shared compensation
+   bumps for this class were removed from Styles/responsive.css.) */
+@media (min-width: 769px) {
+  .admin-chart-axis-label {
+    font-size: 12px;
+  }
+}
+
+/* Bar-series legend: explains what each color in the chart represents. */
+.admin-chart-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  margin: -4px 0 14px;
+  padding: 0;
+  list-style: none;
+  font-size: 12px;
+  color: #334155;
+}
+
+.admin-chart-legend li {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.admin-chart-legend-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  flex-shrink: 0;
+}
+
+/* -------------------------------- Donut chart ------------------------------- */
+
+.admin-donut-wrapper {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  padding: 10px 0 16px;
+}
+
+/* Let the hovered slice expand slightly beyond the viewBox without clipping */
+.admin-donut-wrapper svg {
+  overflow: visible;
+}
+
+.admin-donut-slice {
+  transition: transform 200ms ease-out;
+}
+
+.admin-donut-legend {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.admin-donut-legend li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+}
+
+.admin-legend-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  flex-shrink: 0;
+}
+
+.admin-legend-name {
+  flex: 1;
+  color: #334155;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.admin-legend-count {
+  color: #0f172a;
+  font-weight: 700;
+}
+
+/* Ranked mini-bar between the category name and its count. Decorative and
+   hidden on wide screens (where the donut itself already communicates the
+   proportions); shown on phones so the list reads as a ranked summary even
+   when the donut is small. */
+.admin-legend-bar {
+  display: none;
+  flex: 1 1 40px;
+  min-width: 32px;
+  height: 6px;
+  border-radius: 999px;
+  background: #e2e8f0;
+  overflow: hidden;
+}
+
+.admin-legend-bar > span {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+}
+
+/* ------------------------------- Requests table ------------------------------ */
+
+.admin-table-wrapper {
+  overflow-x: auto;
+}
+
+.admin-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.admin-table th {
+  padding: 8px 10px;
+  border-bottom: 1px solid #e2e8f0;
+  /* Was #94a3b8 (2.5:1 on white) — too light for 11px text. */
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.admin-table td {
+  padding: 13px 10px;
+  border-bottom: 1px solid #eef2f6;
+  color: #334155;
+  font-size: 13px;
+}
+
+.admin-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.admin-request-id {
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.admin-status-pill {
+  display: inline-block;
+  padding: 5px 12px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.admin-status-pill.status-pending {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.admin-status-pill.status-approved {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.admin-status-pill.status-processing {
+  background: #ede9fe;
+  color: #5b21b6;
+}
+
+.admin-status-pill.status-completed {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.admin-status-pill.status-rejected {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.admin-table-footnote {
+  margin: 12px 0 0;
+  color: #64748b;
+  font-size: 11px;
+}
+
+/* Request-number button in the desktop table: opens the same details screen
+   as the mobile cards. */
+.admin-request-link {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: #1d4ed8;
+  font: inherit;
+  font-weight: 700;
+  text-align: left;
+  cursor: pointer;
+}
+
+.admin-request-link:hover {
+  text-decoration: underline;
+  transform: none;
+  box-shadow: none;
+}
+
+.admin-request-link:focus-visible {
+  outline: 2px solid #1d4ed8;
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* --------------------- Mobile request list (phones) ------------------------ */
+
+.admin-request-cards {
+  display: none;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.admin-request-card {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 100%;
+  min-height: 44px;
+  padding: 12px 14px;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  background: #f8fafc;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    background-color 0.18s cubic-bezier(0.4, 0, 0.2, 1),
+    border-color 0.18s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.admin-request-card:hover {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+  /* Neutralize the global App.css button hover lift for list rows. */
+  transform: none;
+  box-shadow: none;
+}
+
+.admin-request-card:focus-visible {
+  outline: 2px solid #1d4ed8;
+  outline-offset: 2px;
+}
+
+.admin-request-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-width: 0;
+}
+
+.admin-request-card-top .admin-request-id {
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.admin-request-card-top .admin-status-pill {
+  flex-shrink: 0;
+}
+
+.admin-request-card-resident {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1f2937;
+  overflow-wrap: anywhere;
+}
+
+.admin-request-card-meta {
+  font-size: 12px;
+  color: #64748b;
+  overflow-wrap: anywhere;
+}
+
+/* Filtered-to-empty state for the Recent Requests list. */
+.admin-filter-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  padding-top: 4px;
+}
+
+.admin-filter-empty .admin-empty-note {
+  margin: 0;
+}
+
+/* Phones/tablets up to 768px: the table cannot expose its columns there, so
+   the readable card list replaces it entirely (nothing is merely hidden —
+   every field the table shows also appears on the cards). */
+@media (max-width: 768px) {
+  .admin-table-wrapper {
+    display: none;
+  }
+
+  .admin-request-cards {
+    display: flex;
+  }
+}
+
+/* ------------------------------ Registrations ------------------------------- */
+
+.admin-registration-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.admin-registration-list li {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.admin-avatar {
+  width: 34px;
+  height: 34px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+/* Resident avatars: muted palette shades derived from the portal colors so
+   the initial circles no longer clash with the rest of the UI. */
+.admin-avatar.admin-avatar-1 {
+  background: #3d6ea8;
+}
+
+.admin-avatar.admin-avatar-2 {
+  background: #3a8266;
+}
+
+.admin-avatar.admin-avatar-3 {
+  background: #7b6bb5;
+}
+
+.admin-avatar.admin-avatar-4 {
+  background: #9a6b2a;
+}
+
+.admin-avatar.admin-avatar-5 {
+  background: #b25f57;
+}
+
+.admin-registration-info strong {
+  display: block;
+  font-size: 13px;
+  color: #0f172a;
+}
+
+.admin-registration-info span {
+  display: block;
+  margin-top: 1px;
+  font-size: 11px;
+  /* #64748b instead of the 2.5:1 #94a3b8. */
+  color: #64748b;
+}
+
+/* ------------------------------- Activity feed ------------------------------ */
+
+.admin-activity-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.admin-activity-list li {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: #f8fafc;
+}
+
+.admin-activity-icon {
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  background: #e2e8f0;
+  font-size: 14px;
+}
+
+.admin-activity-icon img {
+  width: 18px;
+  height: 18px;
+  object-fit: contain;
+}
+
+.admin-activity-info strong {
+  display: block;
+  font-size: 12px;
+  color: #0f172a;
+}
+
+.admin-activity-info span {
+  display: block;
+  margin-top: 1px;
+  font-size: 11px;
+  color: #64748b;
+}
+
+/* ------------------------- Dashboard notification items --------------------- */
+
+/* Real notification rows (title + message + time + unread state); each row is
+   one button that opens the existing Notifications page. Class names are
+   dashboard-card specific so they never collide with the row styles the
+   Admin Notifications page owns for its own .admin-notification-item list. */
+.admin-notif-feed-list li {
+  display: block;
+  padding: 0;
+  background: transparent;
+}
+
+.admin-notif-feed-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 12px;
+  border: 0;
+  border-radius: 10px;
+  background: #f8fafc;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 0.18s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.admin-notif-feed-item:hover {
+  background: #f1f5f9;
+  /* Neutralize the global App.css button hover lift for list rows. */
+  transform: none;
+  box-shadow: none;
+}
+
+.admin-notif-feed-item:focus-visible {
+  outline: 2px solid #1d4ed8;
+  outline-offset: -2px;
+}
+
+.admin-notif-feed-item .admin-activity-icon {
+  margin-top: 2px;
+}
+
+.admin-notif-feed-item .admin-activity-info {
+  min-width: 0;
+}
+
+.admin-notif-feed-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.admin-unread-flag {
+  flex-shrink: 0;
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: #dbeafe;
+  color: #1e40af;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.admin-notif-feed-message {
+  display: block;
+  margin-top: 2px;
+  font-size: 12px;
+  line-height: 1.45;
+  color: #475569;
+  overflow-wrap: anywhere;
+}
+
+/* -------------------------------- Responsive -------------------------------- */
+
+/* Below 1201px the charts stack (the inner grid of .admin-charts-grid). */
+@media (max-width: 1200px) {
+  .admin-charts-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ------------------------- Desktop layout (>= 1025px) ----------------------- */
+
+/* At >=1025px the shared sidebar is full width again (Styles/responsive.css
+   only collapses it up to 1024px). The sections the mobile stack shows in
+   priority order are placed back into the analytics-oriented layout:
+
+     row 1        status strip (full width)
+     rows 2-3     six stat cards, three per row (Pending, Approved,
+                  Residents / Processing, Completed, Rejected)
+     row 4        charts panel
+     rows 5-6     Recent Requests next to Registrations + Notifications
+                  (stacked from 1025-1200, side by side from 1201px)
+
+   The two half-grids dissolve with display: contents so their cards become
+   direct children of this grid; DOM order stays mobile-first and CSS alone
+   restores the desktop arrangement. */
+@media (min-width: 1025px) {
+  .admin-dashboard-layout {
+    display: grid;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    column-gap: 16px;
+    row-gap: 20px;
+  }
+
+  .admin-dashboard-layout .admin-stats-grid {
+    display: contents;
+  }
+
+  /* Two of six columns each = three cards per row. */
+  .admin-dashboard-layout .admin-stat-card {
+    grid-column: span 2;
+  }
+
+  .admin-dashboard-layout .admin-status-strip {
+    grid-row: 1;
+    grid-column: 1 / -1;
+  }
+
+  .admin-dashboard-layout .admin-charts-grid {
+    grid-row: 4;
+    grid-column: 1 / -1;
+  }
+
+  .admin-dashboard-layout .admin-recent-requests {
+    grid-row: 5;
+    grid-column: 1 / -1;
+  }
+
+  .admin-dashboard-layout .admin-side-stack {
+    grid-row: 6;
+    grid-column: 1 / -1;
+  }
+}
+
+@media (min-width: 1201px) {
+  .admin-dashboard-layout .admin-recent-requests {
+    grid-row: 5;
+    grid-column: 1 / 5;
+  }
+
+  .admin-dashboard-layout .admin-side-stack {
+    grid-row: 5;
+    grid-column: 5 / -1;
+  }
+}
+
+/* --------------------------- Phones and tablets ----------------------------- */
+
+@media (max-width: 768px) {
+  /* 44px touch targets for the app-bar controls; this scoped selector wins
+     over the shared .sidebar-toggle sizing in Styles/responsive.css. */
+  .admin-topbar .sidebar-toggle,
+  .admin-topbar .admin-notif-button {
+    width: 44px;
+    height: 44px;
+  }
+
+  .admin-panel-link {
+    min-height: 44px;
+    padding: 10px 12px;
+  }
+
+  /* Donut legend becomes a ranked list with mini bars; the name flexes so
+     long document types truncate instead of pushing the count off-row. */
+  .admin-donut-legend {
+    gap: 8px;
+  }
+
+  .admin-legend-name {
+    flex: 0 1 auto;
+  }
+
+  .admin-legend-bar {
+    display: block;
+  }
+}
+
+@media (max-width: 480px) {
+  /* Panels tighten so every card keeps its edges inside a 320px viewport.
+     Scoped to the dashboard layout: AdminReports shares .admin-panel and
+     keeps its own spacing. */
+  .admin-dashboard-layout .admin-panel {
+    padding: 16px;
+  }
+
+  .admin-dashboard-layout {
+    gap: 14px;
+  }
+
+  /* Compact stat card: icon + number share the top row, then the label and
+     supporting text take the card's full width. This keeps the two-column
+     grid readable down to 320px — nothing clips and no label splits into a
+     cramped narrow column. (.admin-stat-body dissolves into the card grid.) */
+  .admin-dashboard-layout .admin-stat-card {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: center;
+    gap: 2px 10px;
+    padding: 12px;
+  }
+
+  .admin-dashboard-layout .admin-stat-body {
+    display: contents;
+  }
+
+  .admin-dashboard-layout .admin-stat-icon {
+    grid-row: 1;
+    grid-column: 1;
+    width: 32px;
+    height: 32px;
+  }
+
+  .admin-dashboard-layout .admin-stat-icon img {
+    width: 18px;
+    height: 18px;
+  }
+
+  .admin-dashboard-layout .admin-stat-value {
+    grid-row: 1;
+    grid-column: 2;
+    margin: 0;
+    font-size: 20px;
+    justify-self: start;
+  }
+
+  .admin-dashboard-layout .admin-stat-label {
+    grid-row: 2;
+    grid-column: 1 / -1;
+    margin: 4px 0 0;
+    font-size: 12.5px;
+  }
+
+  .admin-dashboard-layout .admin-stat-note {
+    grid-row: 3;
+    grid-column: 1 / -1;
+    margin: 2px 0 0;
+    font-size: 11px;
+  }
+
+  /* Donut: smaller ring and tighter legend so request panels stay high on
+     the page. (responsive.css caps the ring at 180px; this scoped rule
+     wins below 480px.) */
+  .admin-dashboard .admin-donut-wrapper {
+    padding: 4px 0 10px;
+  }
+
+  .admin-dashboard .admin-donut-wrapper svg {
+    width: min(100%, 150px);
+  }
+
+  .admin-chart-legend {
+    gap: 6px 12px;
+    margin-bottom: 12px;
+  }
+}
+
+/* ---------------------- Sidebar motion preferences ------------------------- */
+
+/* Honor users who prefer reduced motion: hover feedback stays (color only),
+   but movement and transitions are disabled. */
+@media (prefers-reduced-motion: reduce) {
+  .admin-nav-item,
+  .admin-nav-item .admin-nav-icon img,
+  .admin-nav-item .admin-nav-label,
+  .sidebar-user-logout,
+  .admin-status-chip,
+  .admin-request-card,
+  .admin-notif-feed-item,
+  .admin-panel-link {
+    transition: none;
+  }
+
+  .admin-nav-item:not(:disabled):active,
+  .admin-nav-item:hover:not(:disabled) .admin-nav-icon img,
+  .admin-nav-item:hover:not(:disabled) .admin-nav-label {
+    transform: none;
+  }
+}

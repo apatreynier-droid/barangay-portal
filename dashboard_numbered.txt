@@ -1,0 +1,695 @@
+﻿   0: .dashboard {
+   1:   min-height: 100vh;
+   2:   display: flex;
+   3:   background: #f5f7fb;
+   4:   color: #1f2937;
+   5: }
+   6: 
+   7: .dashboard-main {
+   8:   width: calc(100% - 250px);
+   9:   margin-left: 250px;
+  10:   padding: 30px 40px 48px;
+  11: }
+  12: 
+  13: .dashboard-error-banner {
+  14:   display: flex;
+  15:   align-items: center;
+  16:   justify-content: space-between;
+  17:   gap: 12px;
+  18: 
+  19:   margin-bottom: 18px;
+  20:   padding: 12px 16px;
+  21: 
+  22:   border: 1px solid #fecaca;
+  23:   border-radius: 12px;
+  24:   background: #fef2f2;
+  25: 
+  26:   color: #b91c1c;
+  27:   font-size: 13px;
+  28:   font-weight: 600;
+  29: }
+  30: 
+  31: .dashboard-error-banner button {
+  32:   padding: 6px 14px;
+  33: 
+  34:   border: none;
+  35:   border-radius: 8px;
+  36:   background: #dc2626;
+  37: 
+  38:   color: #ffffff;
+  39:   font-size: 12px;
+  40:   font-weight: 700;
+  41: 
+  42:   cursor: pointer;
+  43: }
+  44: 
+  45: .profile-avatar {
+  46:   width: 42px;
+  47:   height: 42px;
+  48:   border-radius: 50%;
+  49:   background: linear-gradient(135deg, #667eea, #764ba2);
+  50:   color: white;
+  51:   display: flex;
+  52:   justify-content: center;
+  53:   align-items: center;
+  54:   font-size: 13px;
+  55:   font-weight: 700;
+  56: }
+  57: 
+  58: .profile-info {
+  59:   display: flex;
+  60:   flex-direction: column;
+  61: }
+  62: 
+  63: .profile-info strong {
+  64:   font-size: 13px;
+  65: }
+  66: 
+  67: .profile-info span {
+  68:   margin-top: 2px;
+  69:   font-size: 11px;
+  70:   color: #9ca3af;
+  71: }
+  72: 
+  73: .welcome-card {
+  74:   position: relative;
+  75:   overflow: hidden;
+  76:   display: flex;
+  77:   justify-content: space-between;
+  78:   align-items: center;
+  79:   min-height: 200px;
+  80:   padding: 32px;
+  81:   margin-bottom: 24px;
+  82:   border-radius: 20px;
+  83:   background: linear-gradient(135deg, #667eea, #764ba2, #8b5cf6);
+  84:   color: white;
+  85: }
+  86: 
+  87: .welcome-small {
+  88:   margin: 0 0 6px;
+  89:   font-size: 13px;
+  90:   opacity: 0.9;
+  91: }
+  92: 
+  93: .welcome-card h2 {
+  94:   margin: 0 0 10px;
+  95:   font-size: 28px;
+  96: }
+  97: 
+  98: .welcome-text {
+  99:   max-width: 580px;
+ 100:   margin: 0 0 22px;
+ 101:   font-size: 14px;
+ 102:   line-height: 1.7;
+ 103:   opacity: 0.85;
+ 104: }
+ 105: 
+ 106: .primary-button {
+ 107:   padding: 11px 18px;
+ 108:   border: none;
+ 109:   border-radius: 10px;
+ 110:   background: #ffffff;
+ 111:   color: #667eea;
+ 112:   font-size: 13px;
+ 113:   font-weight: 700;
+ 114:   cursor: pointer;
+ 115: }
+ 116: 
+ 117: .welcome-icon {
+ 118:   width: 110px;
+ 119:   height: 110px;
+ 120:   display: flex;
+ 121:   align-items: center;
+ 122:   justify-content: center;
+ 123:   margin-right: 30px;
+ 124:   border-radius: 24px;
+ 125:   background: rgba(255, 255, 255, 0.12);
+ 126: }
+ 127: 
+ 128: .welcome-icon img {
+ 129:   width: 60px;
+ 130:   height: 60px;
+ 131:   object-fit: contain;
+ 132: }
+ 133: 
+ 134: .stats-grid {
+ 135:   display: grid;
+ 136:   grid-template-columns: repeat(4, 1fr);
+ 137:   gap: 18px;
+ 138:   margin-bottom: 24px;
+ 139: }
+ 140: 
+ 141: .stat-card {
+ 142:   display: flex;
+ 143:   align-items: center;
+ 144:   gap: 14px;
+ 145:   padding: 20px;
+ 146:   background: #ffffff;
+ 147:   border: 1px solid #e5e7eb;
+ 148:   border-radius: 16px;
+ 149: }
+ 150: 
+ 151: .stat-icon {
+ 152:   width: 46px;
+ 153:   height: 46px;
+ 154:   display: flex;
+ 155:   align-items: center;
+ 156:   justify-content: center;
+ 157:   border-radius: 12px;
+ 158: }
+ 159: 
+ 160: .stat-icon img {
+ 161:   width: 22px;
+ 162:   height: 22px;
+ 163:   object-fit: contain;
+ 164: }
+ 165: 
+ 166: .stat-icon.blue {
+ 167:   background: #eff6ff;
+ 168: }
+ 169: 
+ 170: .stat-icon.orange {
+ 171:   background: #fff7ed;
+ 172: }
+ 173: 
+ 174: .stat-icon.purple {
+ 175:   background: #f5f3ff;
+ 176: }
+ 177: 
+ 178: .stat-icon.green {
+ 179:   background: #ecfdf5;
+ 180: }
+ 181: 
+ 182: .stat-card span {
+ 183:   display: block;
+ 184:   margin-bottom: 4px;
+ 185:   color: #475569;
+ 186:   font-size: 11px;
+ 187: }
+ 188: 
+ 189: .stat-card strong {
+ 190:   color: #111827;
+ 191:   font-size: 24px;
+ 192: }
+ 193: 
+ 194: .dashboard-grid {
+ 195:   display: grid;
+ 196:   grid-template-columns: 1.5fr 1fr;
+ 197:   gap: 20px;
+ 198:   margin-bottom: 20px;
+ 199: }
+ 200: 
+ 201: .content-card {
+ 202:   padding: 24px;
+ 203:   background: #ffffff;
+ 204:   border: 1px solid #e5e7eb;
+ 205:   border-radius: 16px;
+ 206: }
+ 207: 
+ 208: .card-header {
+ 209:   display: flex;
+ 210:   justify-content: space-between;
+ 211:   margin-bottom: 20px;
+ 212: }
+ 213: 
+ 214: .card-header h2 {
+ 215:   margin: 0 0 5px;
+ 216:   font-size: 17px;
+ 217: }
+ 218: 
+ 219: .card-header p {
+ 220:   margin: 0;
+ 221:   font-size: 12px;
+ 222:   color: #9ca3af;
+ 223: }
+ 224: 
+ 225: .view-all {
+ 226:   padding: 9px 13px;
+ 227: 
+ 228:   border: 1px solid #c7d2fe;
+ 229:   border-radius: 9px;
+ 230:   background: #ffffff;
+ 231: 
+ 232:   color: #667eea;
+ 233:   font-family: inherit;
+ 234:   font-size: 12px;
+ 235:   font-weight: 700;
+ 236: 
+ 237:   cursor: pointer;
+ 238: }
+ 239: 
+ 240: .view-all:hover {
+ 241:   background: #eef2ff;
+ 242: }
+ 243: 
+ 244: .requests-list {
+ 245:   display: flex;
+ 246:   flex-direction: column;
+ 247: }
+ 248: 
+ 249: .dashboard-empty-state {
+ 250:   margin: 0;
+ 251:   padding: 18px 0;
+ 252:   color: #6b7280;
+ 253:   font-size: 13px;
+ 254:   text-align: center;
+ 255: }
+ 256: 
+ 257: .request-row {
+ 258:   display: flex;
+ 259:   align-items: center;
+ 260:   gap: 14px;
+ 261:   padding: 15px 0;
+ 262:   border-bottom: 1px solid #f3f4f6;
+ 263: }
+ 264: 
+ 265: .document-icon {
+ 266:   width: 42px;
+ 267:   height: 42px;
+ 268:   display: flex;
+ 269:   align-items: center;
+ 270:   justify-content: center;
+ 271:   border-radius: 10px;
+ 272:   background: #f3f4f6;
+ 273: }
+ 274: 
+ 275: .document-icon img {
+ 276:   width: 22px;
+ 277:   height: 22px;
+ 278:   object-fit: contain;
+ 279: }
+ 280: 
+ 281: .request-details {
+ 282:   flex: 1;
+ 283:   min-width: 0;
+ 284: }
+ 285: 
+ 286: .request-details h3 {
+ 287:   margin: 0 0 4px;
+ 288:   font-size: 13px;
+ 289: }
+ 290: 
+ 291: .request-details span {
+ 292:   color: #9ca3af;
+ 293:   font-size: 11px;
+ 294: }
+ 295: 
+ 296: .request-status {
+ 297:   padding: 6px 9px;
+ 298:   border-radius: 20px;
+ 299:   font-size: 10px;
+ 300:   font-weight: 600;
+ 301: }
+ 302: 
+ 303: .status-pending {
+ 304:   background: #fff7ed;
+ 305:   color: #9a3412;
+ 306: }
+ 307: 
+ 308: .status-approved {
+ 309:   background: #eff6ff;
+ 310:   color: #1d4ed8;
+ 311: }
+ 312: 
+ 313: .status-processing {
+ 314:   background: #eff6ff;
+ 315:   color: #1d4ed8;
+ 316: }
+ 317: 
+ 318: .status-ready {
+ 319:   background: #ecfdf5;
+ 320:   color: #047857;
+ 321: }
+ 322: 
+ 323: .quick-actions {
+ 324:   display: flex;
+ 325:   flex-direction: column;
+ 326:   gap: 10px;
+ 327: }
+ 328: 
+ 329: .quick-action {
+ 330:   width: 100%;
+ 331:   display: flex;
+ 332:   align-items: center;
+ 333:   gap: 12px;
+ 334:   padding: 13px;
+ 335:   text-align: left;
+ 336:   border: 1px solid #e5e7eb;
+ 337:   background: #ffffff;
+ 338:   border-radius: 11px;
+ 339:   cursor: pointer;
+ 340: }
+ 341: 
+ 342: .quick-action > span {
+ 343:   width: 38px;
+ 344:   height: 38px;
+ 345:   display: flex;
+ 346:   align-items: center;
+ 347:   justify-content: center;
+ 348:   border-radius: 9px;
+ 349:   background: #f3f4f6;
+ 350:   flex-shrink: 0;
+ 351: }
+ 352: 
+ 353: .quick-action > span img {
+ 354:   /* Render the PNG assets with their original colors and proportions. */
+ 355:   width: 22px;
+ 356:   height: 22px;
+ 357:   object-fit: contain;
+ 358:   display: block;
+ 359: }
+ 360: 
+ 361: .quick-action > div {
+ 362:   min-width: 0;
+ 363: }
+ 364: 
+ 365: .quick-action strong {
+ 366:   display: block;
+ 367:   font-size: 12px;
+ 368: }
+ 369: 
+ 370: .quick-action small {
+ 371:   display: block;
+ 372:   margin-top: 3px;
+ 373:   color: #9ca3af;
+ 374:   font-size: 10px;
+ 375: }
+ 376: 
+ 377: .pickup-card {
+ 378:   display: flex;
+ 379:   align-items: center;
+ 380:   gap: 16px;
+ 381:   padding: 22px;
+ 382:   background: #ecfdf5;
+ 383:   border: 1px solid #bbf7d0;
+ 384:   border-radius: 16px;
+ 385: }
+ 386: 
+ 387: .pickup-icon {
+ 388:   width: 48px;
+ 389:   height: 48px;
+ 390:   display: flex;
+ 391:   align-items: center;
+ 392:   justify-content: center;
+ 393:   border-radius: 50%;
+ 394:   background: #10b981;
+ 395:   color: white;
+ 396:   font-weight: 700;
+ 397:   flex-shrink: 0;
+ 398: }
+ 399: 
+ 400: .pickup-content {
+ 401:   flex: 1;
+ 402:   min-width: 200px;
+ 403: }
+ 404: 
+ 405: .pickup-label {
+ 406:   color: #059669;
+ 407:   font-size: 10px;
+ 408:   font-weight: 700;
+ 409: }
+ 410: 
+ 411: .pickup-content h2 {
+ 412:   margin: 4px 0 5px;
+ 413:   color: #065f46;
+ 414:   font-size: 15px;
+ 415: }
+ 416: 
+ 417: .pickup-content p {
+ 418:   margin: 0;
+ 419:   color: #047857;
+ 420:   font-size: 11px;
+ 421:   line-height: 1.6;
+ 422: }
+ 423: 
+ 424: .secondary-button {
+ 425:   padding: 10px 15px;
+ 426:   border: 1px solid #a7f3d0;
+ 427:   border-radius: 9px;
+ 428:   background: white;
+ 429:   color: #059669;
+ 430:   font-size: 11px;
+ 431:   font-weight: 600;
+ 432:   cursor: pointer;
+ 433: }
+ 434: 
+ 435: .request-modal-backdrop {
+ 436:   position: fixed;
+ 437:   inset: 0;
+ 438:   z-index: 10;
+ 439:   display: grid;
+ 440:   place-items: center;
+ 441:   padding: 20px;
+ 442:   background: rgba(17, 24, 39, 0.5);
+ 443: }
+ 444: 
+ 445: .request-modal {
+ 446:   width: min(100%, 480px);
+ 447:   padding: 28px;
+ 448:   border-radius: 18px;
+ 449:   background: #ffffff;
+ 450:   box-shadow: 0 24px 60px rgba(17, 24, 39, 0.24);
+ 451: }
+ 452: 
+ 453: .request-modal-header {
+ 454:   display: flex;
+ 455:   align-items: flex-start;
+ 456:   justify-content: space-between;
+ 457:   gap: 16px;
+ 458:   margin-bottom: 24px;
+ 459: }
+ 460: 
+ 461: .request-modal-header p {
+ 462:   margin: 0 0 5px;
+ 463:   color: #667eea;
+ 464:   font-size: 12px;
+ 465:   font-weight: 700;
+ 466:   text-transform: uppercase;
+ 467:   letter-spacing: 0.08em;
+ 468: }
+ 469: 
+ 470: .request-modal-header h2 {
+ 471:   margin: 0;
+ 472:   color: #111827;
+ 473:   font-size: 22px;
+ 474: }
+ 475: 
+ 476: .modal-close-button {
+ 477:   width: 32px;
+ 478:   height: 32px;
+ 479:   border: 0;
+ 480:   border-radius: 8px;
+ 481:   background: #f3f4f6;
+ 482:   color: #4b5563;
+ 483:   cursor: pointer;
+ 484:   font-size: 24px;
+ 485:   line-height: 1;
+ 486: }
+ 487: 
+ 488: .request-form {
+ 489:   display: flex;
+ 490:   flex-direction: column;
+ 491:   gap: 9px;
+ 492: }
+ 493: 
+ 494: .request-form label {
+ 495:   margin-top: 8px;
+ 496:   color: #374151;
+ 497:   font-size: 13px;
+ 498:   font-weight: 600;
+ 499: }
+ 500: 
+ 501: .request-form select,
+ 502: .request-form textarea {
+ 503:   width: 100%;
+ 504:   border: 1px solid #d1d5db;
+ 505:   border-radius: 10px;
+ 506:   background: #ffffff;
+ 507:   color: #111827;
+ 508:   font: inherit;
+ 509:   font-size: 14px;
+ 510:   outline: none;
+ 511: }
+ 512: 
+ 513: .request-form select {
+ 514:   height: 44px;
+ 515:   padding: 0 12px;
+ 516: }
+ 517: 
+ 518: .request-form textarea {
+ 519:   min-height: 110px;
+ 520:   padding: 12px;
+ 521:   resize: vertical;
+ 522: }
+ 523: 
+ 524: .request-form select:focus,
+ 525: .request-form textarea:focus {
+ 526:   border-color: #667eea;
+ 527:   box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.14);
+ 528: }
+ 529: 
+ 530: .form-error {
+ 531:   margin: 3px 0 0;
+ 532:   color: #dc2626;
+ 533:   font-size: 12px;
+ 534: }
+ 535: 
+ 536: .request-form-actions {
+ 537:   display: flex;
+ 538:   justify-content: flex-end;
+ 539:   gap: 10px;
+ 540:   margin-top: 18px;
+ 541: }
+ 542: 
+ 543: .cancel-button,
+ 544: .submit-request-button {
+ 545:   padding: 10px 15px;
+ 546:   border-radius: 9px;
+ 547:   font-size: 13px;
+ 548:   font-weight: 700;
+ 549:   cursor: pointer;
+ 550: }
+ 551: 
+ 552: .cancel-button {
+ 553:   border: 1px solid #d1d5db;
+ 554:   background: #ffffff;
+ 555:   color: #4b5563;
+ 556: }
+ 557: 
+ 558: .submit-request-button {
+ 559:   border: 1px solid #667eea;
+ 560:   background: #667eea;
+ 561:   color: #ffffff;
+ 562: }
+ 563: 
+ 564: @media (max-width: 1024px) {
+ 565:   .dashboard-main {
+ 566:     width: calc(100% - 80px);
+ 567:     margin-left: 80px;
+ 568:     padding: 28px 28px 48px;
+ 569:   }
+ 570: 
+ 571:   .sidebar {
+ 572:     width: 80px;
+ 573:     padding: 24px 12px;
+ 574:   }
+ 575: 
+ 576:   .sidebar-logo {
+ 577:     justify-content: center;
+ 578:     padding: 0;
+ 579:   }
+ 580: 
+ 581:   .sidebar-logo > div:last-child {
+ 582:     display: none;
+ 583:   }
+ 584: 
+ 585:   .nav-item {
+ 586:     justify-content: center;
+ 587:     gap: 0;
+ 588:     padding: 12px 8px;
+ 589:     font-size: 0;
+ 590:   }
+ 591: 
+ 592:   .nav-icon {
+ 593:     width: auto;
+ 594:     font-size: 20px;
+ 595:   }
+ 596: 
+ 597:   .stats-grid {
+ 598:     grid-template-columns: repeat(2, 1fr);
+ 599:   }
+ 600: 
+ 601:   .dashboard-grid {
+ 602:     grid-template-columns: 1fr;
+ 603:   }
+ 604: 
+ 605:   .topbar {
+ 606:     flex-wrap: wrap;
+ 607:   }
+ 608: }
+ 609: 
+ 610: @media (max-width: 600px) {
+ 611:   .dashboard-main {
+ 612:     padding: 18px 18px 48px;
+ 613:   }
+ 614: 
+ 615:   .stats-grid {
+ 616:     grid-template-columns: 1fr 1fr;
+ 617:     gap: 10px;
+ 618:   }
+ 619: 
+ 620:   .welcome-card {
+ 621:     padding: 24px;
+ 622:   }
+ 623: 
+ 624:   .welcome-card h2 {
+ 625:     font-size: 22px;
+ 626:   }
+ 627: 
+ 628:   .pickup-card {
+ 629:     align-items: flex-start;
+ 630:     flex-wrap: wrap;
+ 631:   }
+ 632: 
+ 633:   .topbar {
+ 634:     flex-wrap: wrap;
+ 635:     gap: 12px;
+ 636:   }
+ 637: }
+ 638: 
+ 639: @media (max-width: 420px) {
+ 640:   .sidebar {
+ 641:     width: 64px;
+ 642:     padding: 20px 10px;
+ 643:   }
+ 644: 
+ 645:   .sidebar-logo-circle {
+ 646:     width: 52px;
+ 647:     height: 52px;
+ 648:   }
+ 649: 
+ 650:   .sidebar-logo-circle img {
+ 651:     width: 100%;
+ 652:     height: 100%;
+ 653:     object-fit: contain;
+ 654:     display: block;
+ 655:   }
+ 656: 
+ 657:   .nav-item {
+ 658:     padding: 10px 4px;
+ 659:   }
+ 660: 
+ 661:   .nav-icon {
+ 662:     font-size: 18px;
+ 663:   }
+ 664: 
+ 665:   .dashboard-main {
+ 666:     width: calc(100% - 64px);
+ 667:     margin-left: 64px;
+ 668:     padding: 14px 14px 48px;
+ 669:   }
+ 670: 
+ 671:   .stats-grid {
+ 672:     grid-template-columns: 1fr;
+ 673:   }
+ 674: 
+ 675:   .stat-card {
+ 676:     padding: 14px;
+ 677:   }
+ 678: }
+ 679: 
+ 680: /* ---------------------- Sidebar motion preferences ------------------------- */
+ 681: 
+ 682: /* Honor users who prefer reduced motion: hover feedback stays (color only),
+ 683:    but movement and transitions are disabled. */
+ 684: @media (prefers-reduced-motion: reduce) {
+ 685:   .nav-item,
+ 686:   .nav-item .nav-icon img {
+ 687:     transition: none;
+ 688:   }
+ 689: 
+ 690:   .nav-item:not(:disabled):active,
+ 691:   .nav-item:hover .nav-icon img {
+ 692:     transform: none;
+ 693:   }
+ 694: }

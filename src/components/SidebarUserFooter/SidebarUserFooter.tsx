@@ -1,6 +1,6 @@
 import { useState } from "react";
 import LogoutConfirmation from "../LogoutConfirmation/LogoutConfirmation";
-import "./SidebarUserFooter.css";
+import "../../Styles/Shared/Components/SidebarUserFooter.css";
 
 type SidebarUserFooterProps = {
   firstName: string;

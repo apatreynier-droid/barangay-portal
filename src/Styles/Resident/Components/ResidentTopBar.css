@@ -1,0 +1,99 @@
+.topbar {
+  /* Sticky: stays in flow until the page scrolls, then pins to the top of
+     the viewport. Opaque page background so content scrolls underneath
+     without showing through; z-index sits above page content but below
+     modal backdrops (z-index 20+). */
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: #f5f7fb;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 28px;
+  /* Thin divider under the sticky bar, so it stays visible while pinned. */
+  border-bottom: 1px solid #848484;
+}
+
+/* Hamburger + page title on mobile (the hamburger is hidden on desktop by
+   the shared responsive stylesheet). */
+.topbar-leading {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.topbar-leading h1 {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.topbar-label {
+  margin: 0 0 4px;
+  font-size: 12px;
+  color: #9ca3af;
+  text-transform: uppercase;
+  letter-spacing: 0.7px;
+  font-weight: 600;
+}
+
+.topbar h1 {
+  margin: 0;
+
+@media (max-width: 1024px) {
+  .topbar {
+    flex-wrap: wrap;
+  }
+}
+
+@media (max-width: 600px) {
+  .topbar {
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+}
+
+  font-size: 28px;
+  color: #111827;
+}
+
+.profile {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.notification-button {
+  position: relative;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+}
+
+/* Bell icon (same asset as the sidebar's Notifications item) rendered at the
+   sidebar icon size; the button itself stays the 40px hit target. */
+.notification-icon {
+  width: 18px;
+  height: 18px;
+  object-fit: contain;
+  display: block;
+}
+
+.notification-dot {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 7px;
+  height: 7px;
+  background: #ef4444;
+  border: 2px solid #ffffff;
+  border-radius: 50%;
+}
