@@ -1160,10 +1160,22 @@ def admin_dashboard(
         for row in cursor.fetchall()
     ]
 
+    # Meaningful activity titles: name the document type and the resident so
+    # the dashboard feed never repeats one generic string for every row.
+    # Response shape (title + created_at) is unchanged for the frontend.
     cursor.execute(
         """
-        SELECT 'New Document Request' AS title, requests.submitted_at AS created_at
+        SELECT CONCAT(
+                   document_types.document_name,
+                   ' request from ',
+                   resident_profiles.first_name,
+                   ' ',
+                   resident_profiles.last_name
+               ) AS title,
+               requests.submitted_at AS created_at
         FROM requests
+        JOIN resident_profiles ON resident_profiles.user_id = requests.user_id
+        JOIN document_types ON document_types.id = requests.document_type_id
         ORDER BY requests.submitted_at DESC, requests.id DESC
         LIMIT 3
         """

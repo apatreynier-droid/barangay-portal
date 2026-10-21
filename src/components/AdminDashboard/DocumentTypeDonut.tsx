@@ -38,6 +38,8 @@ const DocumentTypeDonut = ({ data }: DocumentTypeDonutProps) => {
     useState<TooltipPosition | null>(null);
 
   const total = data.reduce((sum, item) => sum + item.count, 0);
+  // Largest category drives the ranked mini-bars in the legend below.
+  const maxCount = Math.max(1, ...data.map((item) => item.count));
   const circumference = 2 * Math.PI * RADIUS;
   const center = SIZE / 2;
 
@@ -232,6 +234,17 @@ const DocumentTypeDonut = ({ data }: DocumentTypeDonutProps) => {
                   aria-hidden="true"
                 />
                 <span className="admin-legend-name">{item.document_name}</span>
+                {/* Ranked mini-bar: length = share of the largest category.
+                    Decorative only (hidden on wide screens); the exact count
+                    stays next to it. */}
+                <span className="admin-legend-bar" aria-hidden="true">
+                  <span
+                    style={{
+                      width: `${Math.round((item.count / maxCount) * 100)}%`,
+                      background: COLORS[index % COLORS.length],
+                    }}
+                  />
+                </span>
                 <span className="admin-legend-count">{item.count}</span>
               </li>
             ))}

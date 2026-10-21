@@ -13,6 +13,7 @@ export const RESIDENT_MY_REQUESTS_PATH = "/myRequests";
 export const RESIDENT_REQUEST_HISTORY_PATH = "/requestHistory";
 export const RESIDENT_REQUEST_DOCUMENT_PATH = "/requestDocument";
 export const NOTIFICATIONS_PATH = "/notifications";
+export const POTHOLE_DETECTION_PATH = "/pothole-detection";
 
 export const ADMIN_HOME_PATH = "/AdminDashboard";
 export const ADMIN_RESIDENTS_PATH = "/AdminResidents";

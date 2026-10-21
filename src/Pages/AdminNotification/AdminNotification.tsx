@@ -10,7 +10,10 @@ import {
 } from "../../Utils/api";
 import { getPendingApprovals } from "../../Utils/AdminApprovalsLogic";
 import { getPortalProfileName } from "../../Utils/AdminDisplay";
-import { formatRelativeTime } from "../../Utils/AdminDashboardLogic";
+import {
+  formatRelativeTime,
+  toUtcTimestamp,
+} from "../../Utils/AdminDashboardLogic";
 import AdminSidebar from "../../components/AdminDashboard/AdminSidebar";
 import AdminTopbar from "../../components/AdminDashboard/AdminTopbar";
 import useResponsiveSidebar from "../../Utils/useResponsiveSidebar";
@@ -81,16 +84,7 @@ const resolveKind = (notification: ApiNotification): NotificationKind => {
   return "update";
 };
 
-/** MySQL timestamps arrive without a timezone marker; treat them as UTC. */
-const toUtcTimestamp = (value: string): string => {
-  const trimmed = value.trim();
-
-  if (/[zZ]$/.test(trimmed) || /[+-]\d{2}:?\d{2}$/.test(trimmed)) {
-    return value;
-  }
-
-  return `${trimmed}Z`;
-};
+/** MySQL timestamps are handled by the shared toUtcTimestamp helper. */
 
 function AdminNotification({
   user,

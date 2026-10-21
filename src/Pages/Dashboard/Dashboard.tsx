@@ -8,8 +8,10 @@ import StatsGrid from "../../components/Dashboard/StatsGrid";
 import RecentRequests from "../../components/Dashboard/RecentRequests";
 import QuickActions from "../../components/Dashboard/QuickActions";
 import PickupCard from "../../components/Dashboard/PickupCard";
+import { useNavigate } from "react-router-dom";
 import { RESIDENT_ROLE_LABEL } from "../../Utils/ResidentDisplay";
 import useResponsiveSidebar from "../../Utils/useResponsiveSidebar";
+import { POTHOLE_DETECTION_PATH, RESIDENT_REQUEST_HISTORY_PATH } from "../../Utils/routePaths";
 
 type DashboardProps = {
   user: AuthUser;
@@ -36,6 +38,7 @@ const Dashboard = ({
   onRequestDocument,
   onLogout,
 }: DashboardProps) => {
+  const navigate = useNavigate();
   const unreadCount = notifications.filter(
     (notification) => !notification.is_read,
   ).length;
@@ -49,8 +52,12 @@ const Dashboard = ({
         firstName={user.first_name}
         lastName={user.last_name}
         role={RESIDENT_ROLE_LABEL}
+        activePage="dashboard"
         onMyRequests={onMyRequests}
         onNotifications={onNotifications}
+        onRequestDocument={onRequestDocument}
+        onRequestHistory={() => navigate(RESIDENT_REQUEST_HISTORY_PATH)}
+        onPotholeDetection={() => navigate(POTHOLE_DETECTION_PATH)}
         onLogout={onLogout}
         isOpen={isDrawerOpen}
         onNavigate={closeDrawer}

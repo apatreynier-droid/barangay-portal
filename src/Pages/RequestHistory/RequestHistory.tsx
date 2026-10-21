@@ -1,10 +1,12 @@
 import { useMemo, useState } from "react";
-import Sidebar from "../../components/MyRequests/Sidebar";
+import { useNavigate } from "react-router-dom";
+import Sidebar from "../../components/Dashboard/Sidebar";
 import type { Request } from "../../Types/DashboardType";
 import type { AuthUser } from "../../Utils/api";
 import { getStatusClass } from "../../Utils/DashboardLogic";
 import { formatDate } from "../../Utils/RequestHistory";
 import { RESIDENT_ROLE_LABEL } from "../../Utils/ResidentDisplay";
+import { POTHOLE_DETECTION_PATH, RESIDENT_REQUEST_HISTORY_PATH } from "../../Utils/routePaths";
 import useResponsiveSidebar from "../../Utils/useResponsiveSidebar";
 import MobileMenuButton from "../../components/Shared/MobileMenuButton";
 import "../Dashboard/Dashboard.css";
@@ -47,6 +49,7 @@ function RequestHistory({
   onRequestDocument,
   onLogout,
 }: RequestHistoryProps) {
+  const navigate = useNavigate();
   const [filter, setFilter] = useState<HistoryFilter>("All");
   const [searchTerm, setSearchTerm] = useState("");
 
@@ -71,11 +74,12 @@ function RequestHistory({
     <div className="request-history-layout">
       <Sidebar
         activePage="request-history"
-        onBackToDashboard={onBackToDashboard}
+        onDashboard={onBackToDashboard}
         onMyRequests={onMyRequests}
-        onRequestHistory={() => undefined}
+        onRequestHistory={() => navigate(RESIDENT_REQUEST_HISTORY_PATH)}
         onNotifications={onNotifications}
         onRequestDocument={onRequestDocument}
+        onPotholeDetection={() => navigate(POTHOLE_DETECTION_PATH)}
         onLogout={onLogout}
         firstName={user.first_name}
         lastName={user.last_name}

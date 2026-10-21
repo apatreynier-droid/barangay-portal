@@ -2,6 +2,7 @@ import "../AdminDashboard/AdminDashboard.css";
 import "../AdminResidents/AdminResidents.css";
 import "./AdminDocumentRequests.css";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import type { AuthUser } from "../../Utils/api";
 import {
   fetchAdminDashboard,
@@ -9,7 +10,10 @@ import {
 } from "../../Utils/api";
 import type { AdminDocumentRequest } from "../../Types/AdminDocumentRequestsType";
 import { getPortalProfileName } from "../../Utils/AdminDisplay";
-import { isAdministrator } from "../../Utils/routePaths";
+import {
+  ADMIN_DOCUMENT_REQUESTS_PATH,
+  isAdministrator,
+} from "../../Utils/routePaths";
 import AdminSidebar from "../../components/AdminDashboard/AdminSidebar";
 import useResponsiveSidebar from "../../Utils/useResponsiveSidebar";
 import AdminTopbar from "../../components/AdminDashboard/AdminTopbar";
@@ -62,6 +66,19 @@ const AdminDocumentRequests = ({
   );
   const [sidebarStats, setSidebarStats] = useState({ pending: 0, approved: 0 });
 
+  /**
+   * Deep link from the Admin Dashboard's Recent Requests list: the dashboard
+   * navigates here with { state: { requestNumber } }, and once the list is
+   * loaded the matching request opens directly in the details view. The
+   * state is cleared immediately afterwards so a browser back/forward or a
+   * remount never reopens a stale request.
+   */
+  const location = useLocation();
+  const navigate = useNavigate();
+  const pendingRequestNumber =
+    (location.state as { requestNumber?: string } | null)?.requestNumber ??
+    null;
+
   const loadRequests = useCallback(async () => {
     setIsLoading(true);
     setError("");
@@ -78,6 +95,23 @@ const AdminDocumentRequests = ({
   useEffect(() => {
     void loadRequests();
   }, [loadRequests]);
+
+  // Open the deep-linked request once the list has loaded (see above).
+  useEffect(() => {
+    if (pendingRequestNumber === null || requests.length === 0) {
+      return;
+    }
+
+    const match = requests.find(
+      (request) => request.request_number === pendingRequestNumber,
+    );
+
+    if (match) {
+      setSelectedRequestId(match.id);
+    }
+
+    navigate(ADMIN_DOCUMENT_REQUESTS_PATH, { replace: true, state: null });
+  }, [pendingRequestNumber, requests, navigate]);
 
   // Sidebar badges stay consistent with the dashboard without blocking the page.
   useEffect(() => {

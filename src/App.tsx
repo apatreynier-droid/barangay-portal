@@ -17,6 +17,7 @@ import MyRequests from "./Pages/MyRequests/MyRequests";
 import RequestHistory from "./Pages/RequestHistory/RequestHistory";
 import NotificationPage from "./Pages/Notification/NotificationPage";
 import RequestDocumentPage from "./Pages/RequestDocument/RequestDocumentPage";
+import PotholeDetection from "./Pages/PotholeDetection/PotholeDetection";
 import ForgotPasswordPage from "./Pages/ForgotPassword/ForgotPasswordPage";
 import ResetPasswordPage from "./Pages/ResetPassword/ResetPasswordPage";
 import {
@@ -52,6 +53,7 @@ import {
   RESIDENT_REQUEST_DOCUMENT_PATH,
   RESIDENT_REQUEST_HISTORY_PATH,
   RESET_PASSWORD_PATH,
+  POTHOLE_DETECTION_PATH,
 } from "./Utils/routePaths";
 import {
   HomeRoute,
@@ -313,6 +315,21 @@ function PortalRoutes() {
       />
 
       <Route
+        path={POTHOLE_DETECTION_PATH}
+        element={
+          <RequireResident user={user}>
+            {(authUser) => (
+              <PotholeDetection
+                user={authUser}
+                onBackToDashboard={() => navigate(RESIDENT_HOME_PATH)}
+                onLogout={handleLogout}
+              />
+            )}
+          </RequireResident>
+        }
+      />
+
+      <Route
         path={NOTIFICATIONS_PATH}
         element={
           <RequireAuth user={user}>
@@ -371,6 +388,7 @@ function PortalRoutes() {
               <AdminDashboard
                 user={authUser}
                 unreadNotifications={unreadCount}
+                notifications={notifications}
                 onUserManagement={() => navigate(ADMIN_USER_MANAGEMENT_PATH)}
                 onReports={() => navigate(ADMIN_REPORTS_PATH)}
                 onActivityLogs={() => navigate(ADMIN_ACTIVITY_LOGS_PATH)}
@@ -383,6 +401,11 @@ function PortalRoutes() {
                 onApprovals={() => navigate(ADMIN_APPROVALS_PATH)}
                 onDocumentManagement={() =>
                   navigate(ADMIN_DOCUMENT_MANAGEMENT_PATH)
+                }
+                onOpenRequest={(requestNumber) =>
+                  navigate(ADMIN_DOCUMENT_REQUESTS_PATH, {
+                    state: { requestNumber },
+                  })
                 }
                 onLogout={handleLogout}
               />
