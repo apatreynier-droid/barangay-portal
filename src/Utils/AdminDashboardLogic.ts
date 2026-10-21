@@ -107,3 +107,45 @@ export const formatRelativeTime = (value: string): string => {
   const years = Math.floor(months / 12);
   return `${years} year${years === 1 ? "" : "s"} ago`;
 };
+
+/**
+ * MySQL timestamps arrive without a timezone marker; treat them as UTC.
+ * Shared by the Admin Notifications page and the dashboard's notification
+ * card so both render the exact same relative times.
+ */
+export const toUtcTimestamp = (value: string): string => {
+  const trimmed = value.trim();
+
+  if (/[zZ]$/.test(trimmed) || /[+-]\d{2}:?\d{2}$/.test(trimmed)) {
+    return value;
+  }
+
+  return `${trimmed}Z`;
+};
+
+/**
+ * Request-status filter used by the dashboard's compact status strip.
+ * The raw stored statuses come from the API; the strip presents "Approved"
+ * as the alias for "Ready for Pickup" (same mapping as
+ * getAdminStatusLabel above).
+ */
+export type AdminStatusFilter = "all" | "Pending" | "Ready for Pickup" | "Processing";
+
+type AdminStatusFilterOption = {
+  key: AdminStatusFilter;
+  label: string;
+};
+
+/** The strip's chips, in display order. "All" resets the filter. */
+export const ADMIN_STATUS_FILTER_OPTIONS: readonly AdminStatusFilterOption[] = [
+  { key: "all", label: "All" },
+  { key: "Pending", label: "Pending" },
+  { key: "Ready for Pickup", label: "Approved" },
+  { key: "Processing", label: "Processing" },
+] as const;
+
+/** True when a request matches the active strip filter ("all" matches every row). */
+export const matchesAdminStatusFilter = (
+  status: string,
+  filter: AdminStatusFilter,
+): boolean => filter === "all" || status === filter;

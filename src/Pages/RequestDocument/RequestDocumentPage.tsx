@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import type { ChangeEvent, FormEvent } from "react";
-import Sidebar from "../../components/MyRequests/Sidebar";
+import Sidebar from "../../components/Dashboard/Sidebar";
 import {
   ApiError,
   createDocumentRequest,
@@ -9,6 +10,7 @@ import {
   type AuthUser,
 } from "../../Utils/api";
 import { RESIDENT_ROLE_LABEL } from "../../Utils/ResidentDisplay";
+import { POTHOLE_DETECTION_PATH, RESIDENT_REQUEST_DOCUMENT_PATH } from "../../Utils/routePaths";
 import useResponsiveSidebar from "../../Utils/useResponsiveSidebar";
 import MobileMenuButton from "../../components/Shared/MobileMenuButton";
 import "../Dashboard/Dashboard.css";
@@ -40,6 +42,7 @@ function RequestDocumentPage({
   onSessionExpired,
   onLogout,
 }: RequestDocumentPageProps) {
+  const navigate = useNavigate();
   const [documentTypes, setDocumentTypes] = useState<DocumentTypeOption[]>([]);
   const [isLoadingTypes, setIsLoadingTypes] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -142,11 +145,12 @@ function RequestDocumentPage({
     <div className="request-document-layout">
       <Sidebar
         activePage="request-document"
-        onBackToDashboard={onBackToDashboard}
+        onDashboard={onBackToDashboard}
         onMyRequests={onMyRequests}
         onRequestHistory={onRequestHistory}
         onNotifications={onNotifications}
-        onRequestDocument={() => undefined}
+        onRequestDocument={() => navigate(RESIDENT_REQUEST_DOCUMENT_PATH)}
+        onPotholeDetection={() => navigate(POTHOLE_DETECTION_PATH)}
         onLogout={onLogout}
         firstName={user.first_name}
         lastName={user.last_name}

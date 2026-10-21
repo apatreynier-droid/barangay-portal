@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import "../Dashboard/Dashboard.css";
 import "./MyRequests.css";
 import type { Request, RequestStatus } from "../../Types/DashboardType";
 import type { AuthUser } from "../../Utils/api";
-import Sidebar from "../../components/MyRequests/Sidebar";
+import Sidebar from "../../components/Dashboard/Sidebar";
 import RequestsHeader from "../../components/MyRequests/RequestsHeader";
 import RequestStats from "../../components/MyRequests/RequestStats";
 import RequestsToolbar from "../../components/MyRequests/RequestsToolbar";
@@ -12,6 +13,7 @@ import RequestsTabs, {
 } from "../../components/MyRequests/RequestsTabs";
 import RequestsList from "../../components/MyRequests/RequestsList";
 import { RESIDENT_ROLE_LABEL } from "../../Utils/ResidentDisplay";
+import { POTHOLE_DETECTION_PATH } from "../../Utils/routePaths";
 import useResponsiveSidebar from "../../Utils/useResponsiveSidebar";
 
 // Requests still moving through the barangay office.
@@ -52,6 +54,7 @@ const MyRequests = ({
   onRequestDocument,
   onLogout,
 }: MyRequestsProps) => {
+  const navigate = useNavigate();
   // Local mirror of the requests so edits and deletes are reflected
   // immediately while staying in sync with future prop refreshes.
   const [localRequests, setLocalRequests] = useState<Request[]>(requests);
@@ -116,11 +119,13 @@ const MyRequests = ({
   return (
     <div className="my-requests-page">
       <Sidebar
-        onBackToDashboard={onBackToDashboard}
+        activePage="my-requests"
+        onDashboard={onBackToDashboard}
         onMyRequests={onMyRequests}
         onRequestHistory={onRequestHistory}
         onNotifications={onNotifications}
         onRequestDocument={onRequestDocument}
+        onPotholeDetection={() => navigate(POTHOLE_DETECTION_PATH)}
         onLogout={onLogout}
         firstName={user.first_name}
         lastName={user.last_name}

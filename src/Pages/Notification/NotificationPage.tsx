@@ -1,5 +1,6 @@
 import { useState } from "react";
-import Sidebar from "../../components/MyRequests/Sidebar";
+import { useNavigate } from "react-router-dom";
+import Sidebar from "../../components/Dashboard/Sidebar";
 import {
   ApiError,
   markAllNotificationsRead,
@@ -8,7 +9,7 @@ import {
   type AuthUser,
 } from "../../Utils/api";
 import { RESIDENT_ROLE_LABEL } from "../../Utils/ResidentDisplay";
-import { isAdminPortalUser } from "../../Utils/routePaths";
+import { isAdminPortalUser, NOTIFICATIONS_PATH, POTHOLE_DETECTION_PATH } from "../../Utils/routePaths";
 import useResponsiveSidebar from "../../Utils/useResponsiveSidebar";
 import MobileMenuButton from "../../components/Shared/MobileMenuButton";
 import "../Dashboard/Dashboard.css";
@@ -75,6 +76,7 @@ function NotificationPage({
   onRequestDocument,
   onLogout,
 }: NotificationPageProps) {
+  const navigate = useNavigate();
   const [pendingId, setPendingId] = useState<number | null>(null);
   const [isMarkingAll, setIsMarkingAll] = useState(false);
   const [actionError, setActionError] = useState("");
@@ -127,11 +129,12 @@ function NotificationPage({
     <div className="notifications-layout">
       <Sidebar
         activePage="notifications"
-        onBackToDashboard={onBackToDashboard}
+        onDashboard={onBackToDashboard}
         onMyRequests={onMyRequests}
         onRequestHistory={onRequestHistory}
-        onNotifications={() => undefined}
+        onNotifications={() => navigate(NOTIFICATIONS_PATH)}
         onRequestDocument={onRequestDocument}
+        onPotholeDetection={() => navigate(POTHOLE_DETECTION_PATH)}
         onLogout={onLogout}
         firstName={user.first_name}
         lastName={user.last_name}

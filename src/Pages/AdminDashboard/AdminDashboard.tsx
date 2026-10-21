@@ -1,11 +1,13 @@
 import "./AdminDashboard.css";
 import { useCallback, useEffect, useState } from "react";
-import type { AuthUser } from "../../Utils/api";
+import type { ApiNotification, AuthUser } from "../../Utils/api";
 import { fetchAdminDashboard } from "../../Utils/api";
 import type { AdminDashboardData } from "../../Types/AdminDashboardType";
 import { getPortalProfileName } from "../../Utils/AdminDisplay";
+import type { AdminStatusFilter } from "../../Utils/AdminDashboardLogic";
 import AdminSidebar from "../../components/AdminDashboard/AdminSidebar";
 import AdminTopbar from "../../components/AdminDashboard/AdminTopbar";
+import AdminStatusStrip from "../../components/AdminDashboard/AdminStatusStrip";
 import AdminStatsGrid from "../../components/AdminDashboard/AdminStatsGrid";
 import MonthlyRequestsChart from "../../components/AdminDashboard/MonthlyRequestsChart";
 import DocumentTypeDonut from "../../components/AdminDashboard/DocumentTypeDonut";
@@ -17,6 +19,8 @@ import useResponsiveSidebar from "../../Utils/useResponsiveSidebar";
 type AdminDashboardProps = {
   user: AuthUser;
   unreadNotifications: number;
+  /** Live notifications from GET /api/notifications (polled by App). */
+  notifications: ApiNotification[];
   onNotifications: () => void;
   onResidents: () => void;
   onDocumentRequests: () => void;
@@ -27,11 +31,17 @@ type AdminDashboardProps = {
   onActivityLogs: () => void;
   onUserManagement: () => void;
   onLogout: () => void;
+  /**
+   * Opens the existing Document Requests details screen for one request
+   * (the dashboard passes the request number through router state).
+   */
+  onOpenRequest: (requestNumber: string) => void;
 };
 
 const AdminDashboard = ({
   user,
   unreadNotifications,
+  notifications,
   onNotifications,
   onResidents,
   onDocumentRequests,
@@ -42,10 +52,13 @@ const AdminDashboard = ({
   onActivityLogs,
   onUserManagement,
   onLogout,
+  onOpenRequest,
 }: AdminDashboardProps) => {
   const [data, setData] = useState<AdminDashboardData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
+  /** Status-strip filter shared by the strip and the Recent Requests list. */
+  const [statusFilter, setStatusFilter] = useState<AdminStatusFilter>("all");
 
   const loadDashboard = useCallback(async () => {
     setIsLoading(true);
@@ -104,6 +117,8 @@ const AdminDashboard = ({
         <AdminTopbar
           fullName={fullName || "Administrator"}
           onMenuToggle={toggleDrawer}
+          unreadNotifications={unreadNotifications}
+          onNotifications={onNotifications}
         />
 
         {error && (
@@ -119,27 +134,45 @@ const AdminDashboard = ({
           <p className="admin-loading-state">Loading the dashboard…</p>
         ) : (
           data && (
-            <>
-              <AdminStatsGrid stats={data.stats} />
+            /* Mobile-first order: status summary → Pending/Approved →
+               Recent Requests → remaining stats → charts → registrations →
+               notifications. The desktop grid in AdminDashboard.css places
+               these same sections back into the analytics-oriented layout. */
+            <div className="admin-dashboard-layout">
+              <AdminStatusStrip
+                requests={data.recent_requests}
+                activeFilter={statusFilter}
+                onFilterChange={setStatusFilter}
+              />
+
+              <AdminStatsGrid stats={data.stats} group="highlights" />
+
+              <AdminRecentRequests
+                requests={data.recent_requests}
+                statusFilter={statusFilter}
+                onClearFilter={() => setStatusFilter("all")}
+                onViewAll={onDocumentRequests}
+                onOpenRequest={onOpenRequest}
+              />
+
+              <AdminStatsGrid stats={data.stats} group="remaining" />
 
               <div className="admin-charts-grid">
                 <MonthlyRequestsChart data={data.monthly} />
                 <DocumentTypeDonut data={data.document_types} />
               </div>
 
-              <div className="admin-bottom-grid">
-                <AdminRecentRequests requests={data.recent_requests} />
-
-                <div className="admin-side-stack">
-                  <RecentRegistrations
-                    registrations={data.recent_registrations}
-                  />
-                  <AdminNotificationsCard
-                    activities={data.recent_activity}
-                  />
-                </div>
+              <div className="admin-side-stack">
+                <RecentRegistrations
+                  registrations={data.recent_registrations}
+                />
+                <AdminNotificationsCard
+                  notifications={notifications}
+                  activities={data.recent_activity}
+                  onOpen={onNotifications}
+                />
               </div>
-            </>
+            </div>
           )
         )}
       </main>

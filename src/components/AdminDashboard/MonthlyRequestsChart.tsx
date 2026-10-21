@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import type { MouseEvent } from "react";
 import type { AdminMonthlyDataPoint } from "../../Types/AdminDashboardType";
 
@@ -6,15 +6,21 @@ type MonthlyRequestsChartProps = {
   data: AdminMonthlyDataPoint[];
 };
 
-const WIDTH = 720;
-const HEIGHT = 300;
 const PADDING_LEFT = 44;
 const PADDING_RIGHT = 16;
 const PADDING_TOP = 16;
 const PADDING_BOTTOM = 34;
-const BAR_WIDTH = 14;
 const BAR_GAP = 5;
+const MAX_BAR_WIDTH = 14;
+const MIN_BAR_WIDTH = 5;
 const GRID_INTERVALS = 4;
+
+/** Fallback chart width before the wrapper has been measured. */
+const DEFAULT_WIDTH = 720;
+/** Below this rendered width the chart drops to the latest 6 months. */
+const COMPACT_WIDTH = 520;
+/** How many recent months the compact (phone) chart shows. */
+const COMPACT_MONTHS = 6;
 
 // Whole-number Y-axis intervals: the axis picks the smallest "nice" step
 // (1, 2, 5, 10, 15, 20, …) that keeps every gridline label an integer, e.g.
@@ -48,10 +54,54 @@ const MonthlyRequestsChart = ({ data }: MonthlyRequestsChartProps) => {
   const [hover, setHover] = useState<HoverState | null>(null);
   const [tooltipPosition, setTooltipPosition] =
     useState<TooltipPosition | null>(null);
+  /**
+   * The chart renders 1:1 with its container (viewBox width = measured CSS
+   * pixels), so axis and month labels stay at a readable 11–12px on phones
+   * instead of being shrunk by viewBox scaling. Re-measured on resize.
+   */
+  const [chartWidth, setChartWidth] = useState(DEFAULT_WIDTH);
+
+  // Layout effect: the first measurement runs before paint so the initial
+  // frame is already drawn at the real container width.
+  useLayoutEffect(() => {
+    const wrapper = wrapperRef.current;
+    if (!wrapper) {
+      return;
+    }
+
+    const update = () => {
+      const width = Math.round(wrapper.clientWidth);
+      if (width > 0) {
+        setChartWidth(width);
+      }
+    };
+
+    update();
+
+    if (typeof ResizeObserver === "undefined") {
+      return;
+    }
+
+    const observer = new ResizeObserver(update);
+    observer.observe(wrapper);
+
+    return () => {
+      observer.disconnect();
+    };
+  }, []);
+
+  const chartHeight = chartWidth < 420 ? 240 : 300;
+
+  // Phones show the latest six months (the API returns seven) so every bar
+  // group and month label keeps enough room to stay readable.
+  const visibleData =
+    chartWidth < COMPACT_WIDTH && data.length > COMPACT_MONTHS
+      ? data.slice(-COMPACT_MONTHS)
+      : data;
 
   const maxValue = Math.max(
     1,
-    ...data.map((point) =>
+    ...visibleData.map((point) =>
       Math.max(point.submitted, point.completed, point.rejected),
     ),
   );
@@ -59,10 +109,18 @@ const MonthlyRequestsChart = ({ data }: MonthlyRequestsChartProps) => {
   const minStep = Math.max(1, Math.ceil(maxValue / GRID_INTERVALS));
   const valueStep = NICE_STEPS.find((step) => step >= minStep) ?? minStep;
   const topValue = valueStep * GRID_INTERVALS;
-  const plotWidth = WIDTH - PADDING_LEFT - PADDING_RIGHT;
-  const plotHeight = HEIGHT - PADDING_TOP - PADDING_BOTTOM;
-  const groupWidth = BAR_WIDTH * SERIES.length + BAR_GAP * (SERIES.length - 1);
-  const slot = plotWidth / Math.max(1, data.length);
+  const plotWidth = chartWidth - PADDING_LEFT - PADDING_RIGHT;
+  const plotHeight = chartHeight - PADDING_TOP - PADDING_BOTTOM;
+  const slot = plotWidth / Math.max(1, visibleData.length);
+  // Bars shrink with the slot so three series never overlap in a narrow slot.
+  const barWidth = Math.max(
+    MIN_BAR_WIDTH,
+    Math.min(
+      MAX_BAR_WIDTH,
+      Math.floor((slot * 0.7 - BAR_GAP * (SERIES.length - 1)) / SERIES.length),
+    ),
+  );
+  const groupWidth = barWidth * SERIES.length + BAR_GAP * (SERIES.length - 1);
 
   const valueToY = (value: number): number =>
     PADDING_TOP + plotHeight - (value / topValue) * plotHeight;
@@ -74,7 +132,7 @@ const MonthlyRequestsChart = ({ data }: MonthlyRequestsChartProps) => {
   const handleMouseMove = (event: MouseEvent<SVGSVGElement>) => {
     const svg = svgRef.current;
     const wrapper = wrapperRef.current;
-    if (!svg || !wrapper || data.length === 0) {
+    if (!svg || !wrapper || visibleData.length === 0) {
       return;
     }
 
@@ -84,12 +142,12 @@ const MonthlyRequestsChart = ({ data }: MonthlyRequestsChartProps) => {
     }
 
     // Convert cursor position from screen pixels into SVG viewBox units.
-    const x = ((event.clientX - bounds.left) / bounds.width) * WIDTH;
-    const y = ((event.clientY - bounds.top) / bounds.height) * HEIGHT;
+    const x = ((event.clientX - bounds.left) / bounds.width) * chartWidth;
+    const y = ((event.clientY - bounds.top) / bounds.height) * chartHeight;
 
     const insidePlot =
       x >= PADDING_LEFT &&
-      x <= WIDTH - PADDING_RIGHT &&
+      x <= chartWidth - PADDING_RIGHT &&
       y >= PADDING_TOP &&
       y <= PADDING_TOP + plotHeight;
 
@@ -100,13 +158,16 @@ const MonthlyRequestsChart = ({ data }: MonthlyRequestsChartProps) => {
     }
 
     const monthIndex = Math.min(
-      data.length - 1,
+      visibleData.length - 1,
       Math.max(0, Math.floor((x - PADDING_LEFT) / slot)),
     );
     const groupX = PADDING_LEFT + slot * monthIndex + (slot - groupWidth) / 2;
     const seriesIndex = Math.min(
       SERIES.length - 1,
-      Math.max(0, Math.round((x - groupX - BAR_WIDTH / 2) / (BAR_WIDTH + BAR_GAP))),
+      Math.max(
+        0,
+        Math.round((x - groupX - barWidth / 2) / (barWidth + BAR_GAP)),
+      ),
     );
 
     const wrapperBounds = wrapper.getBoundingClientRect();
@@ -125,11 +186,17 @@ const MonthlyRequestsChart = ({ data }: MonthlyRequestsChartProps) => {
   // Entrance animation: bars grow upward from the baseline once the real
   // chart data has loaded. The parent only mounts this component after the
   // dashboard fetch resolves, so mounting here means the data is ready.
+  // Plays once per data payload: container resizes re-render the bars but
+  // must not replay the entrance (the guard skips those runs).
+  const animatedDataRef = useRef<AdminMonthlyDataPoint[] | null>(null);
+
   useEffect(() => {
     const svg = svgRef.current;
-    if (!svg) {
+    if (!svg || animatedDataRef.current === data) {
       return;
     }
+
+    animatedDataRef.current = data;
 
     const bars = Array.from(
       svg.querySelectorAll<SVGRectElement>("rect.admin-chart-bar"),
@@ -137,10 +204,11 @@ const MonthlyRequestsChart = ({ data }: MonthlyRequestsChartProps) => {
 
     const animations = bars.map((bar) => {
       const x = Number(bar.getAttribute("x") ?? 0);
+      const width = Number(bar.getAttribute("width") ?? 0);
 
       // Pin the scale origin to the bar's own baseline point so each bar
       // stretches upward from y = 0 instead of shrinking toward its center.
-      bar.style.transformOrigin = `${x + BAR_WIDTH / 2}px ${baselineY}px`;
+      bar.style.transformOrigin = `${x + width / 2}px ${baselineY}px`;
 
       return bar.animate(
         { transform: ["scaleY(0)", "scaleY(1)"] },
@@ -157,7 +225,7 @@ const MonthlyRequestsChart = ({ data }: MonthlyRequestsChartProps) => {
     };
   }, [data, baselineY]);
 
-  const hoveredPoint = hover ? data[hover.monthIndex] : undefined;
+  const hoveredPoint = hover ? visibleData[hover.monthIndex] : undefined;
 
   const wrapperWidth = wrapperRef.current?.clientWidth ?? 0;
   const wrapperHeight = wrapperRef.current?.clientHeight ?? 0;
@@ -178,11 +246,25 @@ const MonthlyRequestsChart = ({ data }: MonthlyRequestsChartProps) => {
     <section className="admin-panel admin-chart-panel">
       <h3 className="admin-panel-title">Monthly Requests Overview</h3>
 
+      {/* Meaningful legend: explains what each bar color represents. */}
+      <ul className="admin-chart-legend">
+        {SERIES.map((series) => (
+          <li key={series.key}>
+            <span
+              className="admin-chart-legend-dot"
+              style={{ background: series.color }}
+              aria-hidden="true"
+            />
+            {series.label}
+          </li>
+        ))}
+      </ul>
+
       <div className="admin-bar-chart-wrapper" ref={wrapperRef}>
         <svg
           ref={svgRef}
           className="admin-bar-chart"
-          viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
+          viewBox={`0 0 ${chartWidth} ${chartHeight}`}
           role="img"
           aria-label="Monthly requests overview chart"
           onMouseMove={handleMouseMove}
@@ -196,7 +278,7 @@ const MonthlyRequestsChart = ({ data }: MonthlyRequestsChartProps) => {
               <g key={`grid-${index}`}>
                 <line
                   x1={PADDING_LEFT}
-                  x2={WIDTH - PADDING_RIGHT}
+                  x2={chartWidth - PADDING_RIGHT}
                   y1={y}
                   y2={y}
                   className="admin-chart-gridline"
@@ -223,7 +305,7 @@ const MonthlyRequestsChart = ({ data }: MonthlyRequestsChartProps) => {
             rx={6}
           />
 
-          {data.map((point, index) => {
+          {visibleData.map((point, index) => {
             const groupX =
               PADDING_LEFT + slot * index + (slot - groupWidth) / 2;
 
@@ -233,7 +315,7 @@ const MonthlyRequestsChart = ({ data }: MonthlyRequestsChartProps) => {
                   const value = point[series.key];
                   const y = valueToY(value);
                   const x =
-                    groupX + seriesIndex * (BAR_WIDTH + BAR_GAP);
+                    groupX + seriesIndex * (barWidth + BAR_GAP);
                   const isActive =
                     hover !== null &&
                     hover.monthIndex === index &&
@@ -245,7 +327,7 @@ const MonthlyRequestsChart = ({ data }: MonthlyRequestsChartProps) => {
                       className={`admin-chart-bar${isActive ? " is-active" : ""}`}
                       x={x}
                       y={y}
-                      width={BAR_WIDTH}
+                      width={barWidth}
                       height={Math.max(0, PADDING_TOP + plotHeight - y)}
                       rx={3}
                       fill={series.color}
@@ -256,7 +338,7 @@ const MonthlyRequestsChart = ({ data }: MonthlyRequestsChartProps) => {
 
                 <text
                   x={groupX + groupWidth / 2}
-                  y={HEIGHT - 10}
+                  y={chartHeight - 10}
                   textAnchor="middle"
                   className="admin-chart-axis-label"
                 >
