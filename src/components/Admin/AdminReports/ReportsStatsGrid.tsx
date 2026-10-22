@@ -1,4 +1,4 @@
-import type { AdminReportsSummary } from "../../../Types/AdminReportsType";
+import type { AdminReportsSummary } from "../../../Types/Admin/AdminReportsType";
 
 type StatCard = {
   key: string;

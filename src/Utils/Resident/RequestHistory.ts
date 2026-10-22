@@ -3,7 +3,7 @@ import type {
   RequestHistoryItem,
   RequestStatus,
   StatusMeta,
-} from "../Types/RequestHistoryType";
+} from "../../Types/Resident/RequestHistoryType";
 
 export const STATUS_META: Record<RequestStatus, StatusMeta> = {
   pending: { label: "Pending", className: "status-pending" },

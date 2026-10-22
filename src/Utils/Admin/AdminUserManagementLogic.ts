@@ -11,10 +11,10 @@ import type {
   AdminStaffFormErrors,
   AdminStaffFormValues,
   AdminStaffRole,
-} from "../Types/AdminUserManagementType";
+} from "../../Types/Admin/AdminUserManagementType";
 
 /** Matches the backend password rule in app/schemas.py (min_length=6). */
-export { MIN_PASSWORD_LENGTH } from "./ResetPasswordLogic";
+export { MIN_PASSWORD_LENGTH } from "../Auth/ResetPasswordLogic";
 
 export type StaffBadgeMeta = {
   label: string;

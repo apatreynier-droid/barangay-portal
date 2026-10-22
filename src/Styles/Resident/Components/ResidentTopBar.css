@@ -1,19 +1,27 @@
+/* Sticky top bar. It runs edge to edge inside .dashboard-main by cancelling
+   the page padding with negative margins (the --pad variables come from
+   Dashboard.css), and stays pinned while the page scrolls. z-index 10 sits
+   above page content but below modal backdrops (z-index 20+). */
 .topbar {
-  /* Sticky: stays in flow until the page scrolls, then pins to the top of
-     the viewport. Opaque page background so content scrolls underneath
-     without showing through; z-index sits above page content but below
-     modal backdrops (z-index 20+). */
   position: sticky;
   top: 0;
   z-index: 10;
-  background: #f5f7fb;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  margin-bottom: 28px;
-  /* Thin divider under the sticky bar, so it stays visible while pinned. */
-  border-bottom: 1px solid #848484;
+  margin: calc(var(--pad-top, 30px) * -1) calc(var(--pad-x, 40px) * -1) 28px;
+  padding: 16px var(--pad-x, 40px);
+  background: var(--db-bg, #edf2ef);
+  border-bottom: 1px solid var(--db-line, #d9e3dd);
+}
+
+@supports (background: color-mix(in srgb, red 50%, blue)) {
+  .topbar {
+    background: color-mix(in srgb, var(--db-bg, #edf2ef) 88%, transparent);
+    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(10px);
+  }
 }
 
 /* Hamburger + page title on mobile (the hamburger is hidden on desktop by
@@ -32,16 +40,82 @@
 }
 
 .topbar-label {
-  margin: 0 0 4px;
+  margin: 0 0 2px;
   font-size: 12px;
-  color: #9ca3af;
+  color: var(--db-muted, #586c63);
   text-transform: uppercase;
-  letter-spacing: 0.7px;
+  letter-spacing: 0.12em;
   font-weight: 600;
 }
 
 .topbar h1 {
   margin: 0;
+  font-size: clamp(20px, 2.6vw, 26px);
+  font-weight: 700;
+  line-height: 1.15;
+  color: var(--db-ink, #10261f);
+}
+
+.profile {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.notification-button {
+  position: relative;
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--db-surface, #ffffff);
+  border: 1px solid var(--db-line, #d9e3dd);
+  border-radius: 12px;
+  color: var(--db-ink, #10261f);
+  cursor: pointer;
+}
+
+.notification-button:hover {
+  border-color: var(--db-brand, #17614b);
+}
+
+.notification-button:focus-visible {
+  outline: 2px solid var(--db-brand, #17614b);
+  outline-offset: 2px;
+}
+
+/* Lucide bell: follows the button's text color */
+.notification-icon {
+  width: 20px;
+  height: 20px;
+  display: block;
+  color: inherit;
+}
+
+.notification-button:hover .notification-icon {
+  color: var(--db-brand, #17614b);
+}
+
+/* Count badge: grows with the number, stays a pill for 2 digits */
+.notification-dot {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 5px;
+  display: grid;
+  place-items: center;
+  border: 2px solid var(--db-bg, #edf2ef);
+  border-radius: 99px;
+  background: var(--db-gold-bright, #e2b04a);
+  color: #2b1d00;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
 
 @media (max-width: 1024px) {
   .topbar {
@@ -56,44 +130,25 @@
   }
 }
 
-  font-size: 28px;
-  color: #111827;
-}
-
-.profile {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.notification-button {
-  position: relative;
-  width: 40px;
-  height: 40px;
+.theme-toggle {
+  width: 44px;
+  height: 44px;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #ffffff;
-  border: 1px solid #e5e7eb;
-  border-radius: 10px;
+  background: var(--db-surface, #ffffff);
+  border: 1px solid var(--db-line, #d9e3dd);
+  border-radius: 12px;
+  color: var(--db-ink, #10261f);
+  cursor: pointer;
 }
 
-/* Bell icon (same asset as the sidebar's Notifications item) rendered at the
-   sidebar icon size; the button itself stays the 40px hit target. */
-.notification-icon {
-  width: 18px;
-  height: 18px;
-  object-fit: contain;
-  display: block;
+.theme-toggle:hover {
+  border-color: var(--db-brand, #17614b);
+  color: var(--db-brand, #17614b);
 }
 
-.notification-dot {
-  position: absolute;
-  top: 8px;
-  right: 8px;
-  width: 7px;
-  height: 7px;
-  background: #ef4444;
-  border: 2px solid #ffffff;
-  border-radius: 50%;
+.theme-toggle:focus-visible {
+  outline: 2px solid var(--db-brand, #17614b);
+  outline-offset: 2px;
 }

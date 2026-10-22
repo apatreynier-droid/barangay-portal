@@ -1,9 +1,9 @@
-import type { AdminRecentRequest } from "../../../Types/AdminDashboardType";
+import type { AdminRecentRequest } from "../../../Types/Admin/AdminDashboardType";
 import {
   ADMIN_STATUS_FILTER_OPTIONS,
   matchesAdminStatusFilter,
   type AdminStatusFilter,
-} from "../../../Utils/AdminDashboardLogic";
+} from "../../../Utils/Admin/AdminDashboardLogic";
 import allIcon from "../../../assets/icons/files.png";
 import pendingIcon from "../../../assets/icons/hourglass.png";
 import approvedIcon from "../../../assets/icons/accept.png";

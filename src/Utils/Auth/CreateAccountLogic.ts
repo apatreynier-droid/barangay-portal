@@ -1,9 +1,9 @@
 import type {
   CreateAccountFormData,
   CreateAccountErrors,
-} from "../Types/CreateAccountType";
+} from "../../Types/Auth/CreateAccountType";
 
-import { ApiError, registerUser } from "./api";
+import { ApiError, registerUser } from "../Shared/api";
 
 const PHONE_PATTERN = /^[0-9+\-\s]{10,15}$/;
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;

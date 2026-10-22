@@ -1,10 +1,10 @@
 import "../../../Styles/Admin/Pages/AdminDashboard.css";
 import { useCallback, useEffect, useState } from "react";
-import type { ApiNotification, AuthUser } from "../../../Utils/api";
-import { fetchAdminDashboard } from "../../../Utils/api";
-import type { AdminDashboardData } from "../../../Types/AdminDashboardType";
-import { getPortalProfileName } from "../../../Utils/AdminDisplay";
-import type { AdminStatusFilter } from "../../../Utils/AdminDashboardLogic";
+import type { ApiNotification, AuthUser } from "../../../Utils/Shared/api";
+import { fetchAdminDashboard } from "../../../Utils/Shared/api";
+import type { AdminDashboardData } from "../../../Types/Admin/AdminDashboardType";
+import { getPortalProfileName } from "../../../Utils/Admin/AdminDisplay";
+import type { AdminStatusFilter } from "../../../Utils/Admin/AdminDashboardLogic";
 import AdminSidebar from "../../../components/Admin/AdminDashboard/AdminSidebar";
 import AdminTopbar from "../../../components/Admin/AdminDashboard/AdminTopbar";
 import AdminStatusStrip from "../../../components/Admin/AdminDashboard/AdminStatusStrip";
@@ -14,7 +14,7 @@ import DocumentTypeDonut from "../../../components/Admin/AdminDashboard/Document
 import AdminRecentRequests from "../../../components/Admin/AdminDashboard/AdminRecentRequests";
 import RecentRegistrations from "../../../components/Admin/AdminDashboard/RecentRegistrations";
 import AdminNotificationsCard from "../../../components/Admin/AdminDashboard/AdminNotificationsCard";
-import useResponsiveSidebar from "../../../Utils/useResponsiveSidebar";
+import useResponsiveSidebar from "../../../Utils/Shared/useResponsiveSidebar";
 
 type AdminDashboardProps = {
   user: AuthUser;

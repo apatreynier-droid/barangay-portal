@@ -4,7 +4,7 @@ import acceptIcon from "../../../assets/icons/accept.png";
 import clockIcon from "../../../assets/icons/clock.png";
 import stampIcon from "../../../assets/icons/stamp.png";
 import rejectIcon from "../../../assets/icons/reject.png";
-import type { AdminStats } from "../../../Types/AdminDashboardType";
+import type { AdminStats } from "../../../Types/Admin/AdminDashboardType";
 
 type StatCard = {
   key: string;

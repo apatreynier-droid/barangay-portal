@@ -1,18 +1,18 @@
 import "../../../Styles/Admin/Pages/AdminDashboard.css";
 import "../../../Styles/Admin/Pages/AdminUserManagement.css";
 import { useCallback, useEffect, useState } from "react";
-import type { AuthUser } from "../../../Utils/api";
+import type { AuthUser } from "../../../Utils/Shared/api";
 import {
   fetchAdminDashboard,
   fetchStaffAccounts,
   resetStaffPassword,
   updateStaffAccountStatus,
-} from "../../../Utils/api";
-import type { AdminStaffAccount } from "../../../Types/AdminUserManagementType";
-import { getPortalProfileName } from "../../../Utils/AdminDisplay";
+} from "../../../Utils/Shared/api";
+import type { AdminStaffAccount } from "../../../Types/Admin/AdminUserManagementType";
+import { getPortalProfileName } from "../../../Utils/Admin/AdminDisplay";
 import AdminSidebar from "../../../components/Admin/AdminDashboard/AdminSidebar";
 import AdminTopbar from "../../../components/Admin/AdminDashboard/AdminTopbar";
-import useResponsiveSidebar from "../../../Utils/useResponsiveSidebar";
+import useResponsiveSidebar from "../../../Utils/Shared/useResponsiveSidebar";
 import StaffAccountsTable from "../../../components/Admin/AdminUserManagement/StaffAccountsTable";
 import StaffFormModal from "../../../components/Admin/AdminUserManagement/StaffFormModal";
 import StaffActionConfirmModal from "../../../components/Admin/AdminUserManagement/StaffActionConfirmModal";

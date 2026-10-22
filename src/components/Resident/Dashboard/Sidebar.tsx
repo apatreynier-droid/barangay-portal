@@ -1,10 +1,9 @@
 import "../../../Styles/Resident/Components/ResidentSidebar.css";
 
+import { AlertTriangle, Bell, FileText, LayoutDashboard } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
+
 import wingsLogo from "../../../assets/logo-256.png";
-import ADashIcon from "../../../assets/icons/ADash.png";
-import requestIcon from "../../../assets/icons/DR.png";
-import notificationIcon from "../../../assets/icons/notification-bell.png";
-import potholeIcon from "../../../assets/icons/pothole.png";
 import SidebarUserFooter from "../../SidebarUserFooter/SidebarUserFooter";
 
 type SidebarProps = {
@@ -36,7 +35,7 @@ type SidebarProps = {
 const NAV_ITEMS: {
   key: NonNullable<SidebarProps["activePage"]>;
   label: string;
-  icon: string;
+  icon: LucideIcon;
   handlerKey:
     | "onDashboard"
     | "onMyRequests"
@@ -46,25 +45,25 @@ const NAV_ITEMS: {
   {
     key: "dashboard",
     label: "Dashboard",
-    icon: ADashIcon,
+    icon: LayoutDashboard,
     handlerKey: "onDashboard",
   },
   {
     key: "my-requests",
     label: "My Requests",
-    icon: requestIcon,
+    icon: FileText,
     handlerKey: "onMyRequests",
   },
   {
     key: "notifications",
     label: "Notifications",
-    icon: notificationIcon,
+    icon: Bell,
     handlerKey: "onNotifications",
   },
   {
     key: "pothole-detection",
     label: "Pothole Detection",
-    icon: potholeIcon,
+    icon: AlertTriangle,
     handlerKey: "onPotholeDetection",
   },
 ];
@@ -111,6 +110,7 @@ const Sidebar = ({
         {NAV_ITEMS.map((item) => {
           const handler = handlers[item.handlerKey];
           const isActive = activePage === item.key;
+          const Icon = item.icon;
           return (
             <button
               key={item.key}
@@ -120,7 +120,7 @@ const Sidebar = ({
               disabled={isActive || !handler}
             >
               <span className="nav-icon">
-                <img src={item.icon} alt="" />
+                <Icon size={19} strokeWidth={1.9} aria-hidden="true" />
               </span>
               {item.label}
             </button>

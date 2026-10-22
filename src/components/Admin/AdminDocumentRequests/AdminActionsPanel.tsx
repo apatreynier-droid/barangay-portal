@@ -2,8 +2,8 @@ import { useState } from "react";
 import type {
   AdminDocumentRequestActionPayload,
   AdminDocumentRequestDetail,
-} from "../../../Types/AdminDocumentRequestsType";
-import { updateAdminDocumentRequest } from "../../../Utils/api";
+} from "../../../Types/Admin/AdminDocumentRequestsType";
+import { updateAdminDocumentRequest } from "../../../Utils/Shared/api";
 import DatePickerInput from "../../Shared/DatePickerInput";
 
 type AdminActionsPanelProps = {

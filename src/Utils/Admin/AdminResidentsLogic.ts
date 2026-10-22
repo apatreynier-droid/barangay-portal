@@ -1,4 +1,4 @@
-import type { AdminResident } from "../Types/AdminResidentsType";
+import type { AdminResident } from "../../Types/Admin/AdminResidentsType";
 
 export type ResidentsFiltersState = {
   search: string;

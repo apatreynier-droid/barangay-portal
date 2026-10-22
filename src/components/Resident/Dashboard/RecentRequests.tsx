@@ -1,6 +1,6 @@
-import { getStatusClass } from "../../../Utils/DashboardLogic";
-import type { Request } from "../../../Types/DashboardType";
-import filesIcon from "../../../assets/icons/files.png";
+import { FileText } from "lucide-react";
+import { getStatusClass } from "../../../Utils/Resident/DashboardLogic";
+import type { Request } from "../../../Types/Resident/DashboardType";
 
 type RecentRequestsProps = {
   requests: Request[];
@@ -30,7 +30,7 @@ const RecentRequests = ({ requests, onViewAll }: RecentRequestsProps) => {
           requests.map((request) => (
             <div className="request-row" key={request.id}>
               <div className="document-icon">
-                <img src={filesIcon} alt="" />
+                <FileText size={20} strokeWidth={1.9} aria-hidden="true" />
               </div>
 
               <div className="request-details">

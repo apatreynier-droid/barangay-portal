@@ -1,4 +1,4 @@
-import type { AdminDocumentRequest } from "../Types/AdminDocumentRequestsType";
+import type { AdminDocumentRequest } from "../../Types/Admin/AdminDocumentRequestsType";
 
 export const PENDING_STATUS = "Pending";
 

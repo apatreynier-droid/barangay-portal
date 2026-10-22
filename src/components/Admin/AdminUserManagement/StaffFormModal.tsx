@@ -5,15 +5,15 @@ import type {
   AdminStaffAccountStatus,
   AdminStaffFormErrors,
   AdminStaffRole,
-} from "../../../Types/AdminUserManagementType";
+} from "../../../Types/Admin/AdminUserManagementType";
 import {
   MIN_PASSWORD_LENGTH,
   canChangeStaffRole,
   getAssignableRoles,
   getStaffRoleMeta,
   validateStaffForm,
-} from "../../../Utils/AdminUserManagementLogic";
-import { ApiError, createStaffAccount, updateStaffAccount } from "../../../Utils/api";
+} from "../../../Utils/Admin/AdminUserManagementLogic";
+import { ApiError, createStaffAccount, updateStaffAccount } from "../../../Utils/Shared/api";
 
 type StaffFormModalProps = {
   /** "create" renders the Add Staff form, "edit" the Edit Staff form. */

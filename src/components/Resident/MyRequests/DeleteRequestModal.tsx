@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { createPortal } from "react-dom";
-import { ApiError, deleteDocumentRequest } from "../../../Utils/api";
-import type { Request } from "../../../Types/DashboardType";
+import { ApiError, deleteDocumentRequest } from "../../../Utils/Shared/api";
+import type { Request } from "../../../Types/Resident/DashboardType";
 import "../../../Styles/Resident/Components/DeleteRequestModal.css";
 
 type DeleteRequestModalProps = {

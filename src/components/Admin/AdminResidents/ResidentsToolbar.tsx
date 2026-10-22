@@ -1,5 +1,5 @@
-import { getUniquePuroks } from "../../../Utils/AdminResidentsLogic";
-import type { AdminResident } from "../../../Types/AdminResidentsType";
+import { getUniquePuroks } from "../../../Utils/Admin/AdminResidentsLogic";
+import type { AdminResident } from "../../../Types/Admin/AdminResidentsType";
 
 type ResidentsToolbarProps = {
   residents: AdminResident[];

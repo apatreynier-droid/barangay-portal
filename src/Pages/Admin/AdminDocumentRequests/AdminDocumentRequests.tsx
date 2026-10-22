@@ -3,19 +3,19 @@ import "../../../Styles/Admin/Pages/AdminResidents.css";
 import "../../../Styles/Admin/Pages/AdminDocumentRequests.css";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import type { AuthUser } from "../../../Utils/api";
+import type { AuthUser } from "../../../Utils/Shared/api";
 import {
   fetchAdminDashboard,
   fetchAdminDocumentRequests,
-} from "../../../Utils/api";
-import type { AdminDocumentRequest } from "../../../Types/AdminDocumentRequestsType";
-import { getPortalProfileName } from "../../../Utils/AdminDisplay";
+} from "../../../Utils/Shared/api";
+import type { AdminDocumentRequest } from "../../../Types/Admin/AdminDocumentRequestsType";
+import { getPortalProfileName } from "../../../Utils/Admin/AdminDisplay";
 import {
   ADMIN_DOCUMENT_REQUESTS_PATH,
   isAdministrator,
-} from "../../../Utils/routePaths";
+} from "../../../Utils/Shared/routePaths";
 import AdminSidebar from "../../../components/Admin/AdminDashboard/AdminSidebar";
-import useResponsiveSidebar from "../../../Utils/useResponsiveSidebar";
+import useResponsiveSidebar from "../../../Utils/Shared/useResponsiveSidebar";
 import AdminTopbar from "../../../components/Admin/AdminDashboard/AdminTopbar";
 import DocumentRequestsToolbar from "../../../components/Admin/AdminDocumentRequests/DocumentRequestsToolbar";
 import DocumentRequestsTable from "../../../components/Admin/AdminDocumentRequests/DocumentRequestsTable";
@@ -23,8 +23,8 @@ import RequestDetailsView from "../../../components/Admin/AdminDocumentRequests/
 import {
   DEFAULT_DOCUMENT_REQUESTS_FILTERS,
   filterDocumentRequests,
-} from "../../../Utils/AdminDocumentRequestsLogic";
-import type { DocumentRequestsFiltersState } from "../../../Utils/AdminDocumentRequestsLogic";
+} from "../../../Utils/Admin/AdminDocumentRequestsLogic";
+import type { DocumentRequestsFiltersState } from "../../../Utils/Admin/AdminDocumentRequestsLogic";
 
 type AdminDocumentRequestsProps = {
   user: AuthUser;

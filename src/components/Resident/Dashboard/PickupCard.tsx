@@ -1,4 +1,5 @@
-import type { Request } from "../../../Types/DashboardType";
+import { PackageCheck } from "lucide-react";
+import type { Request } from "../../../Types/Resident/DashboardType";
 
 type PickupCardProps = {
   requests: Request[];
@@ -14,7 +15,9 @@ const PickupCard = ({ requests, onMyRequests }: PickupCardProps) => {
 
   return (
     <section className="pickup-card">
-      <div className="pickup-icon">✓</div>
+      <div className="pickup-icon">
+        <PackageCheck size={24} strokeWidth={1.9} aria-hidden="true" />
+      </div>
 
       <div className="pickup-content">
         <span className="pickup-label">READY FOR PICKUP</span>

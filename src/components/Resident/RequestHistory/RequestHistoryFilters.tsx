@@ -1,4 +1,4 @@
-import type { RequestHistoryFiltersState } from "../../../Types/RequestHistoryType";
+import type { RequestHistoryFiltersState } from "../../../Types/Resident/RequestHistoryType";
 import calendarIcon from "../../../assets/icons/calendar.png";
 import { openNativeDatePicker } from "../../Shared/openNativeDatePicker";
 import "../../../Styles/Shared/Components/DatePickerInput.css";

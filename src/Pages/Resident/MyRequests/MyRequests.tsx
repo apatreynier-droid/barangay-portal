@@ -2,19 +2,19 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "../../../Styles/Resident/Pages/Dashboard.css";
 import "../../../Styles/Resident/Pages/MyRequests.css";
-import type { Request, RequestStatus } from "../../../Types/DashboardType";
-import type { AuthUser } from "../../../Utils/api";
+import type { Request, RequestStatus } from "../../../Types/Resident/DashboardType";
+import type { ApiNotification, AuthUser } from "../../../Utils/Shared/api";
 import Sidebar from "../../../components/Resident/Dashboard/Sidebar";
-import RequestsHeader from "../../../components/Resident/MyRequests/RequestsHeader";
+import Topbar from "../../../components/Resident/Dashboard/Topbar";
 import RequestStats from "../../../components/Resident/MyRequests/RequestStats";
 import RequestsToolbar from "../../../components/Resident/MyRequests/RequestsToolbar";
 import RequestsTabs, {
   type RequestsTab,
 } from "../../../components/Resident/MyRequests/RequestsTabs";
 import RequestsList from "../../../components/Resident/MyRequests/RequestsList";
-import { RESIDENT_ROLE_LABEL } from "../../../Utils/ResidentDisplay";
-import { POTHOLE_DETECTION_PATH } from "../../../Utils/routePaths";
-import useResponsiveSidebar from "../../../Utils/useResponsiveSidebar";
+import { RESIDENT_ROLE_LABEL } from "../../../Utils/Resident/ResidentDisplay";
+import { POTHOLE_DETECTION_PATH } from "../../../Utils/Shared/routePaths";
+import useResponsiveSidebar from "../../../Utils/Shared/useResponsiveSidebar";
 
 // Requests still moving through the barangay office.
 const ACTIVE_STATUSES: RequestStatus[] = [
@@ -30,6 +30,7 @@ const HISTORY_STATUSES: RequestStatus[] = ["Completed", "Rejected"];
 interface MyRequestsProps {
   user: AuthUser;
   requests: Request[];
+  notifications?: ApiNotification[];
   isLoadingData: boolean;
   dataError: string;
   onRetry: () => void;
@@ -44,6 +45,7 @@ interface MyRequestsProps {
 const MyRequests = ({
   user,
   requests,
+  notifications = [],
   isLoadingData,
   dataError,
   onRetry,
@@ -102,6 +104,10 @@ const MyRequests = ({
 
   const totalRequests = localRequests.length;
 
+  const unreadCount = notifications.filter(
+    (notification) => !notification.is_read,
+  ).length;
+
   const pendingRequests = localRequests.filter(
     (request) => request.status === "Pending",
   ).length;
@@ -144,10 +150,15 @@ const MyRequests = ({
       )}
 
       <main className="requests-main">
-        <RequestsHeader
-          firstName={user.first_name}
+        <Topbar
+          unreadCount={unreadCount}
+          onNotifications={onNotifications}
           onMenuToggle={toggleDrawer}
         />
+
+        <p className="page-description">
+          Track and manage your barangay document requests, {user.first_name}.
+        </p>
 
         {dataError && (
           <div className="dashboard-error-banner" role="alert">

@@ -1,10 +1,10 @@
 import filesIcon from "../../../assets/icons/files.png";
-import type { AdminActivityEntry } from "../../../Types/AdminDashboardType";
-import type { ApiNotification } from "../../../Utils/api";
+import type { AdminActivityEntry } from "../../../Types/Admin/AdminDashboardType";
+import type { ApiNotification } from "../../../Utils/Shared/api";
 import {
   formatRelativeTime,
   toUtcTimestamp,
-} from "../../../Utils/AdminDashboardLogic";
+} from "../../../Utils/Admin/AdminDashboardLogic";
 
 type AdminNotificationsCardProps = {
   /**

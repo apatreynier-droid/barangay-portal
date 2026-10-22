@@ -1,5 +1,5 @@
-import type { RequestHistoryItem } from "../../../Types/RequestHistoryType";
-import { formatDate, getStatusMeta } from "../../../Utils/RequestHistory";
+import type { RequestHistoryItem } from "../../../Types/Resident/RequestHistoryType";
+import { formatDate, getStatusMeta } from "../../../Utils/Resident/RequestHistory";
 import filesIcon from "../../../assets/icons/files.png";
 
 interface RequestHistoryRowProps {

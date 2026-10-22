@@ -1,10 +1,10 @@
 import "../../../Styles/Admin/Pages/AdminDashboard.css";
 import "../../../Styles/Admin/Pages/AdminLogs.css";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import type { AuthUser } from "../../../Utils/api";
-import { fetchAdminDashboard, fetchActivityLogs } from "../../../Utils/api";
-import type { AdminActivityLog } from "../../../Types/AdminLogsType";
-import { getPortalProfileName } from "../../../Utils/AdminDisplay";
+import type { AuthUser } from "../../../Utils/Shared/api";
+import { fetchAdminDashboard, fetchActivityLogs } from "../../../Utils/Shared/api";
+import type { AdminActivityLog } from "../../../Types/Admin/AdminLogsType";
+import { getPortalProfileName } from "../../../Utils/Admin/AdminDisplay";
 import AdminSidebar from "../../../components/Admin/AdminDashboard/AdminSidebar";
 import AdminTopbar from "../../../components/Admin/AdminDashboard/AdminTopbar";
 import ActivityLogsToolbar from "../../../components/Admin/AdminLogs/ActivityLogsToolbar";
@@ -12,9 +12,9 @@ import ActivityLogsTable from "../../../components/Admin/AdminLogs/ActivityLogsT
 import {
   DEFAULT_ACTIVITY_LOGS_FILTERS,
   filterActivityLogs,
-} from "../../../Utils/AdminLogsLogic";
-import type { ActivityLogsFiltersState } from "../../../Utils/AdminLogsLogic";
-import useResponsiveSidebar from "../../../Utils/useResponsiveSidebar";
+} from "../../../Utils/Admin/AdminLogsLogic";
+import type { ActivityLogsFiltersState } from "../../../Utils/Admin/AdminLogsLogic";
+import useResponsiveSidebar from "../../../Utils/Shared/useResponsiveSidebar";
 
 type AdminLogsProps = {
   user: AuthUser;

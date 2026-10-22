@@ -1,17 +1,19 @@
 import "../../../Styles/Resident/Pages/Dashboard.css";
-import type { Request } from "../../../Types/DashboardType";
-import type { ApiNotification, AuthUser } from "../../../Utils/api";
+import type { Request } from "../../../Types/Resident/DashboardType";
+import type { ApiNotification, AuthUser } from "../../../Utils/Shared/api";
 import Sidebar from "../../../components/Resident/Dashboard/Sidebar";
 import Topbar from "../../../components/Resident/Dashboard/Topbar";
 import WelcomeCard from "../../../components/Resident/Dashboard/WelcomeCard";
 import StatsGrid from "../../../components/Resident/Dashboard/StatsGrid";
 import RecentRequests from "../../../components/Resident/Dashboard/RecentRequests";
 import QuickActions from "../../../components/Resident/Dashboard/QuickActions";
-import PickupCard from "../../../components/Resident/Dashboard/PickupCard";
 import { useNavigate } from "react-router-dom";
-import { RESIDENT_ROLE_LABEL } from "../../../Utils/ResidentDisplay";
-import useResponsiveSidebar from "../../../Utils/useResponsiveSidebar";
-import { POTHOLE_DETECTION_PATH, RESIDENT_REQUEST_HISTORY_PATH } from "../../../Utils/routePaths";
+import { RESIDENT_ROLE_LABEL } from "../../../Utils/Resident/ResidentDisplay";
+import useResponsiveSidebar from "../../../Utils/Shared/useResponsiveSidebar";
+import {
+  POTHOLE_DETECTION_PATH,
+  RESIDENT_REQUEST_HISTORY_PATH,
+} from "../../../Utils/Shared/routePaths";
 
 type DashboardProps = {
   user: AuthUser;
@@ -43,8 +45,7 @@ const Dashboard = ({
     (notification) => !notification.is_read,
   ).length;
 
-  const { isDrawerOpen, closeDrawer, toggleDrawer } =
-    useResponsiveSidebar();
+  const { isDrawerOpen, closeDrawer, toggleDrawer } = useResponsiveSidebar();
 
   return (
     <div className="dashboard">
@@ -79,7 +80,11 @@ const Dashboard = ({
           onMenuToggle={toggleDrawer}
         />
 
-        <WelcomeCard onRequestDocument={() => onRequestDocument()} />
+        <WelcomeCard
+          requests={requests}
+          onRequestDocument={() => onRequestDocument()}
+          onMyRequests={onMyRequests}
+        />
 
         {dataError && (
           <div className="dashboard-error-banner" role="alert">
@@ -100,8 +105,6 @@ const Dashboard = ({
               <RecentRequests requests={requests} onViewAll={onMyRequests} />
               <QuickActions onSelectDocument={onRequestDocument} />
             </div>
-
-            <PickupCard requests={requests} onMyRequests={onMyRequests} />
           </>
         )}
       </main>

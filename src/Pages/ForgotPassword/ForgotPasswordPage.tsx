@@ -1,10 +1,10 @@
 import { useState } from "react";
 import type { ChangeEvent, FormEvent } from "react";
-import type { FormData, FormErrors } from "../../Types/ForgotPasswordType";
+import type { FormData, FormErrors } from "../../Types/Auth/ForgotPasswordType";
 import {
   submitPasswordResetRequest,
   validateForm,
-} from "../../Utils/ForgotPasswordLogic";
+} from "../../Utils/Auth/ForgotPasswordLogic";
 import logo from "../../assets/logo-256.png";
 import "../../Styles/Shared/Pages/ForgotPasswordPage.css";
 

@@ -1,6 +1,6 @@
-import { getUniqueDocuments } from "../../../Utils/AdminDocumentRequestsLogic";
-import { REQUEST_STATUS_OPTIONS } from "../../../Utils/AdminDocumentRequestsLogic";
-import type { AdminDocumentRequest } from "../../../Types/AdminDocumentRequestsType";
+import { getUniqueDocuments } from "../../../Utils/Admin/AdminDocumentRequestsLogic";
+import { REQUEST_STATUS_OPTIONS } from "../../../Utils/Admin/AdminDocumentRequestsLogic";
+import type { AdminDocumentRequest } from "../../../Types/Admin/AdminDocumentRequestsType";
 
 type DocumentRequestsToolbarProps = {
   requests: AdminDocumentRequest[];

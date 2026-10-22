@@ -1,4 +1,4 @@
-import type { AdminStaffAccount } from "../../../Types/AdminUserManagementType";
+import type { AdminStaffAccount } from "../../../Types/Admin/AdminUserManagementType";
 import {
   canManageStaffAccount,
   canResetStaffPassword,
@@ -9,7 +9,7 @@ import {
   getStaffInitials,
   getStaffRoleMeta,
   getStaffStatusMeta,
-} from "../../../Utils/AdminUserManagementLogic";
+} from "../../../Utils/Admin/AdminUserManagementLogic";
 
 type StaffAccountsTableProps = {
   accounts: AdminStaffAccount[];

@@ -1,11 +1,18 @@
-import { getSessionUser } from "../../../Utils/api";
-import filesIcon from "../../../assets/icons/files.png";
+import { ChevronRight, FileText, PackageCheck } from "lucide-react";
+import { getSessionUser } from "../../../Utils/Shared/api";
+import type { Request } from "../../../Types/Resident/DashboardType";
 
 type WelcomeCardProps = {
+  requests: Request[];
   onRequestDocument: () => void;
+  onMyRequests: () => void;
 };
 
-const WelcomeCard = ({ onRequestDocument }: WelcomeCardProps) => {
+const WelcomeCard = ({
+  requests,
+  onRequestDocument,
+  onMyRequests,
+}: WelcomeCardProps) => {
   const user = getSessionUser();
   const greeting = (() => {
     const hour = new Date().getHours();
@@ -15,9 +22,14 @@ const WelcomeCard = ({ onRequestDocument }: WelcomeCardProps) => {
     return "Good evening!";
   })();
 
+  const readyRequests = requests.filter(
+    (request) => request.status === "Ready for Pickup",
+  );
+  const readyRequest = readyRequests[0];
+
   return (
     <section className="welcome-card">
-      <div>
+      <div className="welcome-main">
         <p className="welcome-small">{greeting}</p>
 
         <h2>Welcome back, {user?.first_name ?? "Resident"}!</h2>
@@ -36,9 +48,36 @@ const WelcomeCard = ({ onRequestDocument }: WelcomeCardProps) => {
         </button>
       </div>
 
-      <div className="welcome-icon">
-        <img src={filesIcon} alt="Documents" />
-      </div>
+      {readyRequest ? (
+        <div className="welcome-pickup">
+          <div className="welcome-pickup-label">
+            <PackageCheck size={16} strokeWidth={2} aria-hidden="true" />
+            Ready for pickup
+            {readyRequests.length > 1 ? ` · ${readyRequests.length}` : ""}
+          </div>
+
+          <h3>{readyRequest.document}</h3>
+          <span className="welcome-pickup-id">{readyRequest.id}</span>
+
+          <p>
+            Your request has been approved and is ready for pickup at the
+            Barangay Hall.
+          </p>
+
+          <button
+            type="button"
+            className="welcome-pickup-link"
+            onClick={onMyRequests}
+          >
+            View my requests
+            <ChevronRight size={16} aria-hidden="true" />
+          </button>
+        </div>
+      ) : (
+        <div className="welcome-icon" aria-hidden="true">
+          <FileText size={52} strokeWidth={1.6} />
+        </div>
+      )}
     </section>
   );
 };

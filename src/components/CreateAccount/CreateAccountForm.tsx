@@ -4,7 +4,7 @@ import type { ChangeEvent, FormEvent, ReactNode } from "react";
 import type {
   CreateAccountFormData,
   CreateAccountErrors,
-} from "../../Types/CreateAccountType";
+} from "../../Types/Auth/CreateAccountType";
 
 import {
   validateStep,
@@ -12,7 +12,7 @@ import {
   getCreateAccountError,
   getCreateAccountErrorField,
   generateReferenceNumber,
-} from "../../Utils/CreateAccountLogic";
+} from "../../Utils/Auth/CreateAccountLogic";
 
 import DatePickerInput from "../Shared/DatePickerInput";
 import "../../Styles/Shared/Components/DatePickerInput.css";

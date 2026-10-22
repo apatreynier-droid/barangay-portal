@@ -1,4 +1,4 @@
-import type { AdminDocumentRequest } from "../Types/AdminDocumentRequestsType";
+import type { AdminDocumentRequest } from "../../Types/Admin/AdminDocumentRequestsType";
 import { getRequestStatusMeta } from "./AdminResidentsLogic";
 import type { ResidentStatusMeta } from "./AdminResidentsLogic";
 

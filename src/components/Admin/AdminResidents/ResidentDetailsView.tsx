@@ -2,11 +2,11 @@ import { useCallback, useEffect, useState } from "react";
 import type {
   AdminResidentAccountStatus,
   AdminResidentDetail,
-} from "../../../Types/AdminResidentsType";
+} from "../../../Types/Admin/AdminResidentsType";
 import {
   fetchResidentDetail,
   updateResidentStatus,
-} from "../../../Utils/api";
+} from "../../../Utils/Shared/api";
 import ResidentProfileCard from "./ResidentProfileCard";
 import ResidentPersonalInfo from "./ResidentPersonalInfo";
 import ResidentRequestHistory from "./ResidentRequestHistory";

@@ -1,4 +1,4 @@
-import type { AdminActivityLog } from "../Types/AdminLogsType";
+import type { AdminActivityLog } from "../../Types/Admin/AdminLogsType";
 import { ADMIN_DISPLAY_NAME } from "./AdminDisplay";
 
 export type ActivityLogsFiltersState = {

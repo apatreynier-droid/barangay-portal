@@ -1,4 +1,4 @@
-import type { AdminResidentDetail } from "../../../Types/AdminResidentsType";
+import type { AdminResidentDetail } from "../../../Types/Admin/AdminResidentsType";
 
 type ResidentPersonalInfoProps = {
   resident: AdminResidentDetail;

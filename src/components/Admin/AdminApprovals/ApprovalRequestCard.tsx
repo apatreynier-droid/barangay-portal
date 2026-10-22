@@ -1,10 +1,10 @@
 import { useState } from "react";
-import type { AdminDocumentRequest } from "../../../Types/AdminDocumentRequestsType";
+import type { AdminDocumentRequest } from "../../../Types/Admin/AdminDocumentRequestsType";
 import {
   formatFee,
   formatSubmittedDateTime,
-} from "../../../Utils/AdminDocumentRequestsLogic";
-import { updateAdminDocumentRequest } from "../../../Utils/api";
+} from "../../../Utils/Admin/AdminDocumentRequestsLogic";
+import { updateAdminDocumentRequest } from "../../../Utils/Shared/api";
 
 type ApprovalRequestCardProps = {
   request: AdminDocumentRequest;

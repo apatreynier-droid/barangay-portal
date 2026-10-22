@@ -4,8 +4,8 @@ import {
   ApiError,
   mapApiRequest,
   updateDocumentRequest,
-} from "../../../Utils/api";
-import type { Request } from "../../../Types/DashboardType";
+} from "../../../Utils/Shared/api";
+import type { Request } from "../../../Types/Resident/DashboardType";
 import "../../../Styles/Resident/Components/EditRequestModal.css";
 
 type EditRequestModalProps = {
