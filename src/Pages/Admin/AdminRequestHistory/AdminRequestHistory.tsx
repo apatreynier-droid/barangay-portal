@@ -2,18 +2,18 @@ import "../../../Styles/Admin/Pages/AdminDashboard.css";
 import "../../../Styles/Admin/Pages/AdminResidents.css";
 import "../../../Styles/Admin/Pages/AdminRequestHistory.css";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import type { AuthUser } from "../../../Utils/api";
+import type { AuthUser } from "../../../Utils/Shared/api";
 import {
   fetchAdminDashboard,
   fetchAdminRequestHistory,
-} from "../../../Utils/api";
-import type { AdminRequestHistoryEntry } from "../../../Types/AdminRequestHistoryType";
+} from "../../../Utils/Shared/api";
+import type { AdminRequestHistoryEntry } from "../../../Types/Admin/AdminRequestHistoryType";
 import {
   ADMIN_DISPLAY_NAME,
   getPortalProfileName,
-} from "../../../Utils/AdminDisplay";
+} from "../../../Utils/Admin/AdminDisplay";
 import AdminSidebar from "../../../components/Admin/AdminDashboard/AdminSidebar";
-import useResponsiveSidebar from "../../../Utils/useResponsiveSidebar";
+import useResponsiveSidebar from "../../../Utils/Shared/useResponsiveSidebar";
 import AdminTopbar from "../../../components/Admin/AdminDashboard/AdminTopbar";
 import {
   DEFAULT_ADMIN_REQUEST_HISTORY_FILTERS,
@@ -23,8 +23,8 @@ import {
   getRequestDisplayId,
   getRequestHistoryStatusMeta,
   getUniqueHistoryDocuments,
-} from "../../../Utils/AdminRequestHistoryLogic";
-import type { AdminRequestHistoryFiltersState } from "../../../Utils/AdminRequestHistoryLogic";
+} from "../../../Utils/Admin/AdminRequestHistoryLogic";
+import type { AdminRequestHistoryFiltersState } from "../../../Utils/Admin/AdminRequestHistoryLogic";
 import DatePickerInput from "../../../components/Shared/DatePickerInput";
 import "../../../Styles/Shared/Components/DatePickerInput.css";
 

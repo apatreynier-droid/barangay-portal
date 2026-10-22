@@ -1,4 +1,4 @@
-import type { AdminReportsData } from "../Types/AdminReportsType";
+import type { AdminReportsData } from "../../Types/Admin/AdminReportsType";
 
 const formatExportDateTime = (value: string): string => {
   const date = new Date(value);

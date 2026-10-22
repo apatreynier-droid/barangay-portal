@@ -1,31 +1,46 @@
+@import url("https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700&family=Public+Sans:wght@500;600&display=swap");
+
+/* Design tokens, scoped to the sidebar so nothing else is affected */
 .sidebar {
+  --sb-bg: #0c3629;
+  --sb-ink: #d5e7df;
+  --sb-muted: #8fb1a3;
+  --sb-active: #16503d;
+  --sb-gold: #e2b04a;
+
   position: fixed;
   left: 0;
   top: 0;
-  width: 250px;
+  width: 250px; /* unchanged so your page layout offset still matches */
   height: 100vh;
-  background: #1d3468;
-  border-right: 1px solid rgba(255, 255, 255, 0.12);
+  background: var(--sb-bg);
+  border-right: 1px solid rgba(255, 255, 255, 0.08);
   display: flex;
   flex-direction: column;
-  padding: 24px 16px;
+  padding: 24px 16px 18px;
+  overflow-y: auto;
+  font-family: "Public Sans", "Segoe UI", system-ui, sans-serif;
 }
+
+/* ------------------------------ Brand ------------------------------ */
 
 .sidebar-logo {
   display: flex;
   align-items: center;
   gap: 12px;
   padding: 0 8px;
-  margin-bottom: 40px;
+  margin-bottom: 32px;
 }
 
 .sidebar-logo-circle {
-  width: 64px;
-  height: 64px;
+  width: 52px;
+  height: 52px;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
+  border-radius: 50%;
+  box-shadow: 0 0 0 3px rgba(226, 176, 74, 0.28);
 }
 
 .sidebar-logo-circle img {
@@ -33,39 +48,46 @@
   height: 100%;
   object-fit: contain;
   display: block;
+  border-radius: 50%;
 }
 
 .sidebar-logo h2 {
   margin: 0;
-  font-size: 18px;
+  font-family: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  font-size: 19px;
+  font-weight: 700;
+  line-height: 1.1;
+  letter-spacing: -0.01em;
   color: #ffffff;
 }
 
 .sidebar-logo span {
   display: block;
-  margin-top: 2px;
-  font-size: 11px;
-  color: #cbd5e1;
+  margin-top: 3px;
+  font-size: 12px;
+  color: var(--sb-muted);
 }
+
+/* ------------------------------ Nav ------------------------------ */
 
 .sidebar-nav {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 4px;
 }
 
 .nav-item {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 12px 14px;
+  padding: 10px 12px;
   border-radius: 10px;
-  color: #d1d5db;
+  color: var(--sb-ink);
   text-decoration: none;
-  font-size: 14px;
+  font-size: 14.5px;
   font-weight: 500;
-  /* Explicit property list: never animate layout properties (padding,
-     font-size, font-weight) — animating "all" caused stutter and wobble. */
+  /* Explicit property list: never animate layout properties. */
   transition:
     background-color 0.18s cubic-bezier(0.4, 0, 0.2, 1),
     color 0.18s cubic-bezier(0.4, 0, 0.2, 1),
@@ -78,80 +100,92 @@
   background: transparent;
   text-align: left;
   cursor: pointer;
+  font-family: inherit;
 }
 
 .nav-button:disabled {
   cursor: default;
+  opacity: 1;
 }
 
 .nav-item:hover {
-  background-color: rgba(255, 255, 255, 0.12);
+  background-color: rgba(255, 255, 255, 0.07);
   color: #ffffff;
 }
 
-/* Keep the active item visually stable while hovered (including the
-   disabled active buttons): it keeps its stronger highlight. */
+.nav-item.active,
 .nav-item.active:hover {
-  background-color: rgba(255, 255, 255, 0.18);
-  color: #ffffff;
-}
-
-/* Subtle press feedback: transform only, so layout never shifts. */
-.nav-item:not(:disabled):active {
-  transform: scale(0.98);
-}
-
-.nav-item.active {
-  background: rgba(255, 255, 255, 0.18);
+  background: var(--sb-active);
   color: #ffffff;
   font-weight: 600;
 }
 
+/* Gold marker on the current page, sitting on the sidebar's left edge */
+.nav-item.active::before {
+  content: "";
+  position: absolute;
+  left: -16px;
+  top: 9px;
+  bottom: 9px;
+  width: 4px;
+  border-radius: 0 4px 4px 0;
+  background: var(--sb-gold);
+}
+
+.nav-item:not(:disabled):active {
+  transform: scale(0.98);
+}
+
 .nav-item:focus-visible {
-  outline: 2px solid #ffffff;
+  outline: 2px solid var(--sb-gold);
   outline-offset: 2px;
 }
 
+/* Lucide icons use currentColor: muted by default, white on hover,
+   gold on the active page. */
 .nav-icon {
   width: 20px;
   height: 20px;
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-shrink: 0;
+  color: var(--sb-muted);
+  transition: color 0.18s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.nav-icon img {
-  width: 18px;
-  height: 18px;
-  object-fit: contain;
-  /* Render icons with their original PNG colors (no recoloring to match
-     the sidebar text or active/hover color). */
-  transform: translateZ(0);
-  backface-visibility: hidden;
+.nav-icon svg {
+  display: block;
   transition: transform 0.18s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* Compositor-only scale: immediate response, no repaint-driven lag,
-   and no layout shift since transforms do not affect flow. */
-.nav-item:hover .nav-icon img {
-  transform: translateZ(0) scale(1.08);
+.nav-item:hover .nav-icon {
+  color: #ffffff;
 }
 
-/* The old ".sidebar-bottom" Logout button was replaced by the shared
-   SidebarUserFooter component (see SidebarUserFooter.css). */
-/* ---------------------- Sidebar motion preferences ------------------------- */
+.nav-item:hover .nav-icon svg {
+  transform: scale(1.08);
+}
 
-/* Honor users who prefer reduced motion: hover feedback stays (color only),
-   but movement and transitions are disabled. */
+.nav-item.active .nav-icon,
+.nav-item.active:hover .nav-icon {
+  color: var(--sb-gold);
+}
+
+/* The Logout button lives in the shared SidebarUserFooter component
+   (see SidebarUserFooter.css). */
+
+/* ----------------------- Motion preferences ----------------------- */
+
 @media (prefers-reduced-motion: reduce) {
   .nav-item,
-  .nav-item .nav-icon img {
+  .nav-icon,
+  .nav-icon svg {
     transition: none;
   }
 
   .nav-item:not(:disabled):active,
-  .nav-item:hover .nav-icon img {
+  .nav-item:hover .nav-icon svg {
     transform: none;
   }
 }
-

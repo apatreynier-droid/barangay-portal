@@ -1,5 +1,5 @@
-import type { FormData, FormErrors } from "../Types/ResetPasswordType";
-import { ApiError, confirmPasswordReset } from "./api";
+import type { FormData, FormErrors } from "../../Types/Auth/ResetPasswordType";
+import { ApiError, confirmPasswordReset } from "../Shared/api";
 
 /** Matches the backend rule in app/schemas.py (ResetPasswordInput). */
 export const MIN_PASSWORD_LENGTH = 6;

@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useState } from "react";
-import type { AdminDocumentRequestDetail } from "../../../Types/AdminDocumentRequestsType";
-import { fetchAdminDocumentRequestDetail } from "../../../Utils/api";
+import type { AdminDocumentRequestDetail } from "../../../Types/Admin/AdminDocumentRequestsType";
+import { fetchAdminDocumentRequestDetail } from "../../../Utils/Shared/api";
 import {
   formatFee,
   formatSubmittedDateTime,
   getDocumentRequestStatusMeta,
-} from "../../../Utils/AdminDocumentRequestsLogic";
+} from "../../../Utils/Admin/AdminDocumentRequestsLogic";
 import AdminActionsPanel from "./AdminActionsPanel";
 
 type RequestDetailsViewProps = {

@@ -1,9 +1,9 @@
-import type { AdminDocumentRequest } from "../../../Types/AdminDocumentRequestsType";
+import type { AdminDocumentRequest } from "../../../Types/Admin/AdminDocumentRequestsType";
 import {
   formatFee,
   formatSubmittedDateTime,
   getDocumentRequestStatusMeta,
-} from "../../../Utils/AdminDocumentRequestsLogic";
+} from "../../../Utils/Admin/AdminDocumentRequestsLogic";
 
 type DocumentRequestsTableProps = {
   requests: AdminDocumentRequest[];

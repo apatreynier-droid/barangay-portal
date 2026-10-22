@@ -1,17 +1,17 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Sidebar from "../../../components/Resident/Dashboard/Sidebar";
+import Topbar from "../../../components/Resident/Dashboard/Topbar";
 import {
   ApiError,
   markAllNotificationsRead,
   markNotificationRead,
   type ApiNotification,
   type AuthUser,
-} from "../../../Utils/api";
-import { RESIDENT_ROLE_LABEL } from "../../../Utils/ResidentDisplay";
-import { isAdminPortalUser, NOTIFICATIONS_PATH, POTHOLE_DETECTION_PATH } from "../../../Utils/routePaths";
-import useResponsiveSidebar from "../../../Utils/useResponsiveSidebar";
-import MobileMenuButton from "../../../components/Shared/MobileMenuButton";
+} from "../../../Utils/Shared/api";
+import { RESIDENT_ROLE_LABEL } from "../../../Utils/Resident/ResidentDisplay";
+import { isAdminPortalUser, NOTIFICATIONS_PATH, POTHOLE_DETECTION_PATH } from "../../../Utils/Shared/routePaths";
+import useResponsiveSidebar from "../../../Utils/Shared/useResponsiveSidebar";
 import "../../../Styles/Resident/Pages/Dashboard.css";
 import "../../../Styles/Resident/Pages/NotificationPage.css";
 
@@ -153,25 +153,11 @@ function NotificationPage({
       )}
 
       <main className="notifications-page">
-        <header className="notifications-header">
-          <div className="topbar-leading">
-            {toggleDrawer && <MobileMenuButton onOpen={toggleDrawer} />}
-
-            <div>
-              <p className="page-label">Resident Portal</p>
-              <h1>Notifications</h1>
-              <p>Stay up to date with your document requests.</p>
-            </div>
-          </div>
-          <button
-            className="mark-read-button"
-            type="button"
-            onClick={() => void handleMarkAllAsRead()}
-            disabled={unreadCount === 0 || isMarkingAll}
-          >
-            {isMarkingAll ? "Updating…" : "Mark all as read"}
-          </button>
-        </header>
+        <Topbar
+          unreadCount={unreadCount}
+          onNotifications={() => navigate(NOTIFICATIONS_PATH)}
+          onMenuToggle={toggleDrawer}
+        />
 
         {actionError && (
           <div className="dashboard-error-banner" role="alert">
@@ -194,6 +180,14 @@ function NotificationPage({
                     }`}
               </p>
             </div>
+            <button
+              className="mark-read-button"
+              type="button"
+              onClick={() => void handleMarkAllAsRead()}
+              disabled={unreadCount === 0 || isMarkingAll}
+            >
+              {isMarkingAll ? "Updating…" : "Mark all as read"}
+            </button>
           </div>
 
           {notifications.length === 0 ? (

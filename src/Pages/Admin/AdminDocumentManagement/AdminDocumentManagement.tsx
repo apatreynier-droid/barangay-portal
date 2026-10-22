@@ -1,25 +1,25 @@
 import "../../../Styles/Admin/Pages/AdminDashboard.css";
 import "../../../Styles/Admin/Pages/AdminDocumentManagement.css";
 import { useCallback, useEffect, useState } from "react";
-import type { AuthUser } from "../../../Utils/api";
+import type { AuthUser } from "../../../Utils/Shared/api";
 import {
   fetchAdminDashboard,
   fetchAdminRequestHistory,
   fetchDocumentTypes,
-} from "../../../Utils/api";
-import type { AdminRequestHistoryEntry } from "../../../Types/AdminRequestHistoryType";
-import type { DocumentTypeOption } from "../../../Utils/api";
-import { getPortalProfileName } from "../../../Utils/AdminDisplay";
+} from "../../../Utils/Shared/api";
+import type { AdminRequestHistoryEntry } from "../../../Types/Admin/AdminRequestHistoryType";
+import type { DocumentTypeOption } from "../../../Utils/Shared/api";
+import { getPortalProfileName } from "../../../Utils/Admin/AdminDisplay";
 import AdminSidebar from "../../../components/Admin/AdminDashboard/AdminSidebar";
 import AdminTopbar from "../../../components/Admin/AdminDashboard/AdminTopbar";
-import useResponsiveSidebar from "../../../Utils/useResponsiveSidebar";
+import useResponsiveSidebar from "../../../Utils/Shared/useResponsiveSidebar";
 import {
   getDocumentTemplateMeta,
   getIssuanceStatusMeta,
   previewDocumentTemplate,
   printIssuanceRecord,
   saveIssuanceRecordAsPdf,
-} from "../../../Utils/AdminDocumentManagementLogic";
+} from "../../../Utils/Admin/AdminDocumentManagementLogic";
 
 type AdminDocumentManagementProps = {
   user: AuthUser;

@@ -1,6 +1,6 @@
-import type { FormData, FormErrors } from "../Types/LoginType";
+import type { FormData, FormErrors } from "../../Types/Auth/LoginType";
 
-import { ApiError, loginUser } from "./api";
+import { ApiError, loginUser } from "../Shared/api";
 
 export const validateForm = (formData: FormData): FormErrors => {
   const errors: FormErrors = {};

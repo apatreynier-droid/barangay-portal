@@ -1,22 +1,22 @@
 import { useEffect, useMemo, useState } from "react";
 import "../../../Styles/Admin/Pages/AdminDashboard.css";
 import "../../../Styles/Admin/Pages/AdminNotification.css";
-import type { ApiNotification, AuthUser } from "../../../Utils/api";
+import type { ApiNotification, AuthUser } from "../../../Utils/Shared/api";
 import {
   ApiError,
   fetchAdminDocumentRequests,
   markAllNotificationsRead,
   markNotificationRead,
-} from "../../../Utils/api";
-import { getPendingApprovals } from "../../../Utils/AdminApprovalsLogic";
-import { getPortalProfileName } from "../../../Utils/AdminDisplay";
+} from "../../../Utils/Shared/api";
+import { getPendingApprovals } from "../../../Utils/Admin/AdminApprovalsLogic";
+import { getPortalProfileName } from "../../../Utils/Admin/AdminDisplay";
 import {
   formatRelativeTime,
   toUtcTimestamp,
-} from "../../../Utils/AdminDashboardLogic";
+} from "../../../Utils/Admin/AdminDashboardLogic";
 import AdminSidebar from "../../../components/Admin/AdminDashboard/AdminSidebar";
 import AdminTopbar from "../../../components/Admin/AdminDashboard/AdminTopbar";
-import useResponsiveSidebar from "../../../Utils/useResponsiveSidebar";
+import useResponsiveSidebar from "../../../Utils/Shared/useResponsiveSidebar";
 
 type AdminNotificationProps = {
   user: AuthUser;

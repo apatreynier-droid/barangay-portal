@@ -1,6 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import type { MouseEvent } from "react";
-import type { AdminMonthlyDataPoint } from "../../../Types/AdminDashboardType";
+import type { AdminMonthlyDataPoint } from "../../../Types/Admin/AdminDashboardType";
 
 type MonthlyRequestsChartProps = {
   data: AdminMonthlyDataPoint[];

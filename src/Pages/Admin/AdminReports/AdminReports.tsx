@@ -1,13 +1,13 @@
 import "../../../Styles/Admin/Pages/AdminDashboard.css";
 import "../../../Styles/Admin/Pages/AdminReports.css";
 import { useCallback, useEffect, useState } from "react";
-import type { AuthUser } from "../../../Utils/api";
-import { fetchAdminDashboard, fetchAdminReports } from "../../../Utils/api";
-import type { AdminReportsData } from "../../../Types/AdminReportsType";
-import { getPortalProfileName } from "../../../Utils/AdminDisplay";
+import type { AuthUser } from "../../../Utils/Shared/api";
+import { fetchAdminDashboard, fetchAdminReports } from "../../../Utils/Shared/api";
+import type { AdminReportsData } from "../../../Types/Admin/AdminReportsType";
+import { getPortalProfileName } from "../../../Utils/Admin/AdminDisplay";
 import AdminSidebar from "../../../components/Admin/AdminDashboard/AdminSidebar";
 import AdminTopbar from "../../../components/Admin/AdminDashboard/AdminTopbar";
-import useResponsiveSidebar from "../../../Utils/useResponsiveSidebar";
+import useResponsiveSidebar from "../../../Utils/Shared/useResponsiveSidebar";
 import ReportsStatsGrid from "../../../components/Admin/AdminReports/ReportsStatsGrid";
 import MonthlyVolumeLineChart from "../../../components/Admin/AdminReports/MonthlyVolumeLineChart";
 import ResidentsByPurokChart from "../../../components/Admin/AdminReports/ResidentsByPurokChart";
@@ -17,7 +17,7 @@ import GenerateReportCard from "../../../components/Admin/AdminReports/GenerateR
 import {
   downloadReportsCsv,
   printReports,
-} from "../../../Utils/AdminReportsLogic";
+} from "../../../Utils/Admin/AdminReportsLogic";
 
 type AdminReportsProps = {
   user: AuthUser;

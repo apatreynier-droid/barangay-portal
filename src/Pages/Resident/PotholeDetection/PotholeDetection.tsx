@@ -2,9 +2,9 @@ import { useState, useRef } from "react";
 import type { ChangeEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import Sidebar from "../../../components/Resident/Dashboard/Sidebar";
-import { RESIDENT_ROLE_LABEL } from "../../../Utils/ResidentDisplay";
-import useResponsiveSidebar from "../../../Utils/useResponsiveSidebar";
-import MobileMenuButton from "../../../components/Shared/MobileMenuButton";
+import Topbar from "../../../components/Resident/Dashboard/Topbar";
+import { RESIDENT_ROLE_LABEL } from "../../../Utils/Resident/ResidentDisplay";
+import useResponsiveSidebar from "../../../Utils/Shared/useResponsiveSidebar";
 import {
   RESIDENT_HOME_PATH,
   RESIDENT_MY_REQUESTS_PATH,
@@ -12,7 +12,7 @@ import {
   RESIDENT_REQUEST_HISTORY_PATH,
   NOTIFICATIONS_PATH,
   POTHOLE_DETECTION_PATH,
-} from "../../../Utils/routePaths";
+} from "../../../Utils/Shared/routePaths";
 import "../../../Styles/Resident/Pages/PotholeDetection.css";
 
 type PotholeDetectionProps = {
@@ -94,21 +94,11 @@ function PotholeDetection({ user, onLogout }: PotholeDetectionProps) {
       )}
 
       <main className="pothole-main">
-        <header className="pothole-header">
-          <div className="topbar-leading">
-            {toggleDrawer && <MobileMenuButton onOpen={toggleDrawer} />}
-
-            <div>
-              <p className="page-label">Resident Portal</p>
-              <h1>Pothole Detection</h1>
-              <p>
-                Report damaged roads in your community by providing a photo,
-                reviewing the detection result, and submitting the location for
-                administrative review.
-              </p>
-            </div>
-          </div>
-        </header>
+        <Topbar
+          unreadCount={0}
+          onNotifications={() => navigate(NOTIFICATIONS_PATH)}
+          onMenuToggle={toggleDrawer}
+        />
 
         <nav className="step-indicator" aria-label="Pothole detection workflow">
           {STEPS.map((step) => (

@@ -1,6 +1,4 @@
-import clearanceIcon from "../../../assets/icons/DR.png";
-import residencyIcon from "../../../assets/icons/house.png";
-import permitIcon from "../../../assets/icons/permit.png";
+import { ChevronRight, ClipboardList, FileText, MapPin } from "lucide-react";
 
 type QuickActionsProps = {
   onSelectDocument: (document: string) => void;
@@ -23,12 +21,17 @@ const QuickActions = ({ onSelectDocument }: QuickActionsProps) => {
           onClick={() => onSelectDocument("Barangay Clearance")}
         >
           <span>
-            <img src={clearanceIcon} alt="" />
+            <FileText size={20} strokeWidth={1.9} aria-hidden="true" />
           </span>
           <div>
             <strong>Barangay Clearance</strong>
             <small>Request clearance</small>
           </div>
+          <ChevronRight
+            className="quick-action-go"
+            size={18}
+            aria-hidden="true"
+          />
         </button>
 
         <button
@@ -37,12 +40,17 @@ const QuickActions = ({ onSelectDocument }: QuickActionsProps) => {
           onClick={() => onSelectDocument("Certificate of Residency")}
         >
           <span>
-            <img src={residencyIcon} alt="" />
+            <MapPin size={20} strokeWidth={1.9} aria-hidden="true" />
           </span>
           <div>
             <strong>Certificate of Residency</strong>
             <small>Request certificate</small>
           </div>
+          <ChevronRight
+            className="quick-action-go"
+            size={18}
+            aria-hidden="true"
+          />
         </button>
 
         <button
@@ -51,12 +59,17 @@ const QuickActions = ({ onSelectDocument }: QuickActionsProps) => {
           onClick={() => onSelectDocument("Barangay Permit")}
         >
           <span>
-            <img src={permitIcon} alt="" />
+            <ClipboardList size={20} strokeWidth={1.9} aria-hidden="true" />
           </span>
           <div>
             <strong>Barangay Permit</strong>
             <small>Apply for a permit</small>
           </div>
+          <ChevronRight
+            className="quick-action-go"
+            size={18}
+            aria-hidden="true"
+          />
         </button>
       </div>
     </section>

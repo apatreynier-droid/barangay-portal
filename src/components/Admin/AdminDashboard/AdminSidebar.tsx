@@ -1,13 +1,13 @@
 import "../../../Styles/Admin/Components/AdminSidebar.css";
 
 import SidebarUserFooter from "../../SidebarUserFooter/SidebarUserFooter";
-import type { AuthUser } from "../../../Utils/api";
+import type { AuthUser } from "../../../Utils/Shared/api";
 import {
   getPortalFirstName,
   getPortalLastName,
   getPortalRoleLabel,
-} from "../../../Utils/AdminDisplay";
-import { isAdministrator } from "../../../Utils/routePaths";
+} from "../../../Utils/Admin/AdminDisplay";
+import { isAdministrator } from "../../../Utils/Shared/routePaths";
 import dashboardIcon from "../../../assets/icons/ADash.png";
 import residentsIcon from "../../../assets/icons/Residents.png";
 import documentRequestsIcon from "../../../assets/icons/DR.png";

@@ -2,18 +2,18 @@ import "../../../Styles/Admin/Pages/AdminDashboard.css";
 import "../../../Styles/Admin/Pages/AdminResidents.css";
 import "../../../Styles/Admin/Pages/AdminApprovals.css";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import type { AuthUser } from "../../../Utils/api";
-import { fetchAdminDocumentRequests } from "../../../Utils/api";
-import type { AdminDocumentRequest } from "../../../Types/AdminDocumentRequestsType";
-import { getPortalProfileName } from "../../../Utils/AdminDisplay";
+import type { AuthUser } from "../../../Utils/Shared/api";
+import { fetchAdminDocumentRequests } from "../../../Utils/Shared/api";
+import type { AdminDocumentRequest } from "../../../Types/Admin/AdminDocumentRequestsType";
+import { getPortalProfileName } from "../../../Utils/Admin/AdminDisplay";
 import AdminSidebar from "../../../components/Admin/AdminDashboard/AdminSidebar";
 import AdminTopbar from "../../../components/Admin/AdminDashboard/AdminTopbar";
-import useResponsiveSidebar from "../../../Utils/useResponsiveSidebar";
+import useResponsiveSidebar from "../../../Utils/Shared/useResponsiveSidebar";
 import ApprovalRequestCard from "../../../components/Admin/AdminApprovals/ApprovalRequestCard";
 import {
   getPendingApprovals,
   removeRequestById,
-} from "../../../Utils/AdminApprovalsLogic";
+} from "../../../Utils/Admin/AdminApprovalsLogic";
 
 type AdminApprovalsProps = {
   user: AuthUser;

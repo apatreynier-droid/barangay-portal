@@ -1,11 +1,11 @@
 import { useState } from "react";
 import type { ChangeEvent, FormEvent } from "react";
-import type { FormData, FormErrors } from "../../Types/ResetPasswordType";
+import type { FormData, FormErrors } from "../../Types/Auth/ResetPasswordType";
 import {
   readResetToken,
   submitNewPassword,
   validateForm,
-} from "../../Utils/ResetPasswordLogic";
+} from "../../Utils/Auth/ResetPasswordLogic";
 import logo from "../../assets/logo-256.png";
 import showIcon from "../../assets/show.png";
 import hideIcon from "../../assets/hide.png";

@@ -1,9 +1,9 @@
-import type { AdminRecentRegistration } from "../../../Types/AdminDashboardType";
+import type { AdminRecentRegistration } from "../../../Types/Admin/AdminDashboardType";
 import {
   formatShortDate,
   getAvatarClass,
   getInitials,
-} from "../../../Utils/AdminDashboardLogic";
+} from "../../../Utils/Admin/AdminDashboardLogic";
 
 type RecentRegistrationsProps = {
   registrations: AdminRecentRegistration[];

@@ -4,9 +4,9 @@ import {
   ApiError,
   fetchRequestDetail,
   type RequestDetail,
-} from "../../../Utils/api";
-import { getStatusClass } from "../../../Utils/DashboardLogic";
-import type { Request } from "../../../Types/DashboardType";
+} from "../../../Utils/Shared/api";
+import { getStatusClass } from "../../../Utils/Resident/DashboardLogic";
+import type { Request } from "../../../Types/Resident/DashboardType";
 import "../../../Styles/Resident/Components/RequestDetailsModal.css";
 import filesIcon from "../../../assets/icons/files.png";
 

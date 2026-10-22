@@ -1,5 +1,5 @@
-import type { FormData, FormErrors } from "../Types/ForgotPasswordType";
-import { ApiError, requestPasswordResetEmail } from "./api";
+import type { FormData, FormErrors } from "../../Types/Auth/ForgotPasswordType";
+import { ApiError, requestPasswordResetEmail } from "../Shared/api";
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 

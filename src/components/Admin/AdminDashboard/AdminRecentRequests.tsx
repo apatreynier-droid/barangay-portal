@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import type { AdminRecentRequest } from "../../../Types/AdminDashboardType";
+import type { AdminRecentRequest } from "../../../Types/Admin/AdminDashboardType";
 import {
   formatRelativeTime,
   formatShortDate,
@@ -7,7 +7,7 @@ import {
   getAdminStatusLabel,
   matchesAdminStatusFilter,
   type AdminStatusFilter,
-} from "../../../Utils/AdminDashboardLogic";
+} from "../../../Utils/Admin/AdminDashboardLogic";
 
 type AdminRecentRequestsProps = {
   requests: AdminRecentRequest[];

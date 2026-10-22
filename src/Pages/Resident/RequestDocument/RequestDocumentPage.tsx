@@ -8,10 +8,10 @@ import {
   fetchDocumentTypes,
   type DocumentTypeOption,
   type AuthUser,
-} from "../../../Utils/api";
-import { RESIDENT_ROLE_LABEL } from "../../../Utils/ResidentDisplay";
-import { POTHOLE_DETECTION_PATH, RESIDENT_REQUEST_DOCUMENT_PATH } from "../../../Utils/routePaths";
-import useResponsiveSidebar from "../../../Utils/useResponsiveSidebar";
+} from "../../../Utils/Shared/api";
+import { RESIDENT_ROLE_LABEL } from "../../../Utils/Resident/ResidentDisplay";
+import { POTHOLE_DETECTION_PATH, RESIDENT_REQUEST_DOCUMENT_PATH } from "../../../Utils/Shared/routePaths";
+import useResponsiveSidebar from "../../../Utils/Shared/useResponsiveSidebar";
 import MobileMenuButton from "../../../components/Shared/MobileMenuButton";
 import "../../../Styles/Resident/Pages/Dashboard.css";
 import "../../../Styles/Resident/Pages/RequestDocumentPage.css";

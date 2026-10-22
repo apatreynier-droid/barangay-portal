@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import type { MouseEvent } from "react";
-import type { AdminDocumentTypeCount } from "../../../Types/AdminDashboardType";
+import type { AdminDocumentTypeCount } from "../../../Types/Admin/AdminDashboardType";
 
 type DocumentTypeDonutProps = {
   data: AdminDocumentTypeCount[];

@@ -1,4 +1,4 @@
-import type { AdminRequestHistoryEntry } from "../Types/AdminRequestHistoryType";
+import type { AdminRequestHistoryEntry } from "../../Types/Admin/AdminRequestHistoryType";
 import { getRequestStatusMeta } from "./AdminResidentsLogic";
 import type { ResidentStatusMeta } from "./AdminResidentsLogic";
 

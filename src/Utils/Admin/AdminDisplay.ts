@@ -1,4 +1,4 @@
-import type { AuthUser } from "./api";
+import type { AuthUser } from "../Shared/api";
 
 // Display name shown for the administrator throughout the Admin Portal
 // (sidebar, topbar/profile, and page headings). Intentionally independent

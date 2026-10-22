@@ -1,10 +1,10 @@
-import type { AdminActivityLog } from "../../../Types/AdminLogsType";
+import type { AdminActivityLog } from "../../../Types/Admin/AdminLogsType";
 import {
   formatLogActorName,
   formatLogActorRole,
   formatLogTimestamp,
   getActivityLogTypeMeta,
-} from "../../../Utils/AdminLogsLogic";
+} from "../../../Utils/Admin/AdminLogsLogic";
 
 type ActivityLogsTableProps = {
   logs: AdminActivityLog[];

@@ -1,5 +1,5 @@
-﻿import RequestCard from "./RequestCard";
-import type { Request } from "../../../Types/DashboardType";
+import RequestCard from "./RequestCard";
+import type { Request } from "../../../Types/Resident/DashboardType";
 
 type RequestsListProps = {
   requests: Request[];

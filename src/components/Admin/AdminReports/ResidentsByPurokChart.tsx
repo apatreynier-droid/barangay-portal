@@ -1,4 +1,4 @@
-import type { AdminPurokCount } from "../../../Types/AdminReportsType";
+import type { AdminPurokCount } from "../../../Types/Admin/AdminReportsType";
 
 type ResidentsByPurokChartProps = {
   data: AdminPurokCount[];

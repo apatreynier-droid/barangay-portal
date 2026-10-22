@@ -1,4 +1,4 @@
-import type { MyRequest, RequestStatus } from "../Types/MyRequestType";
+import type { MyRequest, RequestStatus } from "../../Types/Resident/MyRequestType";
 
 export const getMyRequests = (): MyRequest[] => {
   return [];

@@ -1,4 +1,4 @@
-import { ACTIVITY_LOG_TYPE_OPTIONS } from "../../../Utils/AdminLogsLogic";
+import { ACTIVITY_LOG_TYPE_OPTIONS } from "../../../Utils/Admin/AdminLogsLogic";
 
 type ActivityLogsToolbarProps = {
   search: string;

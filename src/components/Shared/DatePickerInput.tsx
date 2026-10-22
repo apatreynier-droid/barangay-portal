@@ -32,7 +32,7 @@ import {
   moveIsoByDays,
   moveIsoByMonths,
   parseDateText,
-} from "../../Utils/DatePickerLogic";
+} from "../../Utils/Shared/DatePickerLogic";
 import calendarIcon from "../../assets/icons/calendar.png";
 import "../../Styles/Shared/Components/DatePickerInput.css";
 

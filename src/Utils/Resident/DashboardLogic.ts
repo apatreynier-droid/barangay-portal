@@ -1,4 +1,4 @@
-import type { Request, RequestStatus } from "../Types/DashboardType";
+import type { Request, RequestStatus } from "../../Types/Resident/DashboardType";
 
 export const getRequests = (): Request[] => {
   return [];

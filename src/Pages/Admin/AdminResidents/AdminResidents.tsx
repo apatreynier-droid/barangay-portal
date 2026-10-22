@@ -1,13 +1,13 @@
 import "../../../Styles/Admin/Pages/AdminDashboard.css";
 import "../../../Styles/Admin/Pages/AdminResidents.css";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import type { AuthUser } from "../../../Utils/api";
-import { fetchAdminDashboard, fetchResidents } from "../../../Utils/api";
-import type { AdminResident } from "../../../Types/AdminResidentsType";
-import { getPortalProfileName } from "../../../Utils/AdminDisplay";
-import { isAdministrator } from "../../../Utils/routePaths";
+import type { AuthUser } from "../../../Utils/Shared/api";
+import { fetchAdminDashboard, fetchResidents } from "../../../Utils/Shared/api";
+import type { AdminResident } from "../../../Types/Admin/AdminResidentsType";
+import { getPortalProfileName } from "../../../Utils/Admin/AdminDisplay";
+import { isAdministrator } from "../../../Utils/Shared/routePaths";
 import AdminSidebar from "../../../components/Admin/AdminDashboard/AdminSidebar";
-import useResponsiveSidebar from "../../../Utils/useResponsiveSidebar";
+import useResponsiveSidebar from "../../../Utils/Shared/useResponsiveSidebar";
 import AdminTopbar from "../../../components/Admin/AdminDashboard/AdminTopbar";
 import ResidentsToolbar from "../../../components/Admin/AdminResidents/ResidentsToolbar";
 import ResidentsTable from "../../../components/Admin/AdminResidents/ResidentsTable";
@@ -15,8 +15,8 @@ import ResidentDetailsView from "../../../components/Admin/AdminResidents/Reside
 import {
   DEFAULT_RESIDENTS_FILTERS,
   filterResidents,
-} from "../../../Utils/AdminResidentsLogic";
-import type { ResidentsFiltersState } from "../../../Utils/AdminResidentsLogic";
+} from "../../../Utils/Admin/AdminResidentsLogic";
+import type { ResidentsFiltersState } from "../../../Utils/Admin/AdminResidentsLogic";
 
 type AdminResidentsProps = {
   user: AuthUser;

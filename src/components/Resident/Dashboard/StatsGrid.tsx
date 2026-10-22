@@ -1,8 +1,5 @@
-import totalRequestIcon from "../../../assets/icons/files.png";
-import pendingIcon from "../../../assets/icons/clock.png";
-import processingIcon from "../../../assets/icons/loading.png";
-import readyIcon from "../../../assets/check.png";
-import type { Request } from "../../../Types/DashboardType";
+import { Check, Clock, FileText, Loader } from "lucide-react";
+import type { Request } from "../../../Types/Resident/DashboardType";
 
 type StatsGridProps = {
   requests: Request[];
@@ -23,7 +20,7 @@ const StatsGrid = ({ requests }: StatsGridProps) => {
     <section className="stats-grid">
       <div className="stat-card">
         <div className="stat-icon blue">
-          <img src={totalRequestIcon} alt="" />
+          <FileText size={22} strokeWidth={1.9} aria-hidden="true" />
         </div>
         <div>
           <span>Total Requests</span>
@@ -33,7 +30,7 @@ const StatsGrid = ({ requests }: StatsGridProps) => {
 
       <div className="stat-card">
         <div className="stat-icon orange">
-          <img src={pendingIcon} alt="" />
+          <Clock size={22} strokeWidth={1.9} aria-hidden="true" />
         </div>
         <div>
           <span>Pending</span>
@@ -43,7 +40,7 @@ const StatsGrid = ({ requests }: StatsGridProps) => {
 
       <div className="stat-card">
         <div className="stat-icon purple">
-          <img src={processingIcon} alt="" />
+          <Loader size={22} strokeWidth={1.9} aria-hidden="true" />
         </div>
         <div>
           <span>Processing</span>
@@ -53,7 +50,7 @@ const StatsGrid = ({ requests }: StatsGridProps) => {
 
       <div className="stat-card">
         <div className="stat-icon green">
-          <img src={readyIcon} alt="" />
+          <Check size={22} strokeWidth={2.2} aria-hidden="true" />
         </div>
         <div>
           <span>Ready for Pickup</span>

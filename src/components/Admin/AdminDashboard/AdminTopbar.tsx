@@ -2,7 +2,7 @@ import "../../../Styles/Admin/Components/AdminTopBar.css";
 
 import MobileMenuButton from "../../Shared/MobileMenuButton";
 import notificationIcon from "../../../assets/icons/notification-bell.png";
-import { getInitials } from "../../../Utils/AdminDashboardLogic";
+import { getInitials } from "../../../Utils/Admin/AdminDashboardLogic";
 
 type AdminTopbarProps = {
   fullName: string;

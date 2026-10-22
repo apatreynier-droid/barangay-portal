@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { getStatusClass, getStatusIcon } from "../../../Utils/MyRequestLogic";
-import type { Request } from "../../../Types/DashboardType";
+import { getStatusClass, getStatusIcon } from "../../../Utils/Resident/MyRequestLogic";
+import type { Request } from "../../../Types/Resident/DashboardType";
 import RequestDetailsModal from "./RequestDetailsModal";
 import EditRequestModal from "./EditRequestModal";
 import DeleteRequestModal from "./DeleteRequestModal";

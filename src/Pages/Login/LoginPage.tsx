@@ -4,9 +4,10 @@ import type {
   FormEvent,
   MouseEvent as ReactMouseEvent,
 } from "react";
-import type { FormData, FormErrors } from "../../Types/LoginType";
-import { validateForm, authenticateUser } from "../../Utils/LoginLogic";
+import type { FormData, FormErrors } from "../../Types/Auth/LoginType";
+import { validateForm, authenticateUser } from "../../Utils/Auth/LoginLogic";
 import logo from "../../assets/logo-256.png";
+import lagab from "../../assets/lagab.jpg";
 import showIcon from "../../assets/show.png";
 import hideIcon from "../../assets/hide.png";
 import "../../Styles/Shared/Pages/LoginPage.css";
@@ -162,6 +163,12 @@ const CloseIcon = () => (
  * `@media (max-width: 920px)` rules in LoginPage.css.
  */
 const MOBILE_BREAKPOINT = "(max-width: 920px)";
+
+/**
+ * Brand panel background: the imported Lagab image on top of the navy
+ * gradient (the gradient shows if the image is slow to load).
+ */
+const BRAND_PANEL_BACKGROUND = `url(${lagab}), linear-gradient(168deg, #21336f 0%, #182a63 45%, #121f52 100%)`;
 
 /**
  * Tracks whether the viewport is in the mobile landing-page layout.
@@ -407,7 +414,10 @@ const LoginPage = ({
     >
       {/* The open modal is marked `aria-modal`, which hides the rest of the
           page from assistive tech; no extra aria-hidden needed here. */}
-      <aside className="brand-panel">
+      <aside
+        className="brand-panel"
+        style={{ backgroundImage: BRAND_PANEL_BACKGROUND }}
+      >
         <div className="brand-inner">
           <header className="brand-header">
             <div className="brand-logo-badge">

@@ -1,6 +1,6 @@
 import { useRef, useState } from "react";
 import type { MouseEvent } from "react";
-import type { AdminReportsMonthlyPoint } from "../../../Types/AdminReportsType";
+import type { AdminReportsMonthlyPoint } from "../../../Types/Admin/AdminReportsType";
 
 type MonthlyVolumeLineChartProps = {
   data: AdminReportsMonthlyPoint[];

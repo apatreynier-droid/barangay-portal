@@ -3,8 +3,8 @@ import "../../../Styles/Admin/Components/EditResidentModal.css";
 import type {
   AdminResidentDetail,
   AdminResidentUpdatePayload,
-} from "../../../Types/AdminResidentsType";
-import { updateResident } from "../../../Utils/api";
+} from "../../../Types/Admin/AdminResidentsType";
+import { updateResident } from "../../../Utils/Shared/api";
 import calendarIcon from "../../../assets/icons/calendar.png";
 import { openNativeDatePicker } from "../../Shared/openNativeDatePicker";
 import "../../../Styles/Shared/Components/DatePickerInput.css";

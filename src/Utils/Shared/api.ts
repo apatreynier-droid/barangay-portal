@@ -1,25 +1,25 @@
-import type { Request, RequestStatus } from "../Types/DashboardType";
-import type { AdminDashboardData } from "../Types/AdminDashboardType";
+import type { Request, RequestStatus } from "../../Types/Resident/DashboardType";
+import type { AdminDashboardData } from "../../Types/Admin/AdminDashboardType";
 import type {
   AdminResident,
   AdminResidentAccountStatus,
   AdminResidentDetail,
   AdminResidentUpdatePayload,
-} from "../Types/AdminResidentsType";
+} from "../../Types/Admin/AdminResidentsType";
 import type {
   AdminDocumentRequest,
   AdminDocumentRequestActionPayload,
   AdminDocumentRequestDetail,
-} from "../Types/AdminDocumentRequestsType";
-import type { AdminRequestHistoryEntry } from "../Types/AdminRequestHistoryType";
-import type { AdminReportsData } from "../Types/AdminReportsType";
-import type { AdminActivityLog } from "../Types/AdminLogsType";
+} from "../../Types/Admin/AdminDocumentRequestsType";
+import type { AdminRequestHistoryEntry } from "../../Types/Admin/AdminRequestHistoryType";
+import type { AdminReportsData } from "../../Types/Admin/AdminReportsType";
+import type { AdminActivityLog } from "../../Types/Admin/AdminLogsType";
 import type {
   AdminStaffAccount,
   AdminStaffAccountStatus,
   AdminStaffCreatePayload,
   AdminStaffUpdatePayload,
-} from "../Types/AdminUserManagementType";
+} from "../../Types/Admin/AdminUserManagementType";
 
 const API_BASE_URL = "http://127.0.0.1:8000";
 

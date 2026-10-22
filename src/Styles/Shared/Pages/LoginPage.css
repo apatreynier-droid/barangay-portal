@@ -63,14 +63,13 @@ body {
   padding: 56px 64px;
   overflow: hidden;
   color: #ffffff;
-  background:
-    url("../../assets/lagab.jpg") center / cover no-repeat,
-    linear-gradient(
-      168deg,
-      var(--navy-panel-top) 0%,
-      var(--navy-panel-mid) 45%,
-      var(--navy-panel-bottom) 100%
-    );
+  /* The image itself is set inline from LoginPage.tsx (imported `lagab`),
+     so Vite resolves the path and a wrong filename becomes a build error
+     instead of a silent miss. These only control how it is drawn. */
+  background-color: var(--navy-panel-mid);
+  background-size: cover, cover;
+  background-position: center, center;
+  background-repeat: no-repeat, no-repeat;
 }
 
 /* Contrast overlay so white text stays readable over bright image areas */

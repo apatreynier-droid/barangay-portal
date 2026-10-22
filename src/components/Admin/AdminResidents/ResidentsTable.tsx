@@ -1,10 +1,10 @@
-import type { AdminResident } from "../../../Types/AdminResidentsType";
+import type { AdminResident } from "../../../Types/Admin/AdminResidentsType";
 import {
   formatRegisteredDate,
   getAvatarClass,
   getResidentInitials,
   getResidentStatusMeta,
-} from "../../../Utils/AdminResidentsLogic";
+} from "../../../Utils/Admin/AdminResidentsLogic";
 
 type ResidentsTableProps = {
   residents: AdminResident[];
