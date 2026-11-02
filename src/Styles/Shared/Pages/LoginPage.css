@@ -634,24 +634,6 @@ body {
   }
 }
 
-/* ============ Responsive Design ============ */
-
-/* ---------------------------------------------------------------------
-   Mobile layout (<= 920px)
-   ---------------------------------------------------------------------
-   The two-panel layout collapses into a single landing screen:
-
-     • the brand panel becomes the whole page (centered hero),
-     • the five translucent feature chips are replaced by two large,
-       stacked buttons (Sign In / Sign Up),
-     • the login form is hidden until "Sign In" is pressed, at which
-       point `.login-modal-open` (toggled in LoginPage.tsx) promotes
-       `.login-panel` into a fixed, scrollable modal over the hero.
-
-   Desktop (> 920px) is untouched: the form stays a permanent panel and
-   `.brand-cta` / `.login-modal-close` remain `display: none`.
-   --------------------------------------------------------------------- */
-
 @media (max-width: 920px) {
   html,
   body {
@@ -743,10 +725,6 @@ body {
     text-align: center;
   }
 
-  /* ---- Login form as a modal ---- */
-
-  /* Hidden until "Sign In" is tapped. `display: none` also removes the
-     inputs from the tab order, so nothing behind the hero is focusable. */
   .login-panel {
     display: none;
   }
@@ -756,9 +734,6 @@ body {
     inset: 0;
     z-index: 60;
     display: flex;
-    /* Top-aligned + `margin: auto` on the child: centers the card when it
-       fits, and pins it to the top (still scrollable) when it does not —
-       avoids the classic "cut off at the top" flexbox overflow bug. */
     align-items: flex-start;
     justify-content: center;
     padding: 20px 16px calc(20px + env(safe-area-inset-bottom, 0px));
@@ -798,7 +773,6 @@ body {
     margin-bottom: 26px;
   }
 
-  /* 16px avoids iOS/Android auto-zooming the page when a field is focused */
   .form-input {
     font-size: 16px;
   }
@@ -808,10 +782,6 @@ body {
     font-size: 15.5px;
   }
 }
-
-/* ---------------------------------------------------------------------
-   Large phones (<= 480px)
-   --------------------------------------------------------------------- */
 
 @media (max-width: 480px) {
   .brand-panel {
@@ -892,10 +862,6 @@ body {
   }
 }
 
-/* ---------------------------------------------------------------------
-   Small phones (<= 374px — e.g. iPhone SE / 320px devices)
-   --------------------------------------------------------------------- */
-
 @media (max-width: 374px) {
   .brand-panel {
     padding: 22px 14px 26px;
@@ -941,13 +907,6 @@ body {
     font-size: 12.5px;
   }
 }
-
-/* ---------------------------------------------------------------------
-   Landscape phones (short viewports)
-   ---------------------------------------------------------------------
-   Keep the hero compact so the Sign In / Sign Up buttons stay reachable
-   without excessive scrolling.
-   --------------------------------------------------------------------- */
 
 @media (max-width: 920px) and (max-height: 520px) {
   .brand-panel {
@@ -1000,8 +959,6 @@ body {
   }
 }
 
-/* ============ Accessibility ============ */
-
 .form-input:focus-visible,
 .submit-button:focus-visible,
 .toggle-password:focus-visible,
@@ -1012,8 +969,6 @@ body {
   outline-offset: 2px;
 }
 
-/* The close button sits over the dark backdrop, so a light ring keeps it
-   visible where the dark navy outline would disappear. */
 .login-modal-open .login-modal-close:focus-visible {
   outline: 2px solid #ffffff;
   outline-offset: 2px;
