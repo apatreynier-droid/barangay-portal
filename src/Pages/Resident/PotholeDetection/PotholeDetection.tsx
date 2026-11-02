@@ -1,6 +1,7 @@
-import { useState, useRef } from "react";
-import type { ChangeEvent } from "react";
+import { useEffect, useRef, useState } from "react";
+import type { ChangeEvent, DragEvent, FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
+import { AlertTriangle, RefreshCw, Trash2, Upload } from "lucide-react";
 import Sidebar from "../../../components/Resident/Dashboard/Sidebar";
 import Topbar from "../../../components/Resident/Dashboard/Topbar";
 import { RESIDENT_ROLE_LABEL } from "../../../Utils/Resident/ResidentDisplay";
@@ -13,6 +14,8 @@ import {
   NOTIFICATIONS_PATH,
   POTHOLE_DETECTION_PATH,
 } from "../../../Utils/Shared/routePaths";
+import "../../../Styles/Resident/Components/ResidentTopBar.css";
+import "../../../Styles/Resident/Pages/Dashboard.css";
 import "../../../Styles/Resident/Pages/PotholeDetection.css";
 
 type PotholeDetectionProps = {
@@ -24,50 +27,153 @@ type PotholeDetectionProps = {
   onLogout: () => void;
 };
 
-const STEPS = [
-  { id: 1, label: "Capture Defect Photo", status: "in-progress" },
-  { id: 2, label: "Pothole Identification", status: "not-started" },
-  { id: 3, label: "Geo-Location Submission", status: "not-started" },
-] as const;
+type ReportStatus = "review" | "repaired";
+
+type PotholeReport = {
+  id: string;
+  title: string;
+  note: string;
+  date: string;
+  status: ReportStatus;
+};
+
+const STATUS_LABEL: Record<ReportStatus, string> = {
+  review: "Under review",
+  repaired: "Repaired",
+};
+
+// Demo data only - replace with the real reports once the API is ready.
+const DEMO_REPORTS: PotholeReport[] = [
+  {
+    id: "demo-1",
+    title: "Road near the covered court",
+    note: "Wide hole on the right lane.",
+    date: "Oct 11",
+    status: "review",
+  },
+  {
+    id: "demo-2",
+    title: "Corner of the market entrance",
+    note: "Several small potholes.",
+    date: "Sep 29",
+    status: "repaired",
+  },
+];
+
+const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp"];
+const MAX_IMAGE_MB = 10;
+const MAX_IMAGE_BYTES = MAX_IMAGE_MB * 1024 * 1024;
+
+const formatFileSize = (bytes: number): string =>
+  bytes >= 1024 * 1024
+    ? `${(bytes / (1024 * 1024)).toFixed(1)} MB`
+    : `${Math.max(1, Math.round(bytes / 1024))} KB`;
+
+const formatToday = (): string =>
+  new Date().toLocaleDateString("en-US", { month: "short", day: "numeric" });
 
 function PotholeDetection({ user, onLogout }: PotholeDetectionProps) {
   const navigate = useNavigate();
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [fileError, setFileError] = useState("");
+  const [isDragging, setIsDragging] = useState(false);
+  const [location, setLocation] = useState("");
+  const [notes, setNotes] = useState("");
+  const [reports, setReports] = useState<PotholeReport[]>(DEMO_REPORTS);
+  const [sentMessage, setSentMessage] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const previewUrlRef = useRef<string | null>(null);
   const { isDrawerOpen, closeDrawer, toggleDrawer } = useResponsiveSidebar();
 
-  const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0] ?? null;
+  // Release the preview's memory when leaving the page.
+  useEffect(() => {
+    return () => {
+      if (previewUrlRef.current) {
+        URL.revokeObjectURL(previewUrlRef.current);
+      }
+    };
+  }, []);
+
+  const clearPreview = () => {
+    if (previewUrlRef.current) {
+      URL.revokeObjectURL(previewUrlRef.current);
+      previewUrlRef.current = null;
+    }
+  };
+
+  const applyFile = (file: File | null | undefined) => {
+    if (!file) return;
+
+    if (!ACCEPTED_IMAGE_TYPES.includes(file.type)) {
+      setFileError("Please choose a JPG, PNG or WebP image.");
+      return;
+    }
+
+    if (file.size > MAX_IMAGE_BYTES) {
+      setFileError(`The image must be ${MAX_IMAGE_MB} MB or smaller.`);
+      return;
+    }
+
+    clearPreview();
+    const url = URL.createObjectURL(file);
+    previewUrlRef.current = url;
+
     setSelectedFile(file);
+    setPreviewUrl(url);
+    setFileError("");
+    setSentMessage("");
   };
 
-  const handleDragOver = (event: React.DragEvent<HTMLDivElement>) => {
+  const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
+    applyFile(event.target.files?.[0]);
+    // Lets the same file be chosen again after removing it.
+    event.target.value = "";
+  };
+
+  const handleDragOver = (event: DragEvent<HTMLLabelElement>) => {
     event.preventDefault();
+    setIsDragging(true);
   };
 
-  const handleDrop = (event: React.DragEvent<HTMLDivElement>) => {
+  const handleDrop = (event: DragEvent<HTMLLabelElement>) => {
     event.preventDefault();
-    const file = event.dataTransfer.files?.[0] ?? null;
-    if (file) setSelectedFile(file);
+    setIsDragging(false);
+    applyFile(event.dataTransfer.files?.[0]);
   };
 
-  const isImageFile = (file: File | null) => {
-    if (!file) return false;
-    return ["image/jpeg", "image/png", "image/webp"].includes(file.type);
+  const handleRemoveFile = () => {
+    clearPreview();
+    setSelectedFile(null);
+    setPreviewUrl(null);
+    setFileError("");
   };
 
-  const isValidSize = (file: File | null) => {
-    if (!file) return false;
-    return file.size <= 10 * 1024 * 1024;
-  };
+  const canSend = selectedFile !== null && location.trim().length > 0;
 
-  const canIdentify =
-    selectedFile !== null &&
-    isImageFile(selectedFile) &&
-    isValidSize(selectedFile);
+  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!canSend) return;
+
+    // Placeholder for the submission flow - nothing is sent to a server yet.
+    // The report is only added to the local list so the page feels complete.
+    const newReport: PotholeReport = {
+      id: `local-${Date.now()}`,
+      title: location.trim(),
+      note: notes.trim() || "No notes added.",
+      date: formatToday(),
+      status: "review",
+    };
+
+    setReports((current) => [newReport, ...current]);
+    handleRemoveFile();
+    setLocation("");
+    setNotes("");
+    setSentMessage("Report sent. Barangay staff will review it.");
+  };
 
   return (
-    <div className="pothole-detection">
+    <div className="pd-page" data-version="3">
       <Sidebar
         firstName={user.first_name}
         lastName={user.last_name}
@@ -93,109 +199,193 @@ function PotholeDetection({ user, onLogout }: PotholeDetectionProps) {
         />
       )}
 
-      <main className="pothole-main">
+      <main className="pd-main">
         <Topbar
           unreadCount={0}
           onNotifications={() => navigate(NOTIFICATIONS_PATH)}
           onMenuToggle={toggleDrawer}
         />
 
-        <nav className="step-indicator" aria-label="Pothole detection workflow">
-          {STEPS.map((step) => (
-            <div
-              key={step.id}
-              className={`step step-${step.id} ${step.status}`}
-            >
-              <div className="step-circle">{step.id}</div>
-              <span className="step-label">{step.label}</span>
-              {step.status === "in-progress" && (
-                <span className="step-status">IN PROGRESS</span>
-              )}
-              {step.status === "not-started" && (
-                <span className="step-status">NOT STARTED</span>
-              )}
-            </div>
-          ))}
-        </nav>
-
-        <section className="pothole-card">
-          <div className="card-header">
-            <div className="card-icon">📷</div>
-            <div>
-              <h2>1. Capture Defect Photo</h2>
+        <div className="pd-layout">
+          {/* ---------- Report form ---------- */}
+          <form className="pd-card pd-form" onSubmit={handleSubmit} noValidate>
+            <div className="pd-card-head">
+              <h2>Report a damaged road</h2>
               <p>
-                Provide a clear photo of the damaged road so the system can
-                demonstrate pothole identification.
+                Add a clear photo and where it is. Barangay staff will review
+                it.
               </p>
             </div>
-            <span className="step-badge">IN PROGRESS</span>
-          </div>
 
-          <div
-            className="upload-area"
-            onDragOver={handleDragOver}
-            onDrop={handleDrop}
-            onClick={() => fileInputRef.current?.click()}
-          >
-            <div className="upload-icon">&#x21bb;</div>
-            <h3>Upload a road-damage photo</h3>
-            <p>Drag and drop an image here, or browse your computer.</p>
+            <div className="pd-field">
+              <span className="pd-label" id="pd-photo-label">
+                Photo
+              </span>
 
-            <input
-              type="file"
-              ref={fileInputRef}
-              accept="image/jpeg, image/png, image/webp"
-              onChange={handleFileChange}
-              className="file-input"
-            />
-
-            <button
-              type="button"
-              className="choose-image-button"
-              onClick={() => fileInputRef.current?.click()}
-            >
-              Choose Image
-            </button>
-
-            <p className="file-info">JPG, PNG, or WebP &bull; Maximum 10 MB</p>
-          </div>
-
-          {selectedFile && (
-            <div className="file-preview">
-              <p className="preview-label">Selected image</p>
-              <img
-                src={URL.createObjectURL(selectedFile)}
-                alt="Preview"
-                className="preview-image"
+              <input
+                type="file"
+                id="pd-photo"
+                ref={fileInputRef}
+                accept={ACCEPTED_IMAGE_TYPES.join(",")}
+                onChange={handleFileChange}
+                className="pd-file-input"
+                aria-labelledby="pd-photo-label"
+                tabIndex={selectedFile ? -1 : 0}
               />
-              <button
-                type="button"
-                className="remove-file-button"
-                onClick={() => {
-                  setSelectedFile(null);
-                  if (fileInputRef.current) {
-                    fileInputRef.current.value = "";
-                  }
-                }}
-              >
-                Remove
-              </button>
-            </div>
-          )}
 
-          <div className="card-actions">
-            <button
-              type="button"
-              className="identify-button"
-              disabled={!canIdentify}
-              onClick={() => {
-                // Placeholder for detection flow - no real detection implemented
-              }}
-            >
-              Identify Pothole
-            </button>
-          </div>
-        </section>
+              {selectedFile && previewUrl ? (
+                <div className="pd-preview">
+                  <div className="pd-preview-frame">
+                    <img
+                      src={previewUrl}
+                      alt="Preview of the selected road photo"
+                      className="pd-preview-img"
+                    />
+                  </div>
+
+                  <div className="pd-preview-meta">
+                    <div className="pd-preview-info">
+                      <span className="pd-preview-name">
+                        {selectedFile.name}
+                      </span>
+                      <span className="pd-preview-size">
+                        {formatFileSize(selectedFile.size)}
+                      </span>
+                    </div>
+
+                    <div className="pd-preview-actions">
+                      <button
+                        type="button"
+                        className="pd-btn"
+                        onClick={() => fileInputRef.current?.click()}
+                      >
+                        <RefreshCw
+                          size={15}
+                          strokeWidth={2}
+                          aria-hidden="true"
+                        />
+                        Replace
+                      </button>
+                      <button
+                        type="button"
+                        className="pd-btn pd-btn-danger"
+                        onClick={handleRemoveFile}
+                      >
+                        <Trash2 size={15} strokeWidth={2} aria-hidden="true" />
+                        Remove
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <label
+                  htmlFor="pd-photo"
+                  className={`pd-drop${isDragging ? " is-dragging" : ""}${
+                    fileError ? " has-error" : ""
+                  }`}
+                  onDragOver={handleDragOver}
+                  onDragLeave={() => setIsDragging(false)}
+                  onDrop={handleDrop}
+                >
+                  <Upload size={26} strokeWidth={1.8} aria-hidden="true" />
+                  <strong className="pd-drop-title">
+                    Drop a photo here or tap to browse
+                  </strong>
+                  <span className="pd-drop-hint">
+                    JPG, PNG or WebP, up to {MAX_IMAGE_MB} MB
+                  </span>
+                </label>
+              )}
+
+              {fileError && (
+                <p className="pd-error" role="alert">
+                  {fileError}
+                </p>
+              )}
+            </div>
+
+            <div className="pd-field">
+              <label className="pd-label" htmlFor="pd-location">
+                Location
+              </label>
+              <input
+                id="pd-location"
+                type="text"
+                className="pd-input"
+                placeholder="Street, landmark or purok"
+                value={location}
+                onChange={(event) => {
+                  setLocation(event.target.value);
+                  setSentMessage("");
+                }}
+              />
+            </div>
+
+            <div className="pd-field">
+              <label className="pd-label" htmlFor="pd-notes">
+                Notes (optional)
+              </label>
+              <textarea
+                id="pd-notes"
+                className="pd-input pd-textarea"
+                rows={3}
+                placeholder="Size of the damage, which lane, how long it has been there"
+                value={notes}
+                onChange={(event) => setNotes(event.target.value)}
+              />
+            </div>
+
+            <div className="pd-actions">
+              <button type="submit" className="pd-submit" disabled={!canSend}>
+                Send report
+              </button>
+              {sentMessage && (
+                <p className="pd-success" role="status">
+                  {sentMessage}
+                </p>
+              )}
+            </div>
+          </form>
+
+          {/* ---------- My reports ---------- */}
+          <section
+            className="pd-card pd-reports"
+            aria-labelledby="pd-reports-title"
+          >
+            <div className="pd-card-head">
+              <h2 id="pd-reports-title">My reports</h2>
+              <p>Status of what you sent</p>
+            </div>
+
+            {reports.length === 0 ? (
+              <p className="pd-empty">
+                You have not sent any reports yet. Your reports will show up
+                here.
+              </p>
+            ) : (
+              <ul className="pd-report-list">
+                {reports.map((report) => (
+                  <li key={report.id} className="pd-report">
+                    <span className="pd-report-icon" aria-hidden="true">
+                      <AlertTriangle size={20} strokeWidth={1.8} />
+                    </span>
+                    <div className="pd-report-text">
+                      <strong className="pd-report-title">
+                        {report.title}
+                      </strong>
+                      <span className="pd-report-note">
+                        {report.note} &middot; {report.date}
+                      </span>
+                    </div>
+                    <span className={`pd-status is-${report.status}`}>
+                      {STATUS_LABEL[report.status]}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
+        </div>
       </main>
     </div>
   );

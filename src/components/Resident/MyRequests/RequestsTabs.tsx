@@ -1,4 +1,5 @@
-export type RequestsTab = "all" | "active" | "history";
+import type { RequestsTab } from "../../../Utils/Resident/requestsTab";
+export type { RequestsTab };
 
 type RequestsTabsProps = {
   activeTab: RequestsTab;
@@ -6,11 +7,13 @@ type RequestsTabsProps = {
   allCount: number;
   activeCount: number;
   historyCount: number;
+  readyCount: number;
 };
 
 const TABS: { key: RequestsTab; label: string }[] = [
   { key: "all", label: "All" },
   { key: "active", label: "Active" },
+  { key: "ready", label: "Ready" },
   { key: "history", label: "History" },
 ];
 
@@ -20,11 +23,13 @@ const RequestsTabs = ({
   allCount,
   activeCount,
   historyCount,
+  readyCount,
 }: RequestsTabsProps) => {
   const counts: Record<RequestsTab, number> = {
     all: allCount,
     active: activeCount,
     history: historyCount,
+    ready: readyCount,
   };
 
   return (

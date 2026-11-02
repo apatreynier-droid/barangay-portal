@@ -1,59 +1,66 @@
 .delete-request-backdrop {
   position: fixed;
-  z-index: 30;
+  z-index: 50;
   inset: 0;
   display: grid;
   place-items: center;
   padding: 20px;
-  background: rgba(17, 24, 39, 0.45);
+  background: rgba(6, 20, 15, 0.6);
 }
 
 .delete-request-dialog {
   width: min(100%, 400px);
   padding: 28px;
-  border-radius: 16px;
-  background: #ffffff;
-  box-shadow: 0 20px 50px rgba(17, 24, 39, 0.22);
+  border: 1px solid var(--db-line);
+  border-radius: 20px;
+  background: var(--db-surface);
+  color: var(--db-ink);
+  font-family: "Public Sans", "Segoe UI", system-ui, sans-serif;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.35);
   text-align: center;
 }
 
 .delete-request-icon {
   display: grid;
-  width: 46px;
-  height: 46px;
+  width: 48px;
+  height: 48px;
   margin: 0 auto 14px;
   place-items: center;
   border-radius: 50%;
-  background: #fef2f2;
-  color: #dc2626;
+  background: var(--db-err-bg);
+  color: var(--db-err-ink);
   font-size: 22px;
   font-weight: 800;
 }
 
 .delete-request-dialog h2 {
   margin: 0;
-  color: #111827;
-  font-size: 20px;
+  color: var(--db-ink);
+  font-family: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  font-size: 22px;
 }
 
 .delete-request-dialog p {
   margin: 9px 0 20px;
-  color: #6b7280;
-  font-size: 14px;
+  color: var(--db-muted);
+  font-size: 14.5px;
   line-height: 1.5;
 }
 
 .delete-request-dialog p strong {
-  color: #374151;
+  color: var(--db-ink);
+  font-family: ui-monospace, "Cascadia Mono", Consolas, monospace;
+  font-size: 0.95em;
 }
 
-.delete-request-error {
-  margin: 0 0 16px !important;
+.delete-request-dialog .delete-request-error {
+  margin: 0 0 16px;
   padding: 10px 14px;
+  border: 1px solid var(--db-err-line);
   border-radius: 10px;
-  background: #fef2f2;
-  color: #dc2626 !important;
-  font-size: 12px !important;
+  background: var(--db-err-bg);
+  color: var(--db-err-ink);
+  font-size: 13px;
   font-weight: 600;
 }
 
@@ -64,14 +71,17 @@
 }
 
 .delete-request-actions button {
-  border-radius: 9px;
-  padding: 10px 16px;
+  min-height: 42px;
+  padding: 10px 18px;
   border: 1px solid transparent;
+  border-radius: 12px;
   font: inherit;
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 700;
   cursor: pointer;
-  transition: background-color 0.15s ease, opacity 0.15s ease;
+  transition:
+    background-color 0.15s ease,
+    opacity 0.15s ease;
 }
 
 .delete-request-actions button:disabled {
@@ -79,22 +89,22 @@
   cursor: not-allowed;
 }
 
-.delete-request-cancel {
-  border-color: #d1d5db !important;
-  background: #ffffff;
-  color: #4b5563;
+.delete-request-actions .delete-request-cancel {
+  border-color: var(--db-line);
+  background: var(--db-surface);
+  color: var(--db-ink);
 }
 
-.delete-request-cancel:hover:not(:disabled) {
-  background: #f9fafb;
+.delete-request-actions .delete-request-cancel:hover:not(:disabled) {
+  border-color: var(--db-brand);
 }
 
-.delete-request-confirm {
-  border-color: #dc2626 !important;
+.delete-request-actions .delete-request-confirm {
+  border-color: #dc2626;
   background: #dc2626;
   color: #ffffff;
 }
 
-.delete-request-confirm:hover:not(:disabled) {
+.delete-request-actions .delete-request-confirm:hover:not(:disabled) {
   background: #b91c1c;
 }

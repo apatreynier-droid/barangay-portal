@@ -1,0 +1,62 @@
+@import url("https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700;12..96,800&family=Public+Sans:wght@400;500;600;700&display=swap");
+
+/* Shared design tokens for every resident page and popup */
+:root {
+  --db-bg: #edf2ef;
+  --db-surface: #ffffff;
+  --db-surface-2: #f5f8f6;
+  --db-ink: #10261f;
+  --db-muted: #586c63;
+  --db-line: #d9e3dd;
+  --db-brand: #17614b;
+  --db-brand-soft: #dcefe6;
+  --db-on-brand: #ffffff;
+  --db-gold: #c58f1c;
+  --db-gold-bright: #e2b04a;
+  --db-gold-soft: #f6e8c6;
+  --db-gold-ink: #7a5508;
+  --db-side: #0c3629;
+  --db-ok: #1d7a4e;
+  --db-ok-bg: #ddf1e6;
+  --db-warn: #8d6204;
+  --db-warn-bg: #faeecd;
+  --db-info: #2759a6;
+  --db-info-bg: #e0ebfa;
+  --db-calm: #4a5e56;
+  --db-calm-bg: #e6ece9;
+  --db-err-bg: #fef2f2;
+  --db-err-line: #fecaca;
+  --db-err-ink: #b91c1c;
+  --db-shadow:
+    0 1px 2px rgba(16, 38, 31, 0.06), 0 6px 20px rgba(16, 38, 31, 0.05);
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+
+  --db-bg: #0a1410;
+  --db-surface: #11201a;
+  --db-surface-2: #162922;
+  --db-ink: #e5f0ea;
+  --db-muted: #94aaa0;
+  --db-line: #223730;
+  --db-brand: #4dbe97;
+  --db-brand-soft: #17352b;
+  --db-on-brand: #05241a;
+  --db-gold: #e2b04a;
+  --db-gold-soft: #3a2f12;
+  --db-gold-ink: #ebc56e;
+  --db-side: #08201a;
+  --db-ok: #62cf98;
+  --db-ok-bg: #16382a;
+  --db-warn: #e5b955;
+  --db-warn-bg: #3a2f12;
+  --db-info: #86b2ee;
+  --db-info-bg: #182c4a;
+  --db-calm: #a5b9af;
+  --db-calm-bg: #1d2f28;
+  --db-err-bg: #3a1717;
+  --db-err-line: #6b2323;
+  --db-err-ink: #fca5a5;
+  --db-shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 6px 20px rgba(0, 0, 0, 0.25);
+}

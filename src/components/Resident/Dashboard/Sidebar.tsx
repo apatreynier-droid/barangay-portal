@@ -1,10 +1,27 @@
+import { useEffect, useState } from "react";
 import "../../../Styles/Resident/Components/ResidentSidebar.css";
 
-import { AlertTriangle, Bell, FileText, LayoutDashboard } from "lucide-react";
+import {
+  AlertTriangle,
+  Bell,
+  ChevronDown,
+  FileText,
+  History as HistoryIcon,
+  LayoutDashboard,
+  List,
+  Loader,
+  PackageCheck,
+} from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
 import wingsLogo from "../../../assets/logo-256.png";
 import SidebarUserFooter from "../../SidebarUserFooter/SidebarUserFooter";
+import {
+  readRequestsTab,
+  selectRequestsTab,
+  subscribeRequestsTab,
+  type RequestsTab,
+} from "../../../Utils/Resident/requestsTab";
 
 type SidebarProps = {
   firstName: string;
@@ -68,6 +85,15 @@ const NAV_ITEMS: {
   },
 ];
 
+// Dropdown under "My Requests".
+const REQUEST_FILTERS: { key: RequestsTab; label: string; icon: LucideIcon }[] =
+  [
+    { key: "all", label: "All requests", icon: List },
+    { key: "active", label: "Active", icon: Loader },
+    { key: "history", label: "History", icon: HistoryIcon },
+    { key: "ready", label: "Ready for pickup", icon: PackageCheck },
+  ];
+
 const Sidebar = ({
   firstName,
   lastName,
@@ -93,6 +119,37 @@ const Sidebar = ({
     action();
   };
 
+  const isRequestsPage = activePage === "my-requests";
+  const [isRequestsOpen, setIsRequestsOpen] = useState(isRequestsPage);
+  const [currentTab, setCurrentTab] = useState<RequestsTab>(readRequestsTab);
+
+  // Keep the highlighted dropdown item in sync with the page's tabs.
+  useEffect(() => subscribeRequestsTab(setCurrentTab), []);
+
+  const handleRequestsToggle = () => {
+    // On the My Requests page the item opens and closes the dropdown.
+    if (isRequestsPage) {
+      setIsRequestsOpen((open) => !open);
+      return;
+    }
+
+    // From any other page it goes to My Requests (showing everything), where
+    // the dropdown starts open.
+    selectRequestsTab("all");
+    if (onMyRequests) closeThen(onMyRequests)();
+  };
+
+  const handleRequestsFilter = (tab: RequestsTab) => {
+    selectRequestsTab(tab);
+
+    if (isRequestsPage) {
+      onNavigate?.();
+      return;
+    }
+
+    if (onMyRequests) closeThen(onMyRequests)();
+  };
+
   return (
     <aside className={`sidebar${isOpen ? " is-open" : ""}`}>
       <div className="sidebar-logo">
@@ -111,6 +168,65 @@ const Sidebar = ({
           const handler = handlers[item.handlerKey];
           const isActive = activePage === item.key;
           const Icon = item.icon;
+
+          if (item.key === "my-requests") {
+            return (
+              <div className="nav-group" key={item.key}>
+                <button
+                  type="button"
+                  className={`nav-item nav-button nav-group-toggle ${
+                    isActive ? "active" : ""
+                  }`}
+                  onClick={handleRequestsToggle}
+                  disabled={!handler}
+                  aria-expanded={isRequestsOpen}
+                  aria-controls="sidebar-requests-menu"
+                >
+                  <span className="nav-icon">
+                    <Icon size={19} strokeWidth={1.9} aria-hidden="true" />
+                  </span>
+                  {item.label}
+                  <ChevronDown
+                    className="nav-chevron"
+                    size={16}
+                    strokeWidth={2}
+                    aria-hidden="true"
+                  />
+                </button>
+
+                <div
+                  id="sidebar-requests-menu"
+                  className={`nav-submenu${isRequestsOpen ? " is-open" : ""}`}
+                >
+                  <div className="nav-submenu-inner">
+                    {REQUEST_FILTERS.map((filter) => {
+                      const FilterIcon = filter.icon;
+                      const isCurrent =
+                        isRequestsPage && currentTab === filter.key;
+
+                      return (
+                        <button
+                          key={filter.key}
+                          type="button"
+                          className={`nav-subitem${isCurrent ? " active" : ""}`}
+                          onClick={() => handleRequestsFilter(filter.key)}
+                          aria-current={isCurrent ? "true" : undefined}
+                        >
+                          <FilterIcon
+                            size={16}
+                            strokeWidth={1.9}
+                            aria-hidden="true"
+                          />
+                          {filter.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            );
+          }
+
           return (
             <button
               key={item.key}

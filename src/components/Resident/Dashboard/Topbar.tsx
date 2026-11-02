@@ -10,6 +10,8 @@ import {
   POTHOLE_DETECTION_PATH,
   RESIDENT_HOME_PATH,
   RESIDENT_MY_REQUESTS_PATH,
+  RESIDENT_REQUEST_DOCUMENT_PATH,
+  RESIDENT_REQUEST_HISTORY_PATH,
 } from "../../../Utils/Shared/routePaths";
 
 type TopbarProps = {
@@ -20,12 +22,16 @@ type TopbarProps = {
   /** Optional title override. When omitted, the title is derived from the
    *  current resident route so it always matches the active page. */
   title?: string;
+  /** Optional one-line description shown under the title. */
+  description?: string;
 };
 
 const RESIDENT_PAGE_TITLES: Record<string, string> = {
   [RESIDENT_HOME_PATH]: "Dashboard",
   [LEGACY_RESIDENT_HOME_PATH]: "Dashboard",
   [RESIDENT_MY_REQUESTS_PATH]: "My Requests",
+  [RESIDENT_REQUEST_DOCUMENT_PATH]: "Request a Document",
+  [RESIDENT_REQUEST_HISTORY_PATH]: "Request History",
   [NOTIFICATIONS_PATH]: "Notifications",
   [POTHOLE_DETECTION_PATH]: "Pothole Detection",
 };
@@ -38,6 +44,7 @@ const Topbar = ({
   onNotifications,
   onMenuToggle,
   title,
+  description,
 }: TopbarProps) => {
   const location = useLocation();
   const resolvedTitle = title ?? resolveTitle(location.pathname);
@@ -50,6 +57,7 @@ const Topbar = ({
         <div>
           <p className="topbar-label">Resident Portal</p>
           <h1>{resolvedTitle}</h1>
+          {description && <p className="topbar-description">{description}</p>}
         </div>
       </div>
 

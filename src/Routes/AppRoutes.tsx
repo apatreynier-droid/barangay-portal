@@ -339,9 +339,7 @@ function AppRoutes() {
                   onDocumentRequests={() =>
                     navigate(ADMIN_DOCUMENT_REQUESTS_PATH)
                   }
-                  onRequestHistory={() =>
-                    navigate(ADMIN_REQUEST_HISTORY_PATH)
-                  }
+                  onRequestHistory={() => navigate(ADMIN_REQUEST_HISTORY_PATH)}
                   onApprovals={() => navigate(ADMIN_APPROVALS_PATH)}
                   onDocumentManagement={() =>
                     navigate(ADMIN_DOCUMENT_MANAGEMENT_PATH)
@@ -630,5 +628,3 @@ function AppRoutes() {
 }
 
 export default AppRoutes;
-
-

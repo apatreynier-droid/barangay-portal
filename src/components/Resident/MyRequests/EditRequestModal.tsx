@@ -51,7 +51,11 @@ const EditRequestModal = ({
   };
 
   return createPortal(
-    <div className="edit-request-backdrop" onClick={onClose} role="presentation">
+    <div
+      className="edit-request-backdrop"
+      onClick={onClose}
+      role="presentation"
+    >
       <div
         className="edit-request-modal"
         role="dialog"

@@ -189,3 +189,99 @@
     transform: none;
   }
 }
+
+/* ------------------------- My Requests dropdown ------------------------- */
+
+.nav-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.nav-group-toggle .nav-chevron {
+  margin-left: auto;
+  color: var(--sb-muted);
+  transition: transform 0.2s ease;
+}
+
+.nav-group-toggle[aria-expanded="true"] .nav-chevron {
+  transform: rotate(180deg);
+}
+
+/* Height animates from 0fr to 1fr; visibility keeps closed items out of the
+   tab order. */
+.nav-submenu {
+  display: grid;
+  grid-template-rows: 0fr;
+  visibility: hidden;
+  transition:
+    grid-template-rows 0.2s ease,
+    visibility 0.2s;
+}
+
+.nav-submenu.is-open {
+  grid-template-rows: 1fr;
+  visibility: visible;
+}
+
+.nav-submenu-inner {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-height: 0;
+  margin-left: 21px;
+  padding-left: 12px;
+  overflow: hidden;
+  border-left: 1px solid rgba(255, 255, 255, 0.14);
+}
+
+.nav-submenu.is-open .nav-submenu-inner {
+  padding-block: 4px 2px;
+}
+
+.nav-subitem {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--sb-muted);
+  font-family: inherit;
+  font-size: 13.5px;
+  font-weight: 500;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    background-color 0.18s cubic-bezier(0.4, 0, 0.2, 1),
+    color 0.18s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.nav-subitem:hover {
+  background: rgba(255, 255, 255, 0.07);
+  color: #ffffff;
+}
+
+.nav-subitem.active {
+  background: rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+  font-weight: 600;
+}
+
+.nav-subitem.active svg {
+  color: var(--sb-gold);
+}
+
+.nav-subitem:focus-visible {
+  outline: 2px solid var(--sb-gold);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nav-submenu,
+  .nav-subitem,
+  .nav-group-toggle .nav-chevron {
+    transition: none;
+  }
+}
