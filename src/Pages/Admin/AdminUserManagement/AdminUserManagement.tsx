@@ -169,7 +169,7 @@ const AdminUserManagement = ({
     <div className="admin-dashboard">
       <AdminSidebar
         pendingRequests={sidebarStats.pending}
-        pendingApprovals={sidebarStats.approved}
+        pendingApprovals={sidebarStats.pending}
         unreadNotifications={unreadNotifications}
         user={user}
         activeItem="user-management"

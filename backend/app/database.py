@@ -20,7 +20,16 @@ def create_connection(include_database: bool = True) -> MySQLConnection:
     if include_database:
         config["database"] = settings.mysql_database
 
-    return mysql.connector.connect(**config)
+    connection = mysql.connector.connect(**config)
+    # Store and exchange timestamps in UTC so every layer (database, API,
+    # frontend) agrees on a single canonical instant. The Philippine local
+    # time (Asia/Manila, UTC+8) is applied only when rendering for users.
+    cursor = connection.cursor()
+    try:
+        cursor.execute("SET time_zone = '+00:00'")
+    finally:
+        cursor.close()
+    return connection
 
 
 def get_db() -> Generator[MySQLConnection, None, None]:

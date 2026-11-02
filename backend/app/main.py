@@ -1032,7 +1032,7 @@ def admin_dashboard(
         """
         SELECT COUNT(*) AS total_residents,
                COALESCE(SUM(users.created_at
-                            >= CURDATE() - INTERVAL (DAY(CURDATE()) - 1) DAY), 0)
+                            >= DATE(CONVERT_TZ(NOW(), '+00:00', '+08:00')) - INTERVAL (DAY(DATE(CONVERT_TZ(NOW(), '+00:00', '+08:00'))) - 1) DAY), 0)
                    AS new_residents_this_month
         FROM users
         WHERE users.role = 'resident'
@@ -1047,27 +1047,29 @@ def admin_dashboard(
                COALESCE(SUM(status = 'Processing'), 0) AS processing,
                COALESCE(SUM(status = 'Completed'
                             AND COALESCE(completed_at, last_updated)
-                                >= CURDATE() - INTERVAL (DAY(CURDATE()) - 1) DAY), 0)
+                                >= DATE(CONVERT_TZ(NOW(), '+00:00', '+08:00')) - INTERVAL (DAY(DATE(CONVERT_TZ(NOW(), '+00:00', '+08:00'))) - 1) DAY), 0)
                    AS completed,
                COALESCE(SUM(status = 'Rejected'
                             AND last_updated
-                                >= CURDATE() - INTERVAL (DAY(CURDATE()) - 1) DAY), 0)
+                                >= DATE(CONVERT_TZ(NOW(), '+00:00', '+08:00')) - INTERVAL (DAY(DATE(CONVERT_TZ(NOW(), '+00:00', '+08:00'))) - 1) DAY), 0)
                    AS rejected
-        FROM requests
-        """
-    )
+         FROM requests
+         JOIN users ON users.id = requests.user_id
+         WHERE users.role = 'resident'
+         """
+     )
     request_stats = cursor.fetchone()
 
     # Monthly overview (submitted vs completed vs rejected) for the last 7 months.
     cursor.execute(
         """
-        SELECT YEAR(submitted_at) AS yr, MONTH(submitted_at) AS mo,
+        SELECT YEAR(CONVERT_TZ(submitted_at, '+00:00', '+08:00')) AS yr, MONTH(CONVERT_TZ(submitted_at, '+00:00', '+08:00')) AS mo,
                COUNT(*) AS submitted,
                COALESCE(SUM(status = 'Completed'), 0) AS completed,
                COALESCE(SUM(status = 'Rejected'), 0) AS rejected
         FROM requests
         WHERE submitted_at
-              >= SUBDATE(CURDATE() - INTERVAL (DAY(CURDATE()) - 1) DAY, INTERVAL 6 MONTH)
+              >= SUBDATE(DATE(CONVERT_TZ(NOW(), '+00:00', '+08:00')) - INTERVAL (DAY(DATE(CONVERT_TZ(NOW(), '+00:00', '+08:00'))) - 1) DAY, INTERVAL 6 MONTH)
         GROUP BY yr, mo
         """
     )
@@ -1235,13 +1237,13 @@ def admin_reports(
     # Monthly overview (requests vs completed vs rejected) for the last 7 months.
     cursor.execute(
         """
-        SELECT YEAR(submitted_at) AS yr, MONTH(submitted_at) AS mo,
+        SELECT YEAR(CONVERT_TZ(submitted_at, '+00:00', '+08:00')) AS yr, MONTH(CONVERT_TZ(submitted_at, '+00:00', '+08:00')) AS mo,
                COUNT(*) AS requests,
                COALESCE(SUM(status = 'Completed'), 0) AS completed,
                COALESCE(SUM(status = 'Rejected'), 0) AS rejected
         FROM requests
         WHERE submitted_at
-              >= SUBDATE(CURDATE() - INTERVAL (DAY(CURDATE()) - 1) DAY, INTERVAL 6 MONTH)
+              >= SUBDATE(DATE(CONVERT_TZ(NOW(), '+00:00', '+08:00')) - INTERVAL (DAY(DATE(CONVERT_TZ(NOW(), '+00:00', '+08:00'))) - 1) DAY, INTERVAL 6 MONTH)
         GROUP BY yr, mo
         """
     )

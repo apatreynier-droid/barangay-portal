@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Check,
@@ -67,21 +67,90 @@ const resolveKind = (notification: ApiNotification): NotificationKind => {
   return "update";
 };
 
-const formatTimestamp = (value: string): string => {
-  const date = new Date(value + "Z");
+//: Timezone used for all resident-facing timestamp displays (Philippine Standard Time).
+const PHILIPPINE_TIMEZONE = "Asia/Manila";
 
-  if (Number.isNaN(date.getTime())) {
-    return value;
+//: How often (ms) the relative-time labels are refreshed so "Just now" stays accurate.
+const RELATIVE_TIME_REFRESH_MS = 60_000;
+
+/**
+ * Parse a backend timestamp as UTC and return a Date.
+ *
+ * The backend stores all timestamps in UTC (session time_zone = '+00:00').
+ * MySQL returns TIMESTAMP columns as naive datetime strings (e.g.
+ * "2026-11-02 15:35:00"); FastAPI serializes them as ISO strings without a
+ * timezone marker (e.g. "2026-11-02T15:35:00"). We treat these as UTC by
+ * appending "Z" so the browser interprets the instant correctly, then convert
+ * to Asia/Manila only at display time.
+ */
+function parseUtcTimestamp(value: string): Date {
+  const trimmed = value.trim();
+  if (/[zZ]$/.test(trimmed) || /[+-]\d{2}:?\d{2}$/.test(trimmed)) {
+    return new Date(trimmed);
+  }
+  return new Date(trimmed + "Z");
+}
+
+/**
+ * Format a backend UTC timestamp as a relative time string in Philippine time.
+ *
+ * Returns strings like "Just now", "5 minutes ago", "2 hours ago", "Yesterday".
+ */
+function formatRelativeTime(value: string, now: number): string {
+  const eventDate = parseUtcTimestamp(value);
+  if (Number.isNaN(eventDate.getTime())) return value;
+
+  const seconds = Math.max(0, Math.floor((now - eventDate.getTime()) / 1000));
+
+  if (seconds < 60) {
+    return "Just now";
   }
 
-  return date.toLocaleString("en-US", {
-    month: "short",
-    day: "numeric",
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) {
+    return `${minutes} minute${minutes === 1 ? "" : "s"} ago`;
+  }
+
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) {
+    return `${hours} hour${hours === 1 ? "" : "s"} ago`;
+  }
+
+  const days = Math.floor(hours / 24);
+  if (days === 1) {
+    return "Yesterday";
+  }
+  if (days < 30) {
+    return `${days} days ago`;
+  }
+
+  const months = Math.floor(days / 30);
+  if (months < 12) {
+    return `${months} month${months === 1 ? "" : "s"} ago`;
+  }
+
+  const years = Math.floor(months / 12);
+  return `${years} year${years === 1 ? "" : "s"} ago`;
+}
+
+/**
+ * Format a backend UTC timestamp as a full date/time string in Philippine time,
+ * e.g. "November 2, 2026 at 10:35 PM". Used for the time tooltip.
+ */
+function formatFullDateTime(value: string): string {
+  const date = parseUtcTimestamp(value);
+  if (Number.isNaN(date.getTime())) return value;
+
+  return new Intl.DateTimeFormat("en-US", {
+    timeZone: PHILIPPINE_TIMEZONE,
     year: "numeric",
+    month: "long",
+    day: "numeric",
     hour: "numeric",
     minute: "2-digit",
-  });
-};
+    hour12: true,
+  }).format(date);
+}
 
 function NotificationPage({
   user,
@@ -99,6 +168,14 @@ function NotificationPage({
   const [isMarkingAll, setIsMarkingAll] = useState(false);
   const [actionError, setActionError] = useState("");
   const [filter, setFilter] = useState<NotificationFilter>("all");
+  //: Ticks every minute so relative labels ("Just now", "5 minutes ago") stay
+  //: accurate as time passes without the resident needing to refresh.
+  const [now, setNow] = useState(() => Date.now());
+
+  useEffect(() => {
+    const timer = setInterval(() => setNow(Date.now()), RELATIVE_TIME_REFRESH_MS);
+    return () => clearInterval(timer);
+  }, []);
 
   const unreadCount = notifications.filter(
     (notification) => !notification.is_read,
@@ -283,7 +360,16 @@ function NotificationPage({
                           )}
                           {notification.title}
                         </h3>
-                        <time>{formatTimestamp(notification.created_at)}</time>
+                        <time
+                          className="notification-time"
+                          dateTime={notification.created_at}
+                          title={formatFullDateTime(notification.created_at)}
+                        >
+                          {formatRelativeTime(
+                            notification.created_at,
+                            now,
+                          )}
+                        </time>
                       </div>
                       <p>{notification.message}</p>
                     </div>
