@@ -1,15 +1,44 @@
 import { useState } from "react";
-import { getStatusClass, getStatusIcon } from "../../../Utils/Resident/MyRequestLogic";
+import {
+  Check,
+  CheckCheck,
+  Clock,
+  FileText,
+  Loader,
+  PackageCheck,
+  Pencil,
+  Trash2,
+  X,
+  type LucideIcon,
+} from "lucide-react";
+import { getStatusClass } from "../../../Utils/Resident/MyRequestLogic";
 import type { Request } from "../../../Types/Resident/DashboardType";
 import RequestDetailsModal from "./RequestDetailsModal";
 import EditRequestModal from "./EditRequestModal";
 import DeleteRequestModal from "./DeleteRequestModal";
-import filesIcon from "../../../assets/icons/files.png";
 
 type RequestCardProps = {
   request: Request;
   onRequestUpdated: (updated: Request) => void;
   onRequestDeleted: (requestId: string) => void;
+};
+
+const STATUS_ICONS: Partial<Record<Request["status"], LucideIcon>> = {
+  Pending: Clock,
+  Approved: Check,
+  Processing: Loader,
+  "Ready for Pickup": PackageCheck,
+  Completed: CheckCheck,
+  Rejected: X,
+};
+
+const STATUS_PROGRESS: Partial<Record<Request["status"], number>> = {
+  Pending: 25,
+  Approved: 42,
+  Processing: 60,
+  "Ready for Pickup": 85,
+  Completed: 100,
+  Rejected: 0,
 };
 
 const RequestCard = ({
@@ -22,13 +51,16 @@ const RequestCard = ({
   const [showDelete, setShowDelete] = useState(false);
   const canModify = request.status === "Pending";
 
+  const StatusIcon = STATUS_ICONS[request.status];
+  const progress = STATUS_PROGRESS[request.status];
+
   return (
     <>
       <article className="request-card">
         <div className="request-card-top">
           <div className="document-section">
             <div className="document-icon">
-              <img src={filesIcon} alt="" />
+              <FileText size={22} strokeWidth={1.9} aria-hidden="true" />
             </div>
 
             <div>
@@ -45,6 +77,7 @@ const RequestCard = ({
                   className="request-edit-button"
                   onClick={() => setShowEdit(true)}
                 >
+                  <Pencil size={14} strokeWidth={2} aria-hidden="true" />
                   Edit
                 </button>
                 <button
@@ -52,13 +85,16 @@ const RequestCard = ({
                   className="request-delete-button"
                   onClick={() => setShowDelete(true)}
                 >
+                  <Trash2 size={14} strokeWidth={2} aria-hidden="true" />
                   Delete
                 </button>
               </div>
             )}
 
             <div className={`request-status ${getStatusClass(request.status)}`}>
-              <span>{getStatusIcon(request.status)}</span>
+              {StatusIcon && (
+                <StatusIcon size={14} strokeWidth={2.2} aria-hidden="true" />
+              )}
               {request.status}
             </div>
           </div>
@@ -93,13 +129,7 @@ const RequestCard = ({
             <div className="progress-label">
               <span>Application Progress</span>
 
-              <strong>
-                {request.status === "Pending" && "25%"}
-                {request.status === "Processing" && "60%"}
-                {request.status === "Ready for Pickup" && "85%"}
-                {request.status === "Completed" && "100%"}
-                {request.status === "Rejected" && "0%"}
-              </strong>
+              <strong>{progress !== undefined ? `${progress}%` : ""}</strong>
             </div>
 
             <div className="progress-bar">

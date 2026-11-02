@@ -1,3 +1,5 @@
+import { Plus } from "lucide-react";
+
 type RequestsToolbarProps = {
   onNewRequest: () => void;
 };
@@ -15,7 +17,8 @@ const RequestsToolbar = ({ onNewRequest }: RequestsToolbarProps) => {
         className="new-request-button"
         onClick={onNewRequest}
       >
-        + New Request
+        <Plus size={18} strokeWidth={2.2} aria-hidden="true" />
+        New Request
       </button>
     </section>
   );

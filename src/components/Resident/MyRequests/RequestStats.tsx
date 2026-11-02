@@ -1,7 +1,4 @@
-import totalRequestIcon from "../../../assets/icons/files.png";
-import pendingIcon from "../../../assets/icons/clock.png";
-import processingIcon from "../../../assets/icons/loading.png";
-import readyIcon from "../../../assets/check.png";
+import { Check, Clock, FileText, Loader } from "lucide-react";
 
 type RequestStatsProps = {
   total: number;
@@ -20,7 +17,7 @@ const RequestStats = ({
     <section className="request-stats">
       <div className="request-stat-card">
         <div className="request-stat-icon blue">
-          <img src={totalRequestIcon} alt="" />
+          <FileText size={22} strokeWidth={1.9} aria-hidden="true" />
         </div>
 
         <div>
@@ -31,7 +28,7 @@ const RequestStats = ({
 
       <div className="request-stat-card">
         <div className="request-stat-icon orange">
-          <img src={pendingIcon} alt="" />
+          <Clock size={22} strokeWidth={1.9} aria-hidden="true" />
         </div>
 
         <div>
@@ -42,7 +39,7 @@ const RequestStats = ({
 
       <div className="request-stat-card">
         <div className="request-stat-icon purple">
-          <img src={processingIcon} alt="" />
+          <Loader size={22} strokeWidth={1.9} aria-hidden="true" />
         </div>
 
         <div>
@@ -53,7 +50,7 @@ const RequestStats = ({
 
       <div className="request-stat-card">
         <div className="request-stat-icon green">
-          <img src={readyIcon} alt="" />
+          <Check size={22} strokeWidth={2.2} aria-hidden="true" />
         </div>
 
         <div>

@@ -1,5 +1,13 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import {
+  Check,
+  CheckCheck,
+  Inbox,
+  PackageCheck,
+  RefreshCw,
+  type LucideIcon,
+} from "lucide-react";
 import Sidebar from "../../../components/Resident/Dashboard/Sidebar";
 import Topbar from "../../../components/Resident/Dashboard/Topbar";
 import {
@@ -10,7 +18,11 @@ import {
   type AuthUser,
 } from "../../../Utils/Shared/api";
 import { RESIDENT_ROLE_LABEL } from "../../../Utils/Resident/ResidentDisplay";
-import { isAdminPortalUser, NOTIFICATIONS_PATH, POTHOLE_DETECTION_PATH } from "../../../Utils/Shared/routePaths";
+import {
+  isAdminPortalUser,
+  NOTIFICATIONS_PATH,
+  POTHOLE_DETECTION_PATH,
+} from "../../../Utils/Shared/routePaths";
 import useResponsiveSidebar from "../../../Utils/Shared/useResponsiveSidebar";
 import "../../../Styles/Resident/Pages/Dashboard.css";
 import "../../../Styles/Resident/Pages/NotificationPage.css";
@@ -28,12 +40,18 @@ type NotificationPageProps = {
 };
 
 type NotificationKind = "ready" | "update" | "received";
+type NotificationFilter = "all" | "unread";
 
-const notificationIcons: Record<NotificationKind, string> = {
-  ready: "✓",
-  update: "!",
-  received: "i",
+const notificationIcons: Record<NotificationKind, LucideIcon> = {
+  ready: PackageCheck,
+  update: RefreshCw,
+  received: Inbox,
 };
+
+const FILTERS: { key: NotificationFilter; label: string }[] = [
+  { key: "all", label: "All" },
+  { key: "unread", label: "Unread" },
+];
 
 const resolveKind = (notification: ApiNotification): NotificationKind => {
   const title = notification.title.toLowerCase();
@@ -80,10 +98,21 @@ function NotificationPage({
   const [pendingId, setPendingId] = useState<number | null>(null);
   const [isMarkingAll, setIsMarkingAll] = useState(false);
   const [actionError, setActionError] = useState("");
+  const [filter, setFilter] = useState<NotificationFilter>("all");
 
   const unreadCount = notifications.filter(
     (notification) => !notification.is_read,
   ).length;
+
+  const visibleNotifications =
+    filter === "unread"
+      ? notifications.filter((notification) => !notification.is_read)
+      : notifications;
+
+  const filterCounts: Record<NotificationFilter, number> = {
+    all: notifications.length,
+    unread: unreadCount,
+  };
 
   const { isDrawerOpen, closeDrawer, toggleDrawer } = useResponsiveSidebar();
 
@@ -138,7 +167,9 @@ function NotificationPage({
         onLogout={onLogout}
         firstName={user.first_name}
         lastName={user.last_name}
-        role={isAdminPortalUser(user) ? "Brgy. Administrator" : RESIDENT_ROLE_LABEL}
+        role={
+          isAdminPortalUser(user) ? "Brgy. Administrator" : RESIDENT_ROLE_LABEL
+        }
         isOpen={isDrawerOpen}
         onNavigate={closeDrawer}
       />
@@ -154,6 +185,8 @@ function NotificationPage({
 
       <main className="notifications-page">
         <Topbar
+          title="Notifications"
+          description="Updates about your document requests."
           unreadCount={unreadCount}
           onNotifications={() => navigate(NOTIFICATIONS_PATH)}
           onMenuToggle={toggleDrawer}
@@ -186,19 +219,46 @@ function NotificationPage({
               onClick={() => void handleMarkAllAsRead()}
               disabled={unreadCount === 0 || isMarkingAll}
             >
+              <CheckCheck size={16} strokeWidth={2} aria-hidden="true" />
               {isMarkingAll ? "Updating…" : "Mark all as read"}
             </button>
           </div>
 
-          {notifications.length === 0 ? (
+          <div
+            className="notifications-tabs"
+            role="tablist"
+            aria-label="Notification filter"
+          >
+            {FILTERS.map((item) => (
+              <button
+                key={item.key}
+                type="button"
+                role="tab"
+                aria-selected={filter === item.key}
+                className={`notifications-tab ${
+                  filter === item.key ? "active" : ""
+                }`}
+                onClick={() => setFilter(item.key)}
+              >
+                {item.label}
+                <span className="notifications-tab-count">
+                  {filterCounts[item.key]}
+                </span>
+              </button>
+            ))}
+          </div>
+
+          {visibleNotifications.length === 0 ? (
             <p className="notifications-empty-state">
-              You have no notifications yet. Submit a document request to get
-              started.
+              {notifications.length === 0
+                ? "You have no notifications yet. Submit a document request to get started."
+                : "You have no unread notifications."}
             </p>
           ) : (
             <ul className="notifications-list">
-              {notifications.map((notification) => {
+              {visibleNotifications.map((notification) => {
                 const kind = resolveKind(notification);
+                const KindIcon = notificationIcons[kind];
 
                 return (
                   <li
@@ -211,11 +271,18 @@ function NotificationPage({
                       className={`notification-type-icon ${kind}`}
                       aria-hidden="true"
                     >
-                      {notificationIcons[kind]}
+                      <KindIcon size={20} strokeWidth={1.9} />
                     </span>
                     <div className="notification-content">
                       <div className="notification-title-row">
-                        <h3>{notification.title}</h3>
+                        <h3>
+                          {!notification.is_read && (
+                            <span className="notification-unread-dot">
+                              <span className="visually-hidden">Unread: </span>
+                            </span>
+                          )}
+                          {notification.title}
+                        </h3>
                         <time>{formatTimestamp(notification.created_at)}</time>
                       </div>
                       <p>{notification.message}</p>
@@ -227,6 +294,7 @@ function NotificationPage({
                         onClick={() => void handleMarkAsRead(notification.id)}
                         disabled={pendingId === notification.id}
                       >
+                        <Check size={15} strokeWidth={2.2} aria-hidden="true" />
                         {pendingId === notification.id
                           ? "Saving…"
                           : "Mark as read"}
