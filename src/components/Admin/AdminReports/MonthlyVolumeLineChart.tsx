@@ -1,10 +1,18 @@
 import { useRef, useState } from "react";
 import type { MouseEvent } from "react";
 import type { AdminReportsMonthlyPoint } from "../../../Types/Admin/AdminReportsType";
+import { labelStride } from "../../../Utils/Admin/AdminAnalyticsDisplay";
 
 type MonthlyVolumeLineChartProps = {
+  /** One point per period; `month` holds the period label. */
   data: AdminReportsMonthlyPoint[];
+  title?: string;
 };
+
+/** Most x-axis labels printed; denser trends label every n-th period. */
+const MAX_LABELS = 12;
+/** Above this many points the dots are hidden (the line stays readable). */
+const MAX_DOTS = 40;
 
 const WIDTH = 720;
 const HEIGHT = 280;
@@ -23,7 +31,10 @@ const SERIES = [
 
 type SeriesKey = (typeof SERIES)[number]["key"];
 
-const MonthlyVolumeLineChart = ({ data }: MonthlyVolumeLineChartProps) => {
+const MonthlyVolumeLineChart = ({
+  data,
+  title = "Monthly Request Volume",
+}: MonthlyVolumeLineChartProps) => {
   const svgRef = useRef<SVGSVGElement | null>(null);
   const wrapperRef = useRef<HTMLDivElement | null>(null);
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
@@ -90,6 +101,8 @@ const MonthlyVolumeLineChart = ({ data }: MonthlyVolumeLineChartProps) => {
   };
 
   const hoveredPoint = hoveredIndex !== null ? data[hoveredIndex] : undefined;
+  const stride = labelStride(data.length, MAX_LABELS);
+  const showDots = data.length <= MAX_DOTS;
   const tooltipLeft = tooltipPosition
     ? Math.min(Math.max(tooltipPosition.x + 14, 8), Math.max(8, WIDTH - 170))
     : 0;
@@ -97,7 +110,7 @@ const MonthlyVolumeLineChart = ({ data }: MonthlyVolumeLineChartProps) => {
 
   return (
     <section className="admin-panel reports-panel">
-      <h3 className="admin-panel-title">Monthly Request Volume</h3>
+      <h3 className="admin-panel-title">{title}</h3>
 
       {data.length === 0 ? (
         <p className="reports-chart-empty">No request data available yet.</p>
@@ -170,7 +183,8 @@ const MonthlyVolumeLineChart = ({ data }: MonthlyVolumeLineChartProps) => {
                       strokeLinecap="round"
                     />
 
-                    {data.map((point, index) => (
+                    {data.map((point, index) =>
+                      showDots || hoveredIndex === index ? (
                       <circle
                         key={`${series.key}-${index}`}
                         cx={monthToX(index)}
@@ -180,13 +194,15 @@ const MonthlyVolumeLineChart = ({ data }: MonthlyVolumeLineChartProps) => {
                         stroke={series.color}
                         strokeWidth={2}
                       />
-                    ))}
+                      ) : null,
+                    )}
                   </g>
                 );
               })}
 
               {/* X-axis month labels */}
-              {data.map((point, index) => (
+              {data.map((point, index) =>
+                index % stride !== 0 ? null : (
                 <text
                   key={`label-${point.month}-${index}`}
                   x={monthToX(index)}
@@ -196,7 +212,8 @@ const MonthlyVolumeLineChart = ({ data }: MonthlyVolumeLineChartProps) => {
                 >
                   {point.month}
                 </text>
-              ))}
+                ),
+              )}
             </svg>
 
             {hoveredPoint && tooltipPosition && (

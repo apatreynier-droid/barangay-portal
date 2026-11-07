@@ -673,6 +673,11 @@
   color: #1e40af;
 }
 
+.admin-status-pill.status-ready {
+  background: #cffafe;
+  color: #155e75;
+}
+
 .admin-status-pill.status-processing {
   background: #ede9fe;
   color: #5b21b6;
@@ -1029,7 +1034,8 @@
      rows 2-3     six stat cards, three per row (Pending, Approved,
                   Residents / Processing, Completed, Rejected)
      row 4        charts panel
-     rows 5-6     Recent Requests next to Registrations + Notifications
+     row 5        analytics (status breakdown + residents by Purok)
+     rows 6-7     Recent Requests next to Registrations + Notifications
                   (stacked from 1025-1200, side by side from 1201px)
 
    The two half-grids dissolve with display: contents so their cards become
@@ -1062,25 +1068,30 @@
     grid-column: 1 / -1;
   }
 
-  .admin-dashboard-layout .admin-recent-requests {
+  .admin-dashboard-layout .admin-analytics-grid {
     grid-row: 5;
     grid-column: 1 / -1;
   }
 
-  .admin-dashboard-layout .admin-side-stack {
+  .admin-dashboard-layout .admin-recent-requests {
     grid-row: 6;
+    grid-column: 1 / -1;
+  }
+
+  .admin-dashboard-layout .admin-side-stack {
+    grid-row: 7;
     grid-column: 1 / -1;
   }
 }
 
 @media (min-width: 1201px) {
   .admin-dashboard-layout .admin-recent-requests {
-    grid-row: 5;
+    grid-row: 6;
     grid-column: 1 / 5;
   }
 
   .admin-dashboard-layout .admin-side-stack {
-    grid-row: 5;
+    grid-row: 6;
     grid-column: 5 / -1;
   }
 }
@@ -1215,5 +1226,297 @@
   .admin-nav-item:hover:not(:disabled) .admin-nav-icon img,
   .admin-nav-item:hover:not(:disabled) .admin-nav-label {
     transform: none;
+  }
+}
+
+/* ------------------------------ Analytics panels ---------------------------- */
+/* Shared by the Admin Dashboard and the Admin Reports page (both import this
+   stylesheet). Values come from the backend analytics service (Pandas). */
+
+.admin-analytics-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 20px;
+  min-width: 0;
+}
+
+.analytics-panel-heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.analytics-panel-heading .admin-panel-title {
+  margin-bottom: 4px;
+}
+
+.analytics-panel-total {
+  margin: 0;
+  color: #64748b;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.analytics-panel-total strong {
+  color: #0f172a;
+  font-size: 18px;
+}
+
+.analytics-panel-scope {
+  margin: 0 0 14px;
+  color: #64748b;
+  font-size: 12px;
+}
+
+.analytics-subtitle {
+  margin: 0;
+  color: #334155;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+/* Stacked share bar: 2px surface gaps separate the segments. */
+.analytics-stacked-bar {
+  display: flex;
+  gap: 2px;
+  height: 14px;
+  margin-bottom: 14px;
+  overflow: hidden;
+  border-radius: 4px;
+}
+
+.analytics-stacked-segment {
+  flex-basis: 0;
+  min-width: 4px;
+  transition: opacity 0.15s ease;
+}
+
+.analytics-stacked-bar:hover .analytics-stacked-segment:not(.is-active) {
+  opacity: 0.45;
+}
+
+.analytics-status-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 4px 16px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.analytics-status-list li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  padding: 6px 8px;
+  border-radius: 8px;
+  font-size: 13px;
+}
+
+.analytics-status-list li.is-active {
+  background: #f1f5f9;
+}
+
+.analytics-status-name {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  color: #334155;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.analytics-status-count {
+  color: #0f172a;
+  font-weight: 700;
+}
+
+.analytics-status-share {
+  min-width: 44px;
+  color: #64748b;
+  font-size: 12px;
+  text-align: right;
+}
+
+.analytics-yearly {
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid #e2e8f0;
+}
+
+.analytics-yearly ul {
+  display: grid;
+  gap: 6px;
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.analytics-yearly li {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  font-size: 13px;
+  color: #334155;
+}
+
+.analytics-yearly li strong {
+  color: #0f172a;
+}
+
+.analytics-yearly-change {
+  margin-left: auto;
+  color: #64748b;
+  font-size: 12px;
+}
+
+/* Resident counters (accounts by status). */
+.analytics-resident-counters {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 8px;
+  margin: 0 0 18px;
+}
+
+.analytics-counter {
+  min-width: 0;
+  padding: 10px;
+  border-radius: 10px;
+  background: #f8fafc;
+}
+
+.analytics-counter dt {
+  overflow: hidden;
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.analytics-counter dd {
+  margin: 4px 0 0;
+  color: #0f172a;
+  font-size: 18px;
+  font-weight: 800;
+}
+
+.analytics-counter.is-registered {
+  background: #eff6ff;
+}
+
+.analytics-purok-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.analytics-purok-columns {
+  display: flex;
+  gap: 8px;
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.analytics-purok-columns span {
+  width: 64px;
+  text-align: right;
+}
+
+.analytics-purok-list {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.analytics-purok-list li {
+  display: grid;
+  grid-template-columns: 92px minmax(0, 1fr) 64px 64px;
+  align-items: center;
+  gap: 8px;
+  min-height: 30px;
+  font-size: 13px;
+}
+
+.analytics-purok-name {
+  overflow: hidden;
+  color: #334155;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.analytics-purok-list li.is-unspecified .analytics-purok-name {
+  color: #64748b;
+  font-style: italic;
+}
+
+.analytics-purok-bar {
+  height: 10px;
+  overflow: hidden;
+  border-radius: 4px;
+  background: #f1f5f9;
+}
+
+.analytics-purok-bar span {
+  display: block;
+  height: 100%;
+  border-radius: 0 4px 4px 0;
+}
+
+.analytics-purok-value {
+  color: #0f172a;
+  font-weight: 700;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.analytics-purok-value small {
+  display: block;
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.analytics-generated-note {
+  grid-column: 1 / -1;
+  margin: -8px 0 0;
+  color: #64748b;
+  font-size: 11px;
+  text-align: right;
+}
+
+@media (max-width: 1200px) {
+  .admin-analytics-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 600px) {
+  .analytics-status-list {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .analytics-resident-counters {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .analytics-purok-list li {
+    grid-template-columns: 76px minmax(0, 1fr) 52px 52px;
+    gap: 6px;
+  }
+
+  .analytics-purok-columns span {
+    width: 52px;
+  }
+
+  .analytics-generated-note {
+    text-align: left;
   }
 }

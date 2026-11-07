@@ -10,6 +10,10 @@ import type { PotholeAction } from "../../../Types/Admin/AdminPotholeManagementT
 type PotholeConfirmModalProps = {
   action: PotholeAction;
   reportId: string;
+  /** True while the change is being saved. */
+  isSaving: boolean;
+  /** Error returned by the server for the last attempt. */
+  saveError: string;
   onCancel: () => void;
   onConfirm: (remark: string) => void;
 };
@@ -17,6 +21,8 @@ type PotholeConfirmModalProps = {
 const PotholeConfirmModal = ({
   action,
   reportId,
+  isSaving,
+  saveError,
   onCancel,
   onConfirm,
 }: PotholeConfirmModalProps) => {
@@ -24,9 +30,14 @@ const PotholeConfirmModal = ({
   const [remark, setRemark] = useState("");
   const [error, setError] = useState("");
   const dialogRef = useRef<HTMLElement | null>(null);
-  useModalBehavior(dialogRef, onCancel);
+  // Escape/backdrop cannot close the dialog while the change is saving.
+  const handleCancel = () => {
+    if (!isSaving) onCancel();
+  };
+  useModalBehavior(dialogRef, handleCancel);
 
   const handleConfirm = () => {
+    if (isSaving) return;
     const trimmed = remark.trim();
 
     if (meta.requiresRemark && !trimmed) {
@@ -40,7 +51,7 @@ const PotholeConfirmModal = ({
   return (
     <div
       className="residents-confirm-backdrop pothole-confirm-backdrop"
-      onClick={onCancel}
+      onClick={handleCancel}
       role="presentation"
     >
       <section
@@ -70,7 +81,7 @@ const PotholeConfirmModal = ({
           <span>
             {meta.requiresRemark
               ? "Reason for rejection (required)"
-              : "Administrator remark (optional)"}
+              : "Remark (optional)"}
           </span>
           <textarea
             className="pothole-textarea"
@@ -85,9 +96,9 @@ const PotholeConfirmModal = ({
           />
         </label>
 
-        {error && (
+        {(error || saveError) && (
           <p className="pothole-field-error" role="alert">
-            {error}
+            {error || saveError}
           </p>
         )}
 
@@ -95,7 +106,8 @@ const PotholeConfirmModal = ({
           <button
             type="button"
             className="residents-confirm-cancel"
-            onClick={onCancel}
+            onClick={handleCancel}
+            disabled={isSaving}
           >
             Cancel
           </button>
@@ -105,8 +117,9 @@ const PotholeConfirmModal = ({
               meta.isDanger ? "danger" : "info"
             }`}
             onClick={handleConfirm}
+            disabled={isSaving}
           >
-            {meta.confirmLabel}
+            {isSaving ? "Saving…" : meta.confirmLabel}
           </button>
         </div>
       </section>

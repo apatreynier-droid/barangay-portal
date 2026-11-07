@@ -103,9 +103,16 @@ def sanitize_original_filename(name: str | None, extension: str) -> str:
     return base
 
 
-def read_validated_image(upload: UploadFile) -> ValidatedImage:
-    """Read the upload (size-capped) and verify it is a JPEG, PNG or WebP."""
-    max_bytes = settings.request_attachment_max_bytes
+def read_validated_image(
+    upload: UploadFile, max_bytes: int | None = None
+) -> ValidatedImage:
+    """Read the upload (size-capped) and verify it is a JPEG, PNG or WebP.
+
+    ``max_bytes`` defaults to the document-request attachment limit; other
+    features (pothole report photos) pass their own limit.
+    """
+    if max_bytes is None:
+        max_bytes = settings.request_attachment_max_bytes
     data = upload.file.read(max_bytes + 1)
 
     if not data:
@@ -138,16 +145,27 @@ def read_validated_image(upload: UploadFile) -> ValidatedImage:
     )
 
 
-def request_attachments_dir() -> Path:
-    directory = settings.upload_dir / REQUEST_ATTACHMENTS_SUBDIR
+def upload_subdir(subdir: str) -> Path:
+    """Return (and create) a persistent sub-folder of ``settings.upload_dir``."""
+    directory = settings.upload_dir / subdir
     directory.mkdir(parents=True, exist_ok=True)
     return directory
 
 
-def store_image_file(image: ValidatedImage) -> str:
-    """Write the image under a fresh random name and return that name."""
+def request_attachments_dir() -> Path:
+    return upload_subdir(REQUEST_ATTACHMENTS_SUBDIR)
+
+
+def store_image_file(
+    image: ValidatedImage, subdir: str = REQUEST_ATTACHMENTS_SUBDIR
+) -> str:
+    """Write the original bytes under a fresh random name and return that name.
+
+    The bytes are written exactly as uploaded: no resizing, re-encoding or
+    metadata stripping.
+    """
     stored_filename = f"{uuid.uuid4().hex}{image.extension}"
-    path = request_attachments_dir() / stored_filename
+    path = upload_subdir(subdir) / stored_filename
 
     # "xb": never overwrite an existing file.
     with open(path, "xb") as handle:
@@ -158,12 +176,14 @@ def store_image_file(image: ValidatedImage) -> str:
     return stored_filename
 
 
-def resolve_stored_path(stored_filename: str) -> Path | None:
+def resolve_stored_path(
+    stored_filename: str, subdir: str = REQUEST_ATTACHMENTS_SUBDIR
+) -> Path | None:
     """Map a stored name to its file, refusing anything but generated names."""
     if not STORED_FILENAME_PATTERN.fullmatch(stored_filename or ""):
         return None
 
-    directory = request_attachments_dir().resolve()
+    directory = upload_subdir(subdir).resolve()
     path = (directory / stored_filename).resolve()
     if path.parent != directory or not path.is_file():
         return None
@@ -171,13 +191,15 @@ def resolve_stored_path(stored_filename: str) -> Path | None:
     return path
 
 
-def delete_stored_file(stored_filename: str | None) -> None:
+def delete_stored_file(
+    stored_filename: str | None, subdir: str = REQUEST_ATTACHMENTS_SUBDIR
+) -> None:
     """Best-effort removal (used for rollbacks and deleted requests)."""
     if not stored_filename or not STORED_FILENAME_PATTERN.fullmatch(stored_filename):
         return
 
     try:
-        (request_attachments_dir() / stored_filename).unlink(missing_ok=True)
+        (upload_subdir(subdir) / stored_filename).unlink(missing_ok=True)
     except OSError:
         logger.warning("Could not delete attachment file %s", stored_filename)
 
@@ -280,19 +302,29 @@ def _content_disposition(filename: str, *, download: bool) -> str:
 
 
 def build_attachment_response(
-    row: dict[str, object] | None, *, download: bool = False
+    row: dict[str, object] | None,
+    *,
+    download: bool = False,
+    subdir: str = REQUEST_ATTACHMENTS_SUBDIR,
+    not_found_detail: str = "Attachment was not found.",
 ) -> FileResponse:
-    """Stream a stored attachment, or 404 when the row or file is missing."""
-    path = resolve_stored_path(str(row["stored_filename"])) if row else None
+    """Stream a stored image, or 404 when the row or file is missing.
+
+    ``row`` needs ``stored_filename``, ``content_type`` and
+    ``original_filename``.
+    """
+    path = resolve_stored_path(str(row["stored_filename"]), subdir) if row else None
 
     if row is None or path is None:
         if row is not None:
             logger.error(
-                "Attachment file missing on disk for request %s", row["request_id"]
+                "Stored image %s is missing on disk (%s)",
+                row["stored_filename"],
+                subdir,
             )
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Attachment was not found.",
+            detail=not_found_detail,
         )
 
     return FileResponse(

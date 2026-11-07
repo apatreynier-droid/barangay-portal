@@ -1,10 +1,13 @@
-import { useEffect, useRef, useState } from "react";
+import { Suspense, lazy, useEffect, useRef, useState } from "react";
 import type { ChangeEvent, DragEvent, FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   AlertTriangle,
   Camera,
+  Crosshair,
   Images,
+  LoaderCircle,
+  MapPin,
   RefreshCw,
   Trash2,
   Upload,
@@ -12,6 +15,14 @@ import {
 import Sidebar from "../../../components/Resident/Dashboard/Sidebar";
 import Topbar from "../../../components/Resident/Dashboard/Topbar";
 import { RESIDENT_ROLE_LABEL } from "../../../Utils/Resident/ResidentDisplay";
+import useGpsCapture, {
+  LOW_GPS_ACCURACY_M,
+} from "../../../Utils/Resident/useGpsCapture";
+import {
+  fetchMyPotholeReports,
+  submitPotholeReport,
+} from "../../../Utils/Shared/api";
+import { STANDARDIZED_PUROKS } from "../../../Utils/Shared/puroks";
 import useResponsiveSidebar from "../../../Utils/Shared/useResponsiveSidebar";
 import {
   RESIDENT_HOME_PATH,
@@ -21,6 +32,11 @@ import {
   NOTIFICATIONS_PATH,
   POTHOLE_DETECTION_PATH,
 } from "../../../Utils/Shared/routePaths";
+import type { PotholeStatus } from "../../../Types/Admin/AdminPotholeManagementType";
+import type {
+  CapturedLocation,
+  ResidentPotholeReport,
+} from "../../../Types/Resident/PotholeReportType";
 import "../../../Styles/Resident/Components/ResidentTopBar.css";
 import "../../../Styles/Resident/Pages/Dashboard.css";
 import "../../../Styles/Resident/Pages/PotholeDetection.css";
@@ -34,50 +50,64 @@ type PotholeDetectionProps = {
   onLogout: () => void;
 };
 
-type ReportStatus = "review" | "repaired";
-
-type PotholeReport = {
-  id: string;
-  title: string;
-  note: string;
-  date: string;
-  status: ReportStatus;
+const STATUS_DISPLAY: Record<PotholeStatus, { label: string; tone: string }> = {
+  pending: { label: "Under review", tone: "is-review" },
+  verified: { label: "Verified", tone: "is-verified" },
+  under_maintenance: { label: "Being repaired", tone: "is-maintenance" },
+  resolved: { label: "Repaired", tone: "is-repaired" },
+  rejected: { label: "Not accepted", tone: "is-rejected" },
 };
-
-const STATUS_LABEL: Record<ReportStatus, string> = {
-  review: "Under review",
-  repaired: "Repaired",
-};
-
-// Demo data only - replace with the real reports once the API is ready.
-const DEMO_REPORTS: PotholeReport[] = [
-  {
-    id: "demo-1",
-    title: "Road near the covered court",
-    note: "Wide hole on the right lane.",
-    date: "Oct 11",
-    status: "review",
-  },
-  {
-    id: "demo-2",
-    title: "Corner of the market entrance",
-    note: "Several small potholes.",
-    date: "Sep 29",
-    status: "repaired",
-  },
-];
 
 const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp"];
 const MAX_IMAGE_MB = 10;
 const MAX_IMAGE_BYTES = MAX_IMAGE_MB * 1024 * 1024;
+const MAX_LOCATION_LENGTH = 255;
+const MAX_ROAD_LENGTH = 150;
+const MAX_NOTES_LENGTH = 1000;
+
+type LocationMode = "gps" | "manual";
+
+// Leaflet is only downloaded when a map is actually shown.
+const LocationPickerMap = lazy(
+  () => import("../../../components/Resident/PotholeDetection/LocationPickerMap"),
+);
+
+const MapFallback = () => (
+  <div className="pd-map pd-map-loading" aria-busy="true">
+    Loading map…
+  </div>
+);
 
 const formatFileSize = (bytes: number): string =>
   bytes >= 1024 * 1024
     ? `${(bytes / (1024 * 1024)).toFixed(1)} MB`
     : `${Math.max(1, Math.round(bytes / 1024))} KB`;
 
-const formatToday = (): string =>
-  new Date().toLocaleDateString("en-US", { month: "short", day: "numeric" });
+const formatCoordinates = (latitude: number, longitude: number): string =>
+  `${latitude.toFixed(6)}, ${longitude.toFixed(6)}`;
+
+/** MySQL timestamps arrive in UTC without a zone marker. */
+const formatReportDate = (timestamp: string): string => {
+  const value = /[zZ]|[+-]\d{2}:?\d{2}$/.test(timestamp)
+    ? timestamp
+    : `${timestamp}Z`;
+  return new Date(value).toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+};
+
+const describeReportLocation = (report: ResidentPotholeReport): string => {
+  if (report.location_source === "gps") {
+    return report.gps_accuracy_m === null
+      ? "GPS location"
+      : `GPS location (±${Math.round(report.gps_accuracy_m)} m)`;
+  }
+  return report.location_source === "manual"
+    ? "Pinned on the map"
+    : "No map location";
+};
 
 function PotholeDetection({ user, onLogout }: PotholeDetectionProps) {
   const navigate = useNavigate();
@@ -86,14 +116,28 @@ function PotholeDetection({ user, onLogout }: PotholeDetectionProps) {
   const [fileError, setFileError] = useState("");
   const [isDragging, setIsDragging] = useState(false);
   const [location, setLocation] = useState("");
+  const [purok, setPurok] = useState("");
+  const [road, setRoad] = useState("");
   const [notes, setNotes] = useState("");
-  const [reports, setReports] = useState<PotholeReport[]>(DEMO_REPORTS);
+  const [locationMode, setLocationMode] = useState<LocationMode>("gps");
+  const [manualPoint, setManualPoint] = useState<{
+    latitude: number;
+    longitude: number;
+  } | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState("");
   const [sentMessage, setSentMessage] = useState("");
+  const [reports, setReports] = useState<ResidentPotholeReport[]>([]);
+  const [reportsState, setReportsState] = useState<
+    "loading" | "ready" | "error"
+  >("loading");
+  const [reportsError, setReportsError] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
   // Opens the phone's rear camera directly (ignored on desktop browsers).
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const previewUrlRef = useRef<string | null>(null);
   const { isDrawerOpen, closeDrawer, toggleDrawer } = useResponsiveSidebar();
+  const gps = useGpsCapture();
 
   // Release the preview's memory when leaving the page.
   useEffect(() => {
@@ -103,6 +147,31 @@ function PotholeDetection({ user, onLogout }: PotholeDetectionProps) {
       }
     };
   }, []);
+
+  const fetchReports = () => {
+    fetchMyPotholeReports()
+      .then((data) => {
+        setReports(data);
+        setReportsState("ready");
+      })
+      .catch((error: unknown) => {
+        setReportsError(
+          error instanceof Error && error.message
+            ? error.message
+            : "Could not load your reports.",
+        );
+        setReportsState("error");
+      });
+  };
+
+  useEffect(() => {
+    fetchReports();
+  }, []);
+
+  const retryReports = () => {
+    setReportsState("loading");
+    fetchReports();
+  };
 
   const clearPreview = () => {
     if (previewUrlRef.current) {
@@ -125,6 +194,7 @@ function PotholeDetection({ user, onLogout }: PotholeDetectionProps) {
     }
 
     clearPreview();
+    // Only a local preview; the original file itself is uploaded on submit.
     const url = URL.createObjectURL(file);
     previewUrlRef.current = url;
 
@@ -158,31 +228,263 @@ function PotholeDetection({ user, onLogout }: PotholeDetectionProps) {
     setFileError("");
   };
 
-  const canSend = selectedFile !== null && location.trim().length > 0;
+  const switchToManual = () => {
+    gps.reset();
+    setLocationMode("manual");
+    setSentMessage("");
+  };
 
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+  const switchToGps = () => {
+    setManualPoint(null);
+    setLocationMode("gps");
+    gps.capture();
+  };
+
+  const clearPosition = () => {
+    gps.reset();
+    setManualPoint(null);
+    setLocationMode("gps");
+  };
+
+  // Only a position that was really captured (or explicitly pinned) is sent.
+  const position: CapturedLocation | null =
+    locationMode === "gps" && gps.state.status === "captured"
+      ? {
+          source: "gps",
+          latitude: gps.state.reading.latitude,
+          longitude: gps.state.reading.longitude,
+          accuracy: gps.state.reading.accuracy,
+          capturedAt: gps.state.reading.capturedAt,
+        }
+      : locationMode === "manual" && manualPoint
+        ? { source: "manual", ...manualPoint }
+        : null;
+
+  const isLocating = locationMode === "gps" && gps.state.status === "locating";
+  const canSend =
+    selectedFile !== null &&
+    location.trim().length > 0 &&
+    !isLocating &&
+    !isSubmitting;
+
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (!canSend) return;
+    if (!canSend || !selectedFile) return;
 
-    // Placeholder for the submission flow - nothing is sent to a server yet.
-    // The report is only added to the local list so the page feels complete.
-    const newReport: PotholeReport = {
-      id: `local-${Date.now()}`,
-      title: location.trim(),
-      note: notes.trim() || "No notes added.",
-      date: formatToday(),
-      status: "review",
-    };
+    setIsSubmitting(true);
+    setSubmitError("");
+    setSentMessage("");
 
-    setReports((current) => [newReport, ...current]);
-    handleRemoveFile();
-    setLocation("");
-    setNotes("");
-    setSentMessage("Report sent. Barangay staff will review it.");
+    try {
+      const created = await submitPotholeReport({
+        photo: selectedFile,
+        location: location.trim(),
+        purok,
+        road: road.trim(),
+        notes: notes.trim(),
+        position,
+      });
+
+      setReports((current) => [created, ...current]);
+      setReportsState("ready");
+      handleRemoveFile();
+      setLocation("");
+      setPurok("");
+      setRoad("");
+      setNotes("");
+      clearPosition();
+      setSentMessage(
+        `Report ${created.report_number} sent. Barangay staff will review it.`,
+      );
+    } catch (error) {
+      setSubmitError(
+        error instanceof Error && error.message
+          ? error.message
+          : "Could not send your report. Please try again.",
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const renderLocationCapture = () => {
+    if (locationMode === "manual") {
+      return (
+        <div className="pd-geo">
+          <div className="pd-geo-status is-manual">
+            <MapPin size={18} strokeWidth={2} aria-hidden="true" />
+            <div>
+              <strong>Pin the spot on the map</strong>
+              <span>
+                Tap the map where the pothole is. A pinned location is marked
+                as <em>manually selected</em>, not GPS.
+              </span>
+            </div>
+          </div>
+
+          <Suspense fallback={<MapFallback />}>
+            <LocationPickerMap
+              point={manualPoint}
+              onPick={(latitude, longitude) => {
+                setManualPoint({ latitude, longitude });
+                setSentMessage("");
+              }}
+              label="Map: tap to pin where the pothole is"
+            />
+          </Suspense>
+
+          {manualPoint && (
+            <p className="pd-geo-coords">
+              Pinned at{" "}
+              <span className="pd-mono">
+                {formatCoordinates(manualPoint.latitude, manualPoint.longitude)}
+              </span>{" "}
+              (manual pin, not GPS-verified)
+            </p>
+          )}
+
+          <div className="pd-geo-actions">
+            <button type="button" className="pd-btn" onClick={switchToGps}>
+              <Crosshair size={15} strokeWidth={2} aria-hidden="true" />
+              Use GPS instead
+            </button>
+            {manualPoint && (
+              <button
+                type="button"
+                className="pd-btn pd-btn-danger"
+                onClick={() => setManualPoint(null)}
+              >
+                <Trash2 size={15} strokeWidth={2} aria-hidden="true" />
+                Remove pin
+              </button>
+            )}
+          </div>
+        </div>
+      );
+    }
+
+    const { state } = gps;
+
+    if (state.status === "locating") {
+      return (
+        <div className="pd-geo">
+          <div className="pd-geo-status" role="status">
+            <LoaderCircle
+              size={18}
+              strokeWidth={2}
+              className="pd-spin"
+              aria-hidden="true"
+            />
+            <div>
+              <strong>Finding your location…</strong>
+              <span>
+                {state.best
+                  ? `Improving accuracy (now ±${Math.round(state.best.accuracy)} m). Keep the phone still.`
+                  : "Allow location access if your browser asks."}
+              </span>
+            </div>
+          </div>
+          <div className="pd-geo-actions">
+            <button type="button" className="pd-btn" onClick={gps.reset}>
+              Cancel
+            </button>
+          </div>
+        </div>
+      );
+    }
+
+    if (state.status === "captured") {
+      const { reading } = state;
+      const isLow = reading.accuracy > LOW_GPS_ACCURACY_M;
+
+      return (
+        <div className="pd-geo">
+          <div className={`pd-geo-status ${isLow ? "is-warning" : "is-ok"}`}>
+            <Crosshair size={18} strokeWidth={2} aria-hidden="true" />
+            <div>
+              <strong>GPS location captured</strong>
+              <span>
+                <span className="pd-mono">
+                  {formatCoordinates(reading.latitude, reading.longitude)}
+                </span>{" "}
+                · accuracy ±{Math.round(reading.accuracy)} m
+              </span>
+              {isLow && (
+                <span className="pd-geo-warning">
+                  This reading is not very precise. Try again outdoors, or pin
+                  the exact spot on the map.
+                </span>
+              )}
+            </div>
+          </div>
+
+          <Suspense fallback={<MapFallback />}>
+            <LocationPickerMap
+              point={reading}
+              accuracy={reading.accuracy}
+              label="Map showing your captured GPS location"
+            />
+          </Suspense>
+
+          <div className="pd-geo-actions">
+            <button type="button" className="pd-btn" onClick={gps.capture}>
+              <RefreshCw size={15} strokeWidth={2} aria-hidden="true" />
+              Capture again
+            </button>
+            <button type="button" className="pd-btn" onClick={switchToManual}>
+              <MapPin size={15} strokeWidth={2} aria-hidden="true" />
+              Pin on map instead
+            </button>
+            <button
+              type="button"
+              className="pd-btn pd-btn-danger"
+              onClick={gps.reset}
+            >
+              <Trash2 size={15} strokeWidth={2} aria-hidden="true" />
+              Remove
+            </button>
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <div className="pd-geo">
+        {state.status === "error" ? (
+          <div className="pd-geo-status is-error" role="alert">
+            <AlertTriangle size={18} strokeWidth={2} aria-hidden="true" />
+            <div>
+              <strong>Location not captured</strong>
+              <span>{state.message}</span>
+            </div>
+          </div>
+        ) : (
+          <p className="pd-geo-hint">
+            Stand next to the pothole and capture your GPS location so the
+            barangay can find it on the map.
+          </p>
+        )}
+
+        <div className="pd-geo-actions">
+          <button
+            type="button"
+            className="pd-btn pd-btn-primary"
+            onClick={gps.capture}
+          >
+            <Crosshair size={15} strokeWidth={2} aria-hidden="true" />
+            {state.status === "error" ? "Try again" : "Capture my GPS location"}
+          </button>
+          <button type="button" className="pd-btn" onClick={switchToManual}>
+            <MapPin size={15} strokeWidth={2} aria-hidden="true" />
+            Pin on map instead
+          </button>
+        </div>
+      </div>
+    );
   };
 
   return (
-    <div className="pd-page" data-version="3">
+    <div className="pd-page" data-version="4">
       <Sidebar
         firstName={user.first_name}
         lastName={user.last_name}
@@ -357,20 +659,62 @@ function PotholeDetection({ user, onLogout }: PotholeDetectionProps) {
             </div>
 
             <div className="pd-field">
+              <span className="pd-label">Map location</span>
+              {renderLocationCapture()}
+            </div>
+
+            <div className="pd-field">
               <label className="pd-label" htmlFor="pd-location">
-                Location
+                Where is it?
               </label>
               <input
                 id="pd-location"
                 type="text"
                 className="pd-input"
-                placeholder="Street, landmark or purok"
+                placeholder="Landmark or description, e.g. in front of the covered court"
+                maxLength={MAX_LOCATION_LENGTH}
                 value={location}
                 onChange={(event) => {
                   setLocation(event.target.value);
                   setSentMessage("");
                 }}
               />
+            </div>
+
+            <div className="pd-field-row">
+              <div className="pd-field">
+                <label className="pd-label" htmlFor="pd-purok">
+                  Purok (optional)
+                </label>
+                <select
+                  id="pd-purok"
+                  className="pd-input"
+                  value={purok}
+                  onChange={(event) => setPurok(event.target.value)}
+                >
+                  <option value="">Select Purok</option>
+                  {STANDARDIZED_PUROKS.map((name) => (
+                    <option key={name} value={name}>
+                      {name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="pd-field">
+                <label className="pd-label" htmlFor="pd-road">
+                  Road or street (optional)
+                </label>
+                <input
+                  id="pd-road"
+                  type="text"
+                  className="pd-input"
+                  placeholder="e.g. Barangay Road"
+                  maxLength={MAX_ROAD_LENGTH}
+                  value={road}
+                  onChange={(event) => setRoad(event.target.value)}
+                />
+              </div>
             </div>
 
             <div className="pd-field">
@@ -381,6 +725,7 @@ function PotholeDetection({ user, onLogout }: PotholeDetectionProps) {
                 id="pd-notes"
                 className="pd-input pd-textarea"
                 rows={3}
+                maxLength={MAX_NOTES_LENGTH}
                 placeholder="Size of the damage, which lane, how long it has been there"
                 value={notes}
                 onChange={(event) => setNotes(event.target.value)}
@@ -389,8 +734,23 @@ function PotholeDetection({ user, onLogout }: PotholeDetectionProps) {
 
             <div className="pd-actions">
               <button type="submit" className="pd-submit" disabled={!canSend}>
-                Send report
+                {isSubmitting
+                  ? "Sending…"
+                  : isLocating
+                    ? "Waiting for location…"
+                    : "Send report"}
               </button>
+              {selectedFile && location.trim() && !position && !isLocating && (
+                <p className="pd-hint">
+                  No map location captured: the report will be sent with your
+                  written description only.
+                </p>
+              )}
+              {submitError && (
+                <p className="pd-error" role="alert">
+                  {submitError}
+                </p>
+              )}
               {sentMessage && (
                 <p className="pd-success" role="status">
                   {sentMessage}
@@ -409,31 +769,59 @@ function PotholeDetection({ user, onLogout }: PotholeDetectionProps) {
               <p>Status of what you sent</p>
             </div>
 
-            {reports.length === 0 ? (
+            {reportsState === "loading" ? (
+              <p className="pd-empty" aria-busy="true">
+                Loading your reports…
+              </p>
+            ) : reportsState === "error" ? (
+              <div className="pd-empty" role="alert">
+                <p className="pd-error">{reportsError}</p>
+                <button type="button" className="pd-btn" onClick={retryReports}>
+                  <RefreshCw size={15} strokeWidth={2} aria-hidden="true" />
+                  Try again
+                </button>
+              </div>
+            ) : reports.length === 0 ? (
               <p className="pd-empty">
                 You have not sent any reports yet. Your reports will show up
                 here.
               </p>
             ) : (
               <ul className="pd-report-list">
-                {reports.map((report) => (
-                  <li key={report.id} className="pd-report">
-                    <span className="pd-report-icon" aria-hidden="true">
-                      <AlertTriangle size={20} strokeWidth={1.8} />
-                    </span>
-                    <div className="pd-report-text">
-                      <strong className="pd-report-title">
-                        {report.title}
-                      </strong>
-                      <span className="pd-report-note">
-                        {report.note} &middot; {report.date}
+                {reports.map((report) => {
+                  const display = STATUS_DISPLAY[report.status];
+                  const place = [
+                    report.location_description,
+                    report.road_name,
+                    report.purok,
+                  ]
+                    .filter(Boolean)
+                    .join(", ");
+
+                  return (
+                    <li key={report.id} className="pd-report">
+                      <span className="pd-report-icon" aria-hidden="true">
+                        <AlertTriangle size={20} strokeWidth={1.8} />
                       </span>
-                    </div>
-                    <span className={`pd-status is-${report.status}`}>
-                      {STATUS_LABEL[report.status]}
-                    </span>
-                  </li>
-                ))}
+                      <div className="pd-report-text">
+                        <strong className="pd-report-title">{place}</strong>
+                        <span className="pd-report-note">
+                          {report.report_number} &middot;{" "}
+                          {formatReportDate(report.reported_at)} &middot;{" "}
+                          {describeReportLocation(report)}
+                        </span>
+                        {report.status_remark && (
+                          <span className="pd-report-note">
+                            Barangay remark: {report.status_remark}
+                          </span>
+                        )}
+                      </div>
+                      <span className={`pd-status ${display.tone}`}>
+                        {display.label}
+                      </span>
+                    </li>
+                  );
+                })}
               </ul>
             )}
           </section>

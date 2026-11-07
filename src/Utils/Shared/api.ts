@@ -16,7 +16,10 @@ import type {
   AdminRegistration,
   AdminRegistrationActionResult,
 } from "../../Types/Admin/AdminRegistrationsType";
-import type { AdminReportsData } from "../../Types/Admin/AdminReportsType";
+import type {
+  AdminReportsData,
+  AdminReportsQuery,
+} from "../../Types/Admin/AdminReportsType";
 import type { AdminActivityLog } from "../../Types/Admin/AdminLogsType";
 import type {
   AdminStaffAccount,
@@ -24,6 +27,16 @@ import type {
   AdminStaffCreatePayload,
   AdminStaffUpdatePayload,
 } from "../../Types/Admin/AdminUserManagementType";
+import type {
+  ApiAdminPotholeReport,
+  ApiAdminPotholeReportDetail,
+  ApiAdminPotholeSummary,
+  PotholeStatus,
+} from "../../Types/Admin/AdminPotholeManagementType";
+import type {
+  NewPotholeReport,
+  ResidentPotholeReport,
+} from "../../Types/Resident/PotholeReportType";
 
 /** Port the FastAPI backend listens on (uvicorn ... --port 8000). */
 const API_PORT = 8000;
@@ -449,8 +462,27 @@ export const fetchAdminDashboard = async (): Promise<AdminDashboardData> => {
   return body as AdminDashboardData;
 };
 
-export const fetchAdminReports = async (): Promise<AdminReportsData> => {
-  const response = await authedFetch("/api/admin/reports");
+/**
+ * Administrator reports, computed by the backend's Pandas analytics service
+ * for the given Manila-time date range ("" dates = all time / today).
+ */
+export const fetchAdminReports = async (
+  query?: AdminReportsQuery,
+): Promise<AdminReportsData> => {
+  const params = new URLSearchParams();
+  if (query?.dateFrom) {
+    params.set("date_from", query.dateFrom);
+  }
+  if (query?.dateTo) {
+    params.set("date_to", query.dateTo);
+  }
+  if (query?.granularity) {
+    params.set("granularity", query.granularity);
+  }
+  const search = params.toString();
+  const response = await authedFetch(
+    `/api/admin/reports${search ? `?${search}` : ""}`,
+  );
   const body: unknown = await response.json().catch(() => null);
 
   if (!response.ok) {
@@ -878,6 +910,137 @@ export const fetchAdminRequestAttachment = async (
   }
 
   return response.blob();
+};
+
+/* -------------------------------------------------------------------------- */
+/*  Pothole reports (backend/app/potholes.py)                                 */
+/* -------------------------------------------------------------------------- */
+
+const readJson = async <T>(response: Response, fallback: string): Promise<T> => {
+  const body: unknown = await response.json().catch(() => null);
+
+  if (!response.ok) {
+    throw new ApiError(response.status, parseErrorMessage(body, fallback));
+  }
+
+  return body as T;
+};
+
+/**
+ * Sends a resident's pothole report (multipart): the original photo, the
+ * typed location, and the coordinates only when they were really captured,
+ * labelled with their source (device GPS or a manual map pin).
+ */
+export const submitPotholeReport = async (
+  report: NewPotholeReport,
+): Promise<ResidentPotholeReport> => {
+  const formData = new FormData();
+  formData.append("photo", report.photo, report.photo.name);
+  formData.append("location_description", report.location);
+  if (report.purok) formData.append("purok", report.purok);
+  if (report.road) formData.append("road_name", report.road);
+  if (report.notes) formData.append("notes", report.notes);
+
+  const { position } = report;
+  if (position) {
+    formData.append("latitude", String(position.latitude));
+    formData.append("longitude", String(position.longitude));
+    formData.append("location_source", position.source);
+
+    if (position.source === "gps") {
+      if (position.accuracy !== null) {
+        formData.append("gps_accuracy_m", String(position.accuracy));
+      }
+      formData.append("location_captured_at", position.capturedAt);
+    }
+  }
+
+  // No Content-Type header: the browser sets the multipart boundary itself.
+  const response = await authedFetch("/api/pothole-reports", {
+    method: "POST",
+    body: formData,
+  });
+  return readJson(response, "Could not send your report.");
+};
+
+/** The signed-in resident's own pothole reports. */
+export const fetchMyPotholeReports = async (): Promise<
+  ResidentPotholeReport[]
+> => {
+  const response = await authedFetch("/api/pothole-reports");
+  return readJson(response, "Could not load your reports.");
+};
+
+export const fetchAdminPotholeReports = async (): Promise<
+  ApiAdminPotholeReport[]
+> => {
+  const response = await authedFetch("/api/admin/pothole-reports");
+  return readJson(response, "Could not load the pothole reports.");
+};
+
+export const fetchAdminPotholeSummary =
+  async (): Promise<ApiAdminPotholeSummary> => {
+    const response = await authedFetch("/api/admin/pothole-reports/summary");
+    return readJson(response, "Could not load the pothole statistics.");
+  };
+
+export const fetchAdminPotholeReport = async (
+  recordId: number,
+): Promise<ApiAdminPotholeReportDetail> => {
+  const response = await authedFetch(`/api/admin/pothole-reports/${recordId}`);
+  return readJson(response, "Could not load the pothole report.");
+};
+
+/**
+ * The resident's original photo. Served only through this authenticated
+ * endpoint, so it is fetched as a Blob and shown with an object URL that is
+ * revoked when the page closes (the photo itself stays stored on the server).
+ */
+export const fetchAdminPotholePhoto = async (recordId: number): Promise<Blob> => {
+  const response = await authedFetch(
+    `/api/admin/pothole-reports/${recordId}/photo`,
+  );
+
+  if (!response.ok) {
+    const body: unknown = await response.json().catch(() => null);
+    throw new ApiError(
+      response.status,
+      parseErrorMessage(body, "Could not load the photo."),
+    );
+  }
+
+  return response.blob();
+};
+
+export const updateAdminPotholeStatus = async (
+  recordId: number,
+  status: Exclude<PotholeStatus, "pending">,
+  remark: string,
+): Promise<ApiAdminPotholeReportDetail> => {
+  const response = await authedFetch(
+    `/api/admin/pothole-reports/${recordId}/status`,
+    {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status, remark: remark || null }),
+    },
+  );
+  return readJson(response, "Could not update the report status.");
+};
+
+export const addAdminPotholeRemark = async (
+  recordId: number,
+  remark: string,
+): Promise<ApiAdminPotholeReportDetail> => {
+  const response = await authedFetch(
+    `/api/admin/pothole-reports/${recordId}/remarks`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ remark }),
+    },
+  );
+  return readJson(response, "Could not save the remark.");
 };
 
 export const updateDocumentRequest = async (

@@ -15,6 +15,13 @@ import DocumentTypeDonut from "../../../components/Admin/AdminDashboard/Document
 import AdminRecentRequests from "../../../components/Admin/AdminDashboard/AdminRecentRequests";
 import RecentRegistrations from "../../../components/Admin/AdminDashboard/RecentRegistrations";
 import AdminNotificationsCard from "../../../components/Admin/AdminDashboard/AdminNotificationsCard";
+import RequestStatusBreakdown from "../../../components/Admin/AdminDashboard/RequestStatusBreakdown";
+import PurokDistributionPanel from "../../../components/Admin/AdminDashboard/PurokDistributionPanel";
+import {
+  formatChange,
+  formatCount,
+  formatManilaDateTime,
+} from "../../../Utils/Admin/AdminAnalyticsDisplay";
 import useResponsiveSidebar from "../../../Utils/Shared/useResponsiveSidebar";
 
 type AdminDashboardProps = {
@@ -176,6 +183,45 @@ const AdminDashboard = ({
               <div className="admin-charts-grid">
                 <MonthlyRequestsChart data={data.monthly} />
                 <DocumentTypeDonut data={data.document_types} />
+              </div>
+
+              {/* Analytics computed by the backend (Pandas) from live records. */}
+              <div className="admin-analytics-grid">
+                <RequestStatusBreakdown
+                  items={data.request_status}
+                  scope="All document requests, by current status"
+                >
+                  {data.yearly.length > 0 && (
+                    <div className="analytics-yearly">
+                      <h4 className="analytics-subtitle">Yearly Requests</h4>
+                      <ul>
+                        {data.yearly.map((point, index) => (
+                          <li key={point.year}>
+                            <span>{point.year}</span>
+                            <strong>{formatCount(point.requests)}</strong>
+                            <span className="analytics-yearly-change">
+                              {index === 0
+                                ? "First year"
+                                : `${formatChange(
+                                    point.requests - data.yearly[index - 1].requests,
+                                    point.change_percentage,
+                                  )} vs ${data.yearly[index - 1].year}`}
+                            </span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </RequestStatusBreakdown>
+                <PurokDistributionPanel
+                  summary={data.resident_summary}
+                  puroks={data.purok_distribution}
+                />
+                <p className="analytics-generated-note">
+                  Statistics from live records · updated{" "}
+                  {formatManilaDateTime(data.generated_at)} (Philippine time)
+                  {isLoading ? " · refreshing…" : ""}
+                </p>
               </div>
 
               <div className="admin-side-stack">

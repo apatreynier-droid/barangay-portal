@@ -80,6 +80,23 @@ Document request image attachments need migration `011` (the
 .\.venv\Scripts\python.exe scripts\apply_request_attachments_migration.py
 ```
 
+Resident pothole reports (Resident "Pothole Detection" page and Admin
+"Pothole Management" page) need migration `012`: the `pothole_reports` and
+`pothole_report_updates` tables plus the `uploads/pothole_reports/` photo
+folder. Only new tables are created; existing data is not touched. Apply it
+once (idempotent), then run the end-to-end check with the backend running:
+
+```powershell
+.\.venv\Scripts\python.exe scripts\apply_pothole_reports_migration.py
+.\.venv\Scripts\python.exe scripts\test_pothole_reports.py
+```
+
+Device GPS only works on a secure page: mobile browsers block the Geolocation
+API on plain `http://` addresses (only `localhost` is exempt). Serve both the
+portal and this API over HTTPS in production; otherwise residents can still
+send reports, pinning the location on the map by hand (stored as a manual pin,
+never as GPS).
+
 
 ## 4. Optional: initialize the database through Python
 
@@ -132,6 +149,64 @@ If the computer's IP address changes, update that line and restart the API.
 - `GET /api/notifications`
 - `PATCH /api/notifications/{notification_id}/read`
 - `POST /api/notifications/read-all`
+- `GET /api/admin/dashboard` (Staff/administrators; analytics below)
+- `GET /api/admin/reports?date_from=&date_to=&granularity=` (administrators only)
+
+## Dashboard and Reports analytics (Pandas)
+
+`app/analytics.py` is the analytics service behind `GET /api/admin/dashboard`
+and `GET /api/admin/reports`. The route handlers in `app/main.py` only
+validate input and call `build_dashboard_analytics()` /
+`build_reports_analytics()`. Every figure comes from the live MySQL records
+through the request's normal `get_db` connection.
+
+- **SQL** filters by date and does the plain counts (`GROUP BY status`,
+  `purok`, …), so only the selected period's rows are loaded.
+- **Pandas** does the reshaping: Manila-time bucketing (daily, Monday–Sunday
+  weekly, monthly, yearly), filling empty periods and Puroks with 0,
+  percentages, previous-period comparison, Purok comparison and
+  processing-time statistics (mean/median/90th percentile, per stage from
+  `request_status_history`).
+- NumPy is installed as a Pandas dependency. It is not used directly.
+
+Reports query parameters (all optional):
+
+| Parameter | Meaning |
+|---|---|
+| `date_from` | First Philippine calendar day `YYYY-MM-DD`. Omit for all time. |
+| `date_to` | Last Philippine calendar day. Defaults to today (Manila). |
+| `granularity` | `daily`, `weekly`, `monthly` (default) or `yearly`. |
+
+Invalid dates, `date_from` after `date_to`, or a range with too many periods
+for the interval (e.g. more than 400 days at `daily`) return HTTP 422 with an
+explanation.
+
+Definitions used by the numbers:
+
+- *Registered residents* = resident accounts that an administrator approved
+  (`active` + `inactive`/`suspended`, i.e. *deactivated*). Pending and rejected
+  sign-ups are counted separately.
+- Report request figures cover the requests **submitted** in the range, with
+  their current status. *Completed/rejected in period* and processing times
+  cover the requests **completed** (or rejected) in the range, using
+  `completed_at` and the status-history timestamps. `last_updated` is never
+  treated as an event date.
+- Requests per Purok use the requesting resident's Purok. Records without a
+  Purok are shown as "Not specified" instead of being dropped.
+- Pothole analytics are statistics of submitted reports only (no detection
+  or classification). *Resolution rate* = resolved ÷ (resolved + unresolved).
+  Rejected reports count as neither.
+
+To add a metric, write a function in `app/analytics.py` that takes DataFrames
+(or a query helper's result) and returns plain dicts. Add its field to the
+response model in `app/schemas.py`, then add a check to
+`scripts/test_analytics.py`. That script verifies the analytics against plain
+SQL, temporary pothole rows (rolled back) and the role rules. It starts its own
+API process on port 8013:
+
+```powershell
+python scripts\test_analytics.py
+```
 
 ## Login rate limiting
 
