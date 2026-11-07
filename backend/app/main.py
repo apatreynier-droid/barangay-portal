@@ -1,11 +1,11 @@
 from __future__ import annotations
 
-import calendar
 import logging
 import math
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from datetime import date, datetime, timedelta, timezone
+from typing import Literal
 
 import mysql.connector
 import secrets
@@ -16,6 +16,7 @@ from fastapi import (
     File,
     Form,
     HTTPException,
+    Query,
     Request,
     Response,
     UploadFile,
@@ -29,6 +30,11 @@ from urllib.parse import quote
 from .config import settings
 from .database import create_connection, get_db
 from .activity_logs import record_activity_log
+from .analytics import (
+    AnalyticsInputError,
+    build_dashboard_analytics,
+    build_reports_analytics,
+)
 from .attachments import (
     ValidatedImage,
     build_attachment_response,
@@ -70,6 +76,7 @@ from .registration_emails import (
     reset_registration_emails,
     start_registration_email_worker,
 )
+from .potholes import router as pothole_router
 from .request_notifications import send_request_status_email
 from .schemas import (
     AdminActivityEntry,
@@ -78,8 +85,6 @@ from .schemas import (
     AdminDocumentRequestResponse,
     AdminRequestActionInput,
     AdminRequestHistoryResponse,
-    AdminDocumentTypeCount,
-    AdminMonthlyDataPoint,
     AdminRecentRegistration,
     AdminRecentRequest,
     AdminActivityLogResponse,
@@ -91,16 +96,11 @@ from .schemas import (
     AdminResidentResponse,
     AdminResidentStatusInput,
     AdminResidentUpdateInput,
-    AdminReportsExportRow,
-    AdminReportsMonthlyPoint,
     AdminReportsResponse,
-    AdminReportsSummary,
-    AdminPurokCount,
     AdminStaffAccountResponse,
     AdminStaffCreateInput,
     AdminStaffStatusInput,
     AdminStaffUpdateInput,
-    AdminStatusStats,
     AuthResponse,
     CreateRequestInput,
     DashboardSummaryResponse,
@@ -153,6 +153,8 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+# Resident pothole reports and their administration (see app/potholes.py).
+app.include_router(pothole_router)
 
 
 logger = logging.getLogger(__name__)
@@ -1350,98 +1352,18 @@ def admin_dashboard(
     connection: MySQLConnection = Depends(get_db),
     current_user: dict[str, object] = Depends(get_current_admin_portal_user),
 ) -> AdminDashboardResponse:
+    # Statistics, trends and Purok analytics come from the Pandas analytics
+    # service; this handler only adds the "recent" lists shown beside them.
+    try:
+        analytics = build_dashboard_analytics(connection)
+    except mysql.connector.Error as error:
+        logger.exception("Could not compute the dashboard analytics")
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Could not load the dashboard statistics from the database.",
+        ) from error
+
     cursor = connection.cursor(dictionary=True)
-
-    cursor.execute(
-        """
-        SELECT COALESCE(SUM(users.account_status NOT IN ('pending', 'rejected')), 0)
-                   AS total_residents,
-               COALESCE(SUM(users.account_status NOT IN ('pending', 'rejected')
-                            AND users.created_at
-                            >= DATE(CONVERT_TZ(NOW(), '+00:00', '+08:00')) - INTERVAL (DAY(DATE(CONVERT_TZ(NOW(), '+00:00', '+08:00'))) - 1) DAY), 0)
-                   AS new_residents_this_month,
-               COALESCE(SUM(users.account_status = 'pending'), 0)
-                   AS pending_registrations
-        FROM users
-        WHERE users.role = 'resident'
-        """
-    )
-    resident_stats = cursor.fetchone()
-
-    cursor.execute(
-        """
-        SELECT COALESCE(SUM(status = 'Pending'), 0) AS pending,
-               COALESCE(SUM(status = 'Ready for Pickup'), 0) AS approved,
-               COALESCE(SUM(status = 'Processing'), 0) AS processing,
-               COALESCE(SUM(status = 'Completed'
-                            AND COALESCE(completed_at, last_updated)
-                                >= DATE(CONVERT_TZ(NOW(), '+00:00', '+08:00')) - INTERVAL (DAY(DATE(CONVERT_TZ(NOW(), '+00:00', '+08:00'))) - 1) DAY), 0)
-                   AS completed,
-               COALESCE(SUM(status = 'Rejected'
-                            AND last_updated
-                                >= DATE(CONVERT_TZ(NOW(), '+00:00', '+08:00')) - INTERVAL (DAY(DATE(CONVERT_TZ(NOW(), '+00:00', '+08:00'))) - 1) DAY), 0)
-                   AS rejected
-         FROM requests
-         JOIN users ON users.id = requests.user_id
-         WHERE users.role = 'resident'
-         """
-     )
-    request_stats = cursor.fetchone()
-
-    # Monthly overview (submitted vs completed vs rejected) for the last 7 months.
-    cursor.execute(
-        """
-        SELECT YEAR(CONVERT_TZ(submitted_at, '+00:00', '+08:00')) AS yr, MONTH(CONVERT_TZ(submitted_at, '+00:00', '+08:00')) AS mo,
-               COUNT(*) AS submitted,
-               COALESCE(SUM(status = 'Completed'), 0) AS completed,
-               COALESCE(SUM(status = 'Rejected'), 0) AS rejected
-        FROM requests
-        WHERE submitted_at
-              >= SUBDATE(DATE(CONVERT_TZ(NOW(), '+00:00', '+08:00')) - INTERVAL (DAY(DATE(CONVERT_TZ(NOW(), '+00:00', '+08:00'))) - 1) DAY, INTERVAL 6 MONTH)
-        GROUP BY yr, mo
-        """
-    )
-    monthly_rows = {
-        (row["yr"], row["mo"]): row for row in cursor.fetchall()
-    }
-
-    today = date.today()
-    month_keys: list[tuple[int, int]] = []
-    year, month = today.year, today.month
-    for _ in range(7):
-        month_keys.append((year, month))
-        month -= 1
-        if month == 0:
-            month = 12
-            year -= 1
-    month_keys.reverse()
-
-    monthly: list[AdminMonthlyDataPoint] = []
-    for row_year, row_month in month_keys:
-        row = monthly_rows.get((row_year, row_month))
-        monthly.append(
-            AdminMonthlyDataPoint(
-                month=calendar.month_abbr[row_month],
-                submitted=row["submitted"] if row else 0,
-                completed=row["completed"] if row else 0,
-                rejected=row["rejected"] if row else 0,
-            )
-        )
-
-    cursor.execute(
-        """
-        SELECT document_types.document_name, COUNT(requests.id) AS total
-        FROM document_types
-        JOIN requests ON requests.document_type_id = document_types.id
-        GROUP BY document_types.id, document_types.document_name
-        ORDER BY total DESC
-        LIMIT 5
-        """
-    )
-    document_types = [
-        AdminDocumentTypeCount(document_name=row["document_name"], count=row["total"])
-        for row in cursor.fetchall()
-    ]
 
     cursor.execute(
         """
@@ -1520,18 +1442,7 @@ def admin_dashboard(
     cursor.close()
 
     return AdminDashboardResponse(
-        stats=AdminStatusStats(
-            total_residents=resident_stats["total_residents"],
-            new_residents_this_month=resident_stats["new_residents_this_month"],
-            pending=request_stats["pending"],
-            approved=request_stats["approved"],
-            processing=request_stats["processing"],
-            completed=request_stats["completed"],
-            rejected=request_stats["rejected"],
-            pending_registrations=resident_stats["pending_registrations"],
-        ),
-        monthly=monthly,
-        document_types=document_types,
+        **analytics,
         recent_requests=recent_requests,
         recent_registrations=recent_registrations,
         recent_activity=recent_activity,
@@ -1540,159 +1451,38 @@ def admin_dashboard(
 
 @app.get("/api/admin/reports", response_model=AdminReportsResponse)
 def admin_reports(
+    date_from: date | None = Query(
+        default=None,
+        description="First Manila calendar day (YYYY-MM-DD). Omit for all time.",
+    ),
+    date_to: date | None = Query(
+        default=None,
+        description="Last Manila calendar day (YYYY-MM-DD). Defaults to today.",
+    ),
+    granularity: Literal["daily", "weekly", "monthly", "yearly"] = Query(
+        default="monthly",
+        description="Interval of the request, registration and pothole trends.",
+    ),
     connection: MySQLConnection = Depends(get_db),
     current_user: dict[str, object] = Depends(get_current_admin_user),
 ) -> AdminReportsResponse:
-    cursor = connection.cursor(dictionary=True)
-
-    cursor.execute(
-        """
-        SELECT COUNT(*) AS total_residents,
-               COALESCE(SUM(users.account_status = 'active'), 0) AS active_residents
-        FROM users
-        WHERE users.role = 'resident'
-          AND users.account_status NOT IN ('pending', 'rejected')
-        """
-    )
-    resident_stats = cursor.fetchone()
-
-    cursor.execute(
-        """
-        SELECT COUNT(*) AS total_requests,
-               COALESCE(SUM(status = 'Completed'), 0) AS completed,
-               COALESCE(SUM(status = 'Rejected'), 0) AS rejected
-        FROM requests
-        """
-    )
-    request_stats = cursor.fetchone()
-
-    # Monthly overview (requests vs completed vs rejected) for the last 7 months.
-    cursor.execute(
-        """
-        SELECT YEAR(CONVERT_TZ(submitted_at, '+00:00', '+08:00')) AS yr, MONTH(CONVERT_TZ(submitted_at, '+00:00', '+08:00')) AS mo,
-               COUNT(*) AS requests,
-               COALESCE(SUM(status = 'Completed'), 0) AS completed,
-               COALESCE(SUM(status = 'Rejected'), 0) AS rejected
-        FROM requests
-        WHERE submitted_at
-              >= SUBDATE(DATE(CONVERT_TZ(NOW(), '+00:00', '+08:00')) - INTERVAL (DAY(DATE(CONVERT_TZ(NOW(), '+00:00', '+08:00'))) - 1) DAY, INTERVAL 6 MONTH)
-        GROUP BY yr, mo
-        """
-    )
-    monthly_rows = {
-        (row["yr"], row["mo"]): row for row in cursor.fetchall()
-    }
-
-    today = date.today()
-    month_keys: list[tuple[int, int]] = []
-    year, month = today.year, today.month
-    for _ in range(7):
-        month_keys.append((year, month))
-        month -= 1
-        if month == 0:
-            month = 12
-            year -= 1
-    month_keys.reverse()
-
-    monthly: list[AdminReportsMonthlyPoint] = []
-    for row_year, row_month in month_keys:
-        row = monthly_rows.get((row_year, row_month))
-        monthly.append(
-            AdminReportsMonthlyPoint(
-                month=calendar.month_abbr[row_month],
-                requests=row["requests"] if row else 0,
-                completed=row["completed"] if row else 0,
-                rejected=row["rejected"] if row else 0,
-            )
+    """Administrator reports for a date range, computed with Pandas."""
+    try:
+        analytics = build_reports_analytics(
+            connection, date_from, date_to, granularity
         )
+    except AnalyticsInputError as error:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(error)
+        ) from error
+    except mysql.connector.Error as error:
+        logger.exception("Could not compute the report analytics")
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Could not load the report data from the database.",
+        ) from error
 
-    # Registered residents grouped by their purok.
-    cursor.execute(
-        """
-        SELECT resident_profiles.purok,
-               COUNT(*) AS total
-        FROM resident_profiles
-        JOIN users ON users.id = resident_profiles.user_id
-        WHERE users.role = 'resident'
-              AND users.account_status NOT IN ('pending', 'rejected')
-              AND resident_profiles.purok IS NOT NULL
-              AND TRIM(resident_profiles.purok) <> ''
-        GROUP BY resident_profiles.purok
-        ORDER BY total DESC, resident_profiles.purok ASC
-        """
-    )
-    residents_by_purok = [
-        AdminPurokCount(purok=row["purok"], count=row["total"])
-        for row in cursor.fetchall()
-    ]
-
-    # Requests grouped by document type (all types with at least one request).
-    cursor.execute(
-        """
-        SELECT document_types.document_name, COUNT(requests.id) AS total
-        FROM document_types
-        JOIN requests ON requests.document_type_id = document_types.id
-        GROUP BY document_types.id, document_types.document_name
-        ORDER BY total DESC
-        """
-    )
-    document_types = [
-        AdminDocumentTypeCount(document_name=row["document_name"], count=row["total"])
-        for row in cursor.fetchall()
-    ]
-
-    # Full request records used for the CSV export / printable report.
-    cursor.execute(
-        """
-        SELECT requests.request_number,
-               CONCAT(resident_profiles.first_name, ' ', resident_profiles.last_name)
-                   AS resident_name,
-               document_types.document_name AS document,
-               requests.status,
-               requests.submitted_at
-        FROM requests
-        JOIN users ON users.id = requests.user_id
-        JOIN resident_profiles ON resident_profiles.user_id = users.id
-        JOIN document_types ON document_types.id = requests.document_type_id
-        ORDER BY requests.submitted_at DESC, requests.id DESC
-        """
-    )
-    export_requests = [
-        AdminReportsExportRow(
-            request_number=row["request_number"],
-            resident_name=row["resident_name"],
-            document=row["document"],
-            status=row["status"],
-            submitted_at=row["submitted_at"],
-        )
-        for row in cursor.fetchall()
-    ]
-
-    cursor.close()
-
-    total_requests = int(request_stats["total_requests"])
-    completed = int(request_stats["completed"])
-    rejected = int(request_stats["rejected"])
-
-    return AdminReportsResponse(
-        summary=AdminReportsSummary(
-            total_residents=resident_stats["total_residents"],
-            active_residents=resident_stats["active_residents"],
-            total_requests=total_requests,
-            completed=completed,
-            rejected=rejected,
-            completion_rate=round((completed / total_requests) * 100, 1)
-            if total_requests
-            else 0.0,
-            rejection_rate=round((rejected / total_requests) * 100, 1)
-            if total_requests
-            else 0.0,
-        ),
-        monthly=monthly,
-        residents_by_purok=residents_by_purok,
-        document_types=document_types,
-        export_requests=export_requests,
-    )
+    return AdminReportsResponse(**analytics)
 
 
 @app.get("/api/admin/residents", response_model=list[AdminResidentResponse])

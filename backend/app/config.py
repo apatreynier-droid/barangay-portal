@@ -112,6 +112,12 @@ class Settings:
     request_attachment_max_bytes: int = int(
         os.getenv("REQUEST_ATTACHMENT_MAX_BYTES", str(5 * 1024 * 1024))
     )
+    # -- Pothole report photos (see app/potholes.py) ------------------------
+    # Stored under ``upload_dir / pothole_reports``. Matches MAX_IMAGE_MB on the
+    # Resident Pothole Detection page (phone camera photos are often 4-8 MB).
+    pothole_photo_max_bytes: int = int(
+        os.getenv("POTHOLE_PHOTO_MAX_BYTES", str(10 * 1024 * 1024))
+    )
     cors_origins: tuple[str, ...] = tuple(
         origin.strip()
         for origin in os.getenv("CORS_ORIGINS", "http://localhost:5173").split(",")

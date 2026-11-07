@@ -211,12 +211,310 @@
   outline-offset: 2px;
 }
 
+/* ------------------------------- Filter bar --------------------------------- */
+
+.reports-filter-bar {
+  margin-bottom: 20px;
+}
+
+.reports-filter-fields {
+  display: grid;
+  grid-template-columns: minmax(150px, 1fr) minmax(150px, 1fr) minmax(150px, 1fr) auto;
+  align-items: end;
+  gap: 14px;
+}
+
+.reports-filter-field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0;
+}
+
+.reports-filter-field > span {
+  color: #475569;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.reports-filter-field .admin-logs-select,
+.reports-filter-field .date-picker-input {
+  width: 100%;
+  min-width: 0;
+  height: 42px;
+}
+
+.reports-interval-group {
+  display: inline-flex;
+  padding: 3px;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  background: #f8fafc;
+}
+
+.reports-interval-button {
+  min-height: 34px;
+  padding: 6px 12px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: #475569;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.reports-interval-button.is-active {
+  background: #2563eb;
+  color: #ffffff;
+}
+
+.reports-interval-button:disabled {
+  color: #cbd5e1;
+  cursor: not-allowed;
+}
+
+.reports-interval-button:focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: 1px;
+}
+
+.reports-filter-footer {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 8px 16px;
+  margin-top: 12px;
+  color: #475569;
+  font-size: 12px;
+}
+
+.reports-filter-warning {
+  color: #b91c1c;
+  font-weight: 600;
+}
+
+.reports-filter-timezone {
+  color: #64748b;
+}
+
+/* Stale data stays visible (dimmed) while the next range loads. */
+.reports-content {
+  transition: opacity 0.2s ease;
+}
+
+.reports-content.is-updating {
+  opacity: 0.55;
+  pointer-events: none;
+}
+
+.reports-charts-grid-even {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+}
+
+/* ----------------------------- Analytics panels ----------------------------- */
+
+.reports-purok-value {
+  fill: #0f172a;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.reports-counters-4 {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.reports-counters-3 {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.analytics-counter dd small {
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.reports-duration-tiles {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  margin: 0 0 18px;
+}
+
+.reports-duration-tiles div {
+  padding: 10px;
+  border-radius: 10px;
+  background: #f8fafc;
+}
+
+.reports-duration-tiles dt {
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.reports-duration-tiles dd {
+  margin: 4px 0 0;
+  color: #0f172a;
+  font-size: 16px;
+  font-weight: 800;
+}
+
+.reports-stage-list {
+  display: grid;
+  gap: 6px;
+  margin: 8px 0 18px;
+  padding: 0;
+  list-style: none;
+}
+
+.reports-stage-list li {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) 76px;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+}
+
+.reports-stage-name {
+  overflow: hidden;
+  color: #334155;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.reports-stage-value {
+  color: #0f172a;
+  font-weight: 700;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.reports-mini-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.reports-mini-table caption {
+  margin-bottom: 8px;
+  text-align: left;
+}
+
+.reports-mini-table th,
+.reports-mini-table td {
+  padding: 8px 10px;
+  border-bottom: 1px solid #e2e8f0;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.reports-mini-table th:first-child {
+  text-align: left;
+}
+
+.reports-mini-table thead th {
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.reports-mini-table tbody th {
+  color: #334155;
+  font-weight: 600;
+}
+
+.reports-mini-table td {
+  color: #0f172a;
+}
+
+.reports-mini-table tfoot th,
+.reports-mini-table tfoot td {
+  border-bottom: 0;
+  color: #0f172a;
+  font-weight: 700;
+}
+
+.reports-mini-table td.is-top {
+  color: #1d4ed8;
+  font-weight: 800;
+}
+
+.reports-mini-table tr.is-unspecified th {
+  color: #64748b;
+  font-style: italic;
+}
+
+.reports-change.is-up {
+  color: #166534;
+}
+
+.reports-change.is-down {
+  color: #b91c1c;
+}
+
+.reports-change.is-flat {
+  color: #64748b;
+}
+
+.reports-inline-facts {
+  margin: 0 0 18px;
+  color: #475569;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.reports-footnote {
+  margin: 12px 0 0;
+}
+
+.reports-table-scroll {
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+.reports-purok-comparison,
+.reports-pothole-panel {
+  margin-bottom: 20px;
+}
+
+.reports-purok-table {
+  min-width: 620px;
+}
+
+.reports-pothole-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 24px;
+  margin-top: 4px;
+}
+
+.reports-single-column {
+  grid-template-columns: minmax(0, 1fr);
+  margin-top: 8px;
+}
+
+.reports-section-gap {
+  margin-top: 8px;
+  margin-bottom: 4px;
+}
+
 /* -------------------------------- Responsive -------------------------------- */
 
 @media (max-width: 1200px) {
   .reports-charts-grid,
-  .reports-charts-grid-secondary {
+  .reports-charts-grid-secondary,
+  .reports-charts-grid-even {
     grid-template-columns: 1fr;
+  }
+
+  .reports-filter-fields {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .reports-filter-fields > :last-child {
+    grid-column: 1 / -1;
   }
 
   .reports-stats-grid {
@@ -227,6 +525,28 @@
 @media (max-width: 600px) {
   .reports-stats-grid {
     grid-template-columns: 1fr;
+  }
+
+  .reports-filter-fields {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .reports-interval-group {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .reports-interval-button {
+    padding: 6px 4px;
+  }
+
+  .reports-duration-tiles,
+  .reports-counters-4 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .reports-pothole-grid {
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .reports-generate-card {
@@ -259,7 +579,8 @@
 
 @media print {
   body:has(.reports-stats-grid) .admin-sidebar,
-  body:has(.reports-stats-grid) .reports-generate-card {
+  body:has(.reports-stats-grid) .reports-generate-card,
+  body:has(.reports-stats-grid) .reports-filter-fields {
     display: none;
   }
 

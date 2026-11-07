@@ -3,11 +3,14 @@ export const getAdminStatusClass = (status: string): string => {
     case "Pending":
       return "status-pending";
 
+    case "Approved":
+      return "status-approved";
+
     case "Processing":
       return "status-processing";
 
     case "Ready for Pickup":
-      return "status-approved";
+      return "status-ready";
 
     case "Completed":
       return "status-completed";
@@ -20,9 +23,14 @@ export const getAdminStatusClass = (status: string): string => {
   }
 };
 
+/**
+ * Display label of a stored request status. Since migration 003 "Approved"
+ * is a real status of its own (Pending -> Approved -> Processing -> Ready for
+ * Pickup), so "Ready for Pickup" is no longer shown as "Approved".
+ */
 export const getAdminStatusLabel = (status: string): string => {
-  if (status === "Ready for Pickup") {
-    return "Approved";
+  if (status === "all") {
+    return "All";
   }
 
   return status;
@@ -125,11 +133,9 @@ export const toUtcTimestamp = (value: string): string => {
 
 /**
  * Request-status filter used by the dashboard's compact status strip.
- * The raw stored statuses come from the API; the strip presents "Approved"
- * as the alias for "Ready for Pickup" (same mapping as
- * getAdminStatusLabel above).
+ * Each chip matches the stored status of the same name.
  */
-export type AdminStatusFilter = "all" | "Pending" | "Ready for Pickup" | "Processing";
+export type AdminStatusFilter = "all" | "Pending" | "Approved" | "Processing";
 
 type AdminStatusFilterOption = {
   key: AdminStatusFilter;
@@ -140,7 +146,7 @@ type AdminStatusFilterOption = {
 export const ADMIN_STATUS_FILTER_OPTIONS: readonly AdminStatusFilterOption[] = [
   { key: "all", label: "All" },
   { key: "Pending", label: "Pending" },
-  { key: "Ready for Pickup", label: "Approved" },
+  { key: "Approved", label: "Approved" },
   { key: "Processing", label: "Processing" },
 ] as const;
 

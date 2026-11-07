@@ -170,13 +170,25 @@ class DashboardSummaryResponse(BaseModel):
 
 
 class AdminStatusStats(BaseModel):
+    """Dashboard counters (computed in app/analytics.py).
+
+    ``pending``/``approved``/``processing``/``ready_for_pickup`` are the
+    current number of requests in that exact status. ``completed`` and
+    ``rejected`` count the requests completed / rejected *this month*
+    (Manila time); the ``*_all_time`` fields hold the all-time totals.
+    """
+
     total_residents: int
     new_residents_this_month: int
+    total_requests: int = 0
     pending: int
     approved: int
     processing: int
+    ready_for_pickup: int = 0
     completed: int
     rejected: int
+    completed_all_time: int = 0
+    rejected_all_time: int = 0
     pending_registrations: int
 
 
@@ -190,6 +202,54 @@ class AdminMonthlyDataPoint(BaseModel):
 class AdminDocumentTypeCount(BaseModel):
     document_name: str
     count: int
+    #: Share of all requests in the same scope (0-100, one decimal).
+    percentage: float = 0.0
+
+
+class AdminResidentSummary(BaseModel):
+    """Resident accounts by review/account status (current snapshot).
+
+    ``total_registered`` = approved resident accounts (``active`` plus
+    ``deactivated``); ``total_accounts`` also includes pending and rejected
+    sign-ups.
+    """
+
+    total_registered: int
+    active: int
+    deactivated: int
+    pending: int
+    rejected: int
+    total_accounts: int
+
+
+class AdminStatusCount(BaseModel):
+    status: str
+    count: int
+    percentage: float
+
+
+class AdminPurokAnalytics(BaseModel):
+    """One Purok compared on residents, requests (and pothole reports)."""
+
+    purok: str
+    #: False for the "Not specified" bucket (or a legacy, non-standard value).
+    is_standardized: bool
+    residents: int
+    resident_percentage: float
+    requests: int
+    request_percentage: float
+    #: Requests per registered resident; None when the Purok has no residents.
+    requests_per_resident: float | None
+    potholes: int | None = None
+
+
+class AdminYearlyPoint(BaseModel):
+    year: int
+    requests: int
+    completed: int
+    rejected: int
+    #: Change in requests vs the previous year; None when that year had none.
+    change_percentage: float | None
 
 
 class AdminRecentRequest(BaseModel):
@@ -414,6 +474,11 @@ class AdminDashboardResponse(BaseModel):
     recent_requests: list[AdminRecentRequest]
     recent_registrations: list[AdminRecentRegistration]
     recent_activity: list[AdminActivityEntry]
+    resident_summary: AdminResidentSummary
+    request_status: list[AdminStatusCount]
+    yearly: list[AdminYearlyPoint]
+    purok_distribution: list[AdminPurokAnalytics]
+    generated_at: datetime
 
 
 class AdminReportsSummary(BaseModel):
@@ -424,6 +489,151 @@ class AdminReportsSummary(BaseModel):
     rejected: int
     completion_rate: float
     rejection_rate: float
+    open_requests: int = 0
+    new_registrations: int = 0
+
+
+class AdminReportsFilters(BaseModel):
+    """The range the report was actually computed for (Manila calendar days)."""
+
+    date_from: date
+    date_to: date
+    granularity: Literal["daily", "weekly", "monthly", "yearly"]
+    is_all_time: bool
+    days: int
+    timezone: str
+
+
+class AdminTrendPoint(BaseModel):
+    period_start: date
+    period_end: date
+    label: str
+    requests: int
+    completed: int
+    rejected: int
+
+
+class AdminCompletionStats(BaseModel):
+    """Outcome of the requests submitted in the period, plus completion /
+    rejection events that happened in the period."""
+
+    total_requests: int
+    completed: int
+    rejected: int
+    open_requests: int
+    completion_rate: float
+    rejection_rate: float
+    open_rate: float
+    completed_in_period: int
+    rejected_in_period: int
+
+
+class AdminDurationStats(BaseModel):
+    count: int
+    average_hours: float | None
+    median_hours: float | None
+    min_hours: float | None
+    max_hours: float | None
+    p90_hours: float | None
+
+
+class AdminStageDuration(BaseModel):
+    stage: str
+    from_status: str
+    to_status: str
+    count: int
+    average_hours: float | None
+    median_hours: float | None
+
+
+class AdminDocumentTypeDuration(BaseModel):
+    document_name: str
+    count: int
+    average_hours: float | None
+    median_hours: float | None
+
+
+class AdminProcessingTimeStats(BaseModel):
+    """Submission-to-completion time of the requests completed in the period."""
+
+    overall: AdminDurationStats
+    stages: list[AdminStageDuration]
+    by_document_type: list[AdminDocumentTypeDuration]
+    #: Completed requests whose timestamps could not be measured.
+    excluded_records: int
+
+
+class AdminRegistrationPoint(BaseModel):
+    period_start: date
+    period_end: date
+    label: str
+    registrations: int
+    approved: int
+    pending: int
+    rejected: int
+
+
+class AdminRegistrationStats(BaseModel):
+    total: int
+    approved: int
+    pending: int
+    rejected: int
+    trend: list[AdminRegistrationPoint]
+
+
+class AdminComparisonMetric(BaseModel):
+    key: str
+    label: str
+    current: int
+    previous: int
+    change: int
+    #: None when the previous period had zero (a percentage is undefined).
+    change_percentage: float | None
+
+
+class AdminPeriodComparison(BaseModel):
+    previous_from: date
+    previous_to: date
+    metrics: list[AdminComparisonMetric]
+
+
+class AdminPotholeStatusShare(BaseModel):
+    status: str
+    label: str
+    count: int
+    percentage: float
+
+
+class AdminPotholeRoadCount(BaseModel):
+    road_name: str
+    count: int
+    percentage: float
+
+
+class AdminPotholeTrendPoint(BaseModel):
+    period_start: date
+    period_end: date
+    label: str
+    reported: int
+    resolved: int
+
+
+class AdminPotholeAnalytics(BaseModel):
+    """Statistics of submitted pothole reports (``available`` is False when
+    the pothole tables are not installed)."""
+
+    available: bool
+    total: int
+    resolved: int
+    unresolved: int
+    rejected: int
+    #: resolved / (resolved + unresolved); rejected reports are excluded.
+    resolution_rate: float
+    by_status: list[AdminPotholeStatusShare]
+    by_purok: list["AdminPurokCount"]
+    unspecified_purok: int
+    by_road: list[AdminPotholeRoadCount]
+    trend: list[AdminPotholeTrendPoint]
 
 
 class AdminReportsMonthlyPoint(BaseModel):
@@ -486,8 +696,120 @@ class AdminStaffStatusInput(BaseModel):
 
 
 class AdminReportsResponse(BaseModel):
+    filters: AdminReportsFilters
     summary: AdminReportsSummary
+    resident_summary: AdminResidentSummary
     monthly: list[AdminReportsMonthlyPoint]
+    trend: list[AdminTrendPoint]
     residents_by_purok: list[AdminPurokCount]
+    purok_distribution: list[AdminPurokAnalytics]
     document_types: list[AdminDocumentTypeCount]
+    status_breakdown: list[AdminStatusCount]
+    completion: AdminCompletionStats
+    processing_time: AdminProcessingTimeStats
+    registrations: AdminRegistrationStats
+    comparison: AdminPeriodComparison | None
+    potholes: AdminPotholeAnalytics
     export_requests: list[AdminReportsExportRow]
+    generated_at: datetime
+
+
+# --------------------------------------------------------------------------- #
+#  Pothole reports (see app/potholes.py, migration 012)                       #
+# --------------------------------------------------------------------------- #
+
+PotholeStatus = Literal[
+    "pending", "verified", "under_maintenance", "resolved", "rejected"
+]
+#: ``gps``: the device's Geolocation API. ``manual``: a pin the resident placed
+#: on the map. ``None``: no coordinates were captured.
+PotholeLocationSource = Literal["gps", "manual"]
+
+
+class PotholePhotoMeta(BaseModel):
+    """Metadata of the resident's photo (the bytes are served by the
+    authenticated ``.../photo`` endpoint, never in this payload)."""
+
+    original_filename: str
+    content_type: str
+    file_size: int
+
+
+class PotholeLocationFields(BaseModel):
+    purok: str | None
+    road_name: str | None
+    location_description: str
+    latitude: float | None
+    longitude: float | None
+    gps_accuracy_m: float | None
+    location_source: PotholeLocationSource | None
+    location_captured_at: datetime | None
+
+
+class ResidentPotholeReportResponse(PotholeLocationFields):
+    """A resident's own report, as listed on the Pothole Detection page."""
+
+    id: int
+    report_number: str
+    notes: str | None
+    status: PotholeStatus
+    #: The remark attached to the latest status change (e.g. why it was
+    #: rejected), so the resident sees the reason next to the status.
+    status_remark: str | None
+    reported_at: datetime
+    updated_at: datetime
+
+
+class AdminPotholeReportResponse(PotholeLocationFields):
+    id: int
+    report_number: str
+    resident_name: str
+    resident_contact: str | None
+    resident_address: str | None
+    notes: str | None
+    status: PotholeStatus
+    reported_at: datetime
+    updated_at: datetime
+    photo: PotholePhotoMeta
+
+
+class AdminPotholeUpdateEntry(BaseModel):
+    id: int
+    old_status: PotholeStatus | None
+    new_status: PotholeStatus | None
+    remark: str | None
+    changed_by_name: str | None
+    changed_by_role: str | None
+    created_at: datetime
+
+
+class AdminPotholeReportDetailResponse(AdminPotholeReportResponse):
+    history: list[AdminPotholeUpdateEntry]
+
+
+class AdminPotholeStatusCounts(BaseModel):
+    total: int
+    pending: int
+    verified: int
+    under_maintenance: int
+    resolved: int
+    rejected: int
+
+
+class AdminPotholeSummaryResponse(BaseModel):
+    status_counts: AdminPotholeStatusCounts
+    #: Always the seven standardized Puroks, in order (zero counts included).
+    by_purok: list[AdminPurokCount]
+    #: Reports sent without a Purok.
+    unspecified_purok: int
+    #: Reports that can be placed on the map (GPS or manual pin).
+    with_coordinates: int
+
+
+class AdminPotholeStatusInput(BaseModel):
+    status: Literal["verified", "under_maintenance", "resolved", "rejected"]
+    remark: str | None = Field(default=None, max_length=500)
+
+
+class AdminPotholeRemarkInput(BaseModel):
+    remark: str = Field(min_length=1, max_length=500)

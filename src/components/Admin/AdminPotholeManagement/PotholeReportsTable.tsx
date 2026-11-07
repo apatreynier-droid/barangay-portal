@@ -1,11 +1,18 @@
 import { ArrowDown, ArrowUp, ArrowUpDown, MapPin } from "lucide-react";
+import PotholePhoto from "./PotholePhoto";
 import PotholeStatusBadge from "./PotholeStatusBadge";
 import {
   POTHOLE_PAGE_SIZE_OPTIONS,
-  formatPotholeDate,
+  displayPurok,
+  displayRoad,
+  formatPotholeAccuracy,
+  formatPotholeCoordinate,
+  formatPotholeDateTime,
   getPageNumbers,
   hasPotholeCoordinates,
+  isLowPotholeAccuracy,
 } from "../../../Utils/Admin/AdminPotholeManagementLogic";
+import { usePotholePhoto } from "../../../Utils/Admin/potholePhotoCache";
 import type {
   PotholeReport,
   PotholeSortKey,
@@ -15,14 +22,31 @@ import type {
 const COLUMNS: { label: string; sortKey?: PotholeSortKey }[] = [
   { label: "Report ID", sortKey: "id" },
   { label: "Resident Name", sortKey: "residentName" },
-  { label: "Pothole Image" },
+  { label: "Pothole Photo" },
   { label: "Purok", sortKey: "purok" },
   { label: "Road/Street Name", sortKey: "road" },
+  { label: "Latitude" },
+  { label: "Longitude" },
+  { label: "GPS Accuracy", sortKey: "gpsAccuracyM" },
   { label: "Location", sortKey: "location" },
-  { label: "Date Reported", sortKey: "reportedAt" },
+  { label: "Date & Time Reported", sortKey: "reportedAt" },
   { label: "Status", sortKey: "status" },
   { label: "Actions" },
 ];
+
+/** Each row loads only its own photo, when that table page is shown. */
+const PotholeThumbnail = ({ report }: { report: PotholeReport }) => {
+  const { state } = usePotholePhoto(report.recordId);
+
+  return (
+    <PotholePhoto
+      state={state}
+      alt=""
+      className="pothole-thumb"
+      compact
+    />
+  );
+};
 
 type PotholeReportsTableProps = {
   /** Only the reports of the current page. */
@@ -113,12 +137,14 @@ const PotholeReportsTable = ({
               <tr className="pothole-table-empty-row">
                 <td className="admin-logs-empty" colSpan={COLUMNS.length}>
                   <strong className="pothole-empty-title">
-                    No pothole reports found
+                    {canClearFilters
+                      ? "No pothole reports found"
+                      : "No pothole reports available yet."}
                   </strong>
                   <span className="pothole-empty-text">
                     {canClearFilters
                       ? "No reports match the selected filters."
-                      : "Reports will appear here once they are available."}
+                      : "Reports that residents send from the Pothole Detection page will appear here automatically."}
                   </span>
                   {canClearFilters && (
                     <button
@@ -146,28 +172,56 @@ const PotholeReportsTable = ({
                       {report.id}
                     </td>
                     <td data-label="Resident Name">{report.residentName}</td>
-                    <td data-label="Pothole Image">
+                    <td data-label="Pothole Photo">
                       <button
                         type="button"
                         className="pothole-thumb-button"
                         onClick={() => onViewDetails(report.id)}
                         aria-label={`View details and photo of ${report.id}`}
                       >
-                        <img
-                          src={report.imageUrl}
-                          alt=""
-                          className="pothole-thumb"
-                          loading="lazy"
-                        />
+                        <PotholeThumbnail report={report} />
                       </button>
                     </td>
                     <td data-label="Purok" className="pothole-table-nowrap">
-                      {report.purok}
+                      {displayPurok(report.purok)}
                     </td>
-                    <td data-label="Road/Street Name">{report.road}</td>
+                    <td data-label="Road/Street Name">
+                      {displayRoad(report.road)}
+                    </td>
+                    <td data-label="Latitude" className="pothole-table-coordinate">
+                      {formatPotholeCoordinate(report.latitude)}
+                    </td>
+                    <td data-label="Longitude" className="pothole-table-coordinate">
+                      {formatPotholeCoordinate(report.longitude)}
+                    </td>
+                    <td data-label="GPS Accuracy" className="pothole-table-nowrap">
+                      <span
+                        className={
+                          isLowPotholeAccuracy(report)
+                            ? "pothole-accuracy is-low"
+                            : report.locationSource === "manual"
+                              ? "pothole-accuracy is-manual"
+                              : "pothole-accuracy"
+                        }
+                        title={
+                          isLowPotholeAccuracy(report)
+                            ? "Low GPS accuracy: the pothole may be some distance from the marker."
+                            : report.locationSource === "manual"
+                              ? "The resident placed this pin on the map; it is not a GPS reading."
+                              : report.locationSource === null
+                                ? "No location was captured for this report."
+                                : undefined
+                        }
+                      >
+                        {formatPotholeAccuracy(report)}
+                      </span>
+                    </td>
                     <td data-label="Location">{report.location}</td>
-                    <td data-label="Date Reported" className="pothole-table-nowrap">
-                      {formatPotholeDate(report.reportedAt)}
+                    <td
+                      data-label="Date & Time Reported"
+                      className="pothole-table-nowrap"
+                    >
+                      {formatPotholeDateTime(report.reportedAt)}
                     </td>
                     <td data-label="Status">
                       <PotholeStatusBadge status={report.status} />
@@ -190,10 +244,10 @@ const PotholeReportsTable = ({
                           aria-label={
                             canLocate
                               ? `Show ${report.id} on the map`
-                              : `${report.id} has no GPS coordinates`
+                              : `${report.id} has no map location`
                           }
                           title={
-                            canLocate ? "Show on map" : "No GPS coordinates"
+                            canLocate ? "Show on map" : "No map location captured"
                           }
                         >
                           <MapPin size={15} aria-hidden="true" />

@@ -1,4 +1,8 @@
-import type { AdminReportsSummary } from "../../../Types/Admin/AdminReportsType";
+import type {
+  AdminPeriodComparison,
+  AdminReportsSummary,
+} from "../../../Types/Admin/AdminReportsType";
+import { formatChange } from "../../../Utils/Admin/AdminAnalyticsDisplay";
 
 type StatCard = {
   key: string;
@@ -10,22 +14,28 @@ type StatCard = {
 
 type ReportsStatsGridProps = {
   summary: AdminReportsSummary;
+  /** Null for "All time" (there is no previous period to compare with). */
+  comparison: AdminPeriodComparison | null;
 };
 
-const ReportsStatsGrid = ({ summary }: ReportsStatsGridProps) => {
+const ReportsStatsGrid = ({ summary, comparison }: ReportsStatsGridProps) => {
+  const requestChange = comparison?.metrics.find((metric) => metric.key === "requests");
+
   const cards: StatCard[] = [
     {
       key: "residents",
       value: String(summary.total_residents),
-      label: "Total Residents",
-      note: `${summary.active_residents} active`,
+      label: "Registered Residents",
+      note: `${summary.active_residents} active · ${summary.new_registrations} new sign-ups in period`,
       tone: "blue",
     },
     {
       key: "requests",
       value: String(summary.total_requests),
-      label: "Total Requests",
-      note: "All time",
+      label: "Requests in Period",
+      note: requestChange
+        ? `${formatChange(requestChange.change, requestChange.change_percentage)} vs previous period`
+        : `${summary.open_requests} still open`,
       tone: "purple",
     },
     {

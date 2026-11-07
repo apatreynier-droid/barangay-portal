@@ -4,12 +4,18 @@ import "leaflet/dist/leaflet.css";
 import type { PotholeReport } from "../../../Types/Admin/AdminPotholeManagementType";
 import {
   POTHOLE_STATUS_META,
+  displayPurok,
+  formatPotholeAccuracy,
   formatPotholeDateTime,
   hasPotholeCoordinates,
 } from "../../../Utils/Admin/AdminPotholeManagementLogic";
+import { loadPotholePhotoUrl } from "../../../Utils/Admin/potholePhotoCache";
+import {
+  LAGAB_CENTER,
+  OSM_ATTRIBUTION,
+  OSM_TILE_URL,
+} from "../../../Utils/Shared/mapConfig";
 
-/** Barangay Lagab, Compostela, Davao de Oro (from OpenStreetMap). */
-const LAGAB_CENTER: L.LatLngTuple = [7.6691215, 126.0648858];
 const DEFAULT_ZOOM = 14;
 /** Keeps a single marker (or a tight cluster) from zooming in too far. */
 const MAX_FIT_ZOOM = 16;
@@ -49,8 +55,9 @@ const buildMarkerIcon = (report: PotholeReport, isSelected: boolean) =>
   });
 
 /**
- * Built with DOM nodes and textContent rather than an HTML string, so text from
- * a future real report can never be interpreted as markup.
+ * Built with DOM nodes and textContent rather than an HTML string, so text a
+ * resident typed can never be interpreted as markup. The photo is filled in by
+ * showPopupPhoto() when the popup opens, so closed popups download nothing.
  */
 const buildPopupContent = (
   report: PotholeReport,
@@ -68,9 +75,9 @@ const buildPopupContent = (
   };
 
   const image = document.createElement("img");
-  image.className = "pothole-popup-image";
-  image.src = report.imageUrl;
-  image.alt = report.imageAlt;
+  image.className = "pothole-popup-image is-loading";
+  image.alt = `Photo of pothole report ${report.id}`;
+  image.dataset.recordId = String(report.recordId);
   root.appendChild(image);
 
   append("strong", "pothole-popup-id", report.id);
@@ -79,9 +86,20 @@ const buildPopupContent = (
     `pothole-status pothole-status--${report.status}`,
     POTHOLE_STATUS_META[report.status].label,
   );
-  append("p", "pothole-popup-line", `${report.road}, ${report.purok}`);
+  append(
+    "p",
+    "pothole-popup-line",
+    [report.road, displayPurok(report.purok)].filter(Boolean).join(", "),
+  );
   append("p", "pothole-popup-line", `Reported by ${report.residentName}`);
   append("p", "pothole-popup-muted", formatPotholeDateTime(report.reportedAt));
+  append(
+    "p",
+    "pothole-popup-muted",
+    report.locationSource === "manual"
+      ? "Location: manual map pin (not GPS)"
+      : `GPS accuracy: ${formatPotholeAccuracy(report)}`,
+  );
 
   if (onViewDetails) {
     const button = append(
@@ -94,6 +112,30 @@ const buildPopupContent = (
   }
 
   return root;
+};
+
+/** Loads the photo into an open popup (once; the URL is cached per report). */
+const showPopupPhoto = (marker: L.Marker) => {
+  const image = marker
+    .getPopup()
+    ?.getElement()
+    ?.querySelector<HTMLImageElement>("img.pothole-popup-image");
+  const recordId = Number(image?.dataset.recordId);
+
+  if (!image || image.getAttribute("src") || !recordId) {
+    return;
+  }
+
+  loadPotholePhotoUrl(recordId)
+    .then((url) => {
+      image.src = url;
+      image.classList.remove("is-loading");
+    })
+    .catch(() => {
+      image.classList.remove("is-loading");
+      image.classList.add("is-error");
+      image.alt = "The photo could not be loaded.";
+    });
 };
 
 const PotholeMap = ({
@@ -150,10 +192,9 @@ const PotholeMap = ({
     map.on("focus", () => map.scrollWheelZoom.enable());
     map.on("blur", () => map.scrollWheelZoom.disable());
 
-    L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+    L.tileLayer(OSM_TILE_URL, {
       maxZoom: 19,
-      attribution:
-        '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">OpenStreetMap</a> contributors',
+      attribution: OSM_ATTRIBUTION,
     })
       .on("tileerror", () => setTilesFailed(true))
       .on("tileload", () => setTilesFailed(false))
@@ -219,6 +260,9 @@ const PotholeMap = ({
         // doing to fit it in view, which would leave it cut off.
         if (isNewData) {
           existing.marker.setPopupContent(buildPopup(report));
+          if (existing.marker.isPopupOpen()) {
+            showPopupPhoto(existing.marker);
+          }
         }
 
         existing.report = report;
@@ -232,7 +276,10 @@ const PotholeMap = ({
         riseOnHover: true,
       })
         .bindPopup(buildPopup(report), { minWidth: 210, maxWidth: 240 })
-        .on("popupopen", () => handlersRef.current.onSelect?.(report.id))
+        .on("popupopen", () => {
+          showPopupPhoto(marker);
+          handlersRef.current.onSelect?.(report.id);
+        })
         .on("popupclose", () => handlersRef.current.onDeselect?.(report.id))
         .addTo(map);
 
@@ -306,7 +353,9 @@ const PotholeMap = ({
 
       {mappedReports.length === 0 && (
         <p className="pothole-map-message">
-          No reports with GPS coordinates match the current filters.
+          {reports.length === 0
+            ? "No pothole reports to show on the map."
+            : "None of these reports has a captured map location."}
         </p>
       )}
     </div>

@@ -22,7 +22,7 @@ type AdminStatusStripProps = {
 const FILTER_ICONS: Record<AdminStatusFilter, string> = {
   all: allIcon,
   Pending: pendingIcon,
-  "Ready for Pickup": approvedIcon,
+  Approved: approvedIcon,
   Processing: processingIcon,
 };
 

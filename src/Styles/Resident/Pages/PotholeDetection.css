@@ -414,6 +414,192 @@
   line-height: 1.5;
 }
 
+/* ---------- Two fields side by side (Purok + road) ---------- */
+.pd-field-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+select.pd-input {
+  appearance: auto;
+  cursor: pointer;
+}
+
+/* ---------- Map location (GPS / manual pin) ---------- */
+.pd-geo {
+  display: grid;
+  gap: 12px;
+}
+
+.pd-geo-hint {
+  margin: 0;
+  color: var(--pd-muted);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.pd-geo-status {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 14px;
+  border: 1px solid var(--pd-line);
+  border-radius: 14px;
+  background: var(--pd-surface-2);
+  color: var(--pd-ink);
+}
+
+.pd-geo-status > svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.pd-geo-status > div {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.pd-geo-status span {
+  color: var(--pd-muted);
+  overflow-wrap: anywhere;
+}
+
+.pd-geo-status.is-ok {
+  border-color: var(--pd-brand);
+  background: var(--pd-brand-soft);
+}
+
+.pd-geo-status.is-ok > svg {
+  color: var(--pd-brand);
+}
+
+.pd-geo-status.is-warning,
+.pd-geo-status.is-manual {
+  border-color: var(--db-gold, #c58f1c);
+  background: var(--db-warn-bg, #faeecd);
+}
+
+.pd-geo-status.is-warning > svg,
+.pd-geo-status.is-manual > svg {
+  color: var(--db-warn, #8d6204);
+}
+
+.pd-geo-status.is-error {
+  border-color: var(--pd-err-line);
+  background: var(--pd-err-bg);
+}
+
+.pd-geo-status.is-error > svg,
+.pd-geo-status.is-error strong {
+  color: var(--pd-err-ink);
+}
+
+.pd-geo-status .pd-geo-warning {
+  color: var(--db-warn, #8d6204);
+  font-weight: 600;
+}
+
+.pd-geo-coords {
+  margin: 0;
+  color: var(--pd-muted);
+  font-size: 13.5px;
+}
+
+.pd-mono {
+  font-family: ui-monospace, "Cascadia Mono", Consolas, monospace;
+  font-variant-numeric: tabular-nums;
+  color: var(--pd-ink);
+}
+
+.pd-geo-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.pd-map {
+  height: 240px;
+  overflow: hidden;
+  border: 1px solid var(--pd-line);
+  border-radius: 14px;
+  /* Leaflet panes sit above the sticky top bar otherwise. */
+  z-index: 0;
+  isolation: isolate;
+}
+
+.pd-map-loading {
+  display: grid;
+  place-items: center;
+  background: var(--pd-surface-2);
+  color: var(--pd-muted);
+  font-size: 14px;
+}
+
+.pd-map.is-picking {
+  cursor: crosshair;
+}
+
+.pd-map.is-picking .leaflet-grab {
+  cursor: crosshair;
+}
+
+.pd-btn-primary {
+  border-color: var(--pd-brand);
+  background: var(--pd-brand);
+  color: var(--pd-on-brand);
+}
+
+.pd-btn-primary:hover {
+  filter: brightness(1.08);
+  color: var(--pd-on-brand);
+}
+
+.pd-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.pd-spin {
+  animation: pd-spin 0.9s linear infinite;
+}
+
+@keyframes pd-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.pd-hint {
+  margin: 0;
+  color: var(--pd-muted);
+  font-size: 13.5px;
+  line-height: 1.45;
+}
+
+/* ---------- Report status tones (beyond review / repaired) ---------- */
+.pd-status.is-verified {
+  background: var(--db-info-bg, #e0ebfa);
+  color: var(--db-info, #2759a6);
+}
+
+.pd-status.is-maintenance {
+  background: var(--db-warn-bg, #faeecd);
+  color: var(--db-warn, #8d6204);
+}
+
+.pd-status.is-rejected {
+  background: var(--pd-err-bg);
+  color: var(--pd-err-ink);
+}
+
+.pd-empty .pd-error {
+  margin-bottom: 10px;
+}
+
 /* ---------- Responsive ---------- */
 @media (max-width: 1200px) {
   .pd-layout {
@@ -490,11 +676,23 @@
   .pd-preview-actions {
     width: 100%;
   }
+
+  .pd-field-row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .pd-map {
+    height: 220px;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .pd-drop,
   .pd-submit {
     transition: none;
+  }
+
+  .pd-spin {
+    animation: none;
   }
 }

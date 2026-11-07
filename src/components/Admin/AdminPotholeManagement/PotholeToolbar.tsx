@@ -5,9 +5,10 @@ import {
   POTHOLE_STATUS_META,
   hasActivePotholeFilters,
 } from "../../../Utils/Admin/AdminPotholeManagementLogic";
-import type {
-  PotholeFilters,
-  PotholeStatus,
+import {
+  UNSPECIFIED_PUROK,
+  type PotholeFilters,
+  type PotholeStatus,
 } from "../../../Types/Admin/AdminPotholeManagementType";
 
 type PotholeToolbarProps = {
@@ -56,6 +57,7 @@ const PotholeToolbar = ({
               {purok}
             </option>
           ))}
+          <option value={UNSPECIFIED_PUROK}>Not specified</option>
         </select>
       </label>
 

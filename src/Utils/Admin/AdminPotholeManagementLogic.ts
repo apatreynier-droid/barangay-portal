@@ -1,11 +1,18 @@
-import type {
-  PotholeAction,
-  PotholeFilters,
-  PotholeReport,
-  PotholeSortKey,
-  PotholeSortState,
-  PotholeStats,
-  PotholeStatus,
+import { toUtcTimestamp } from "./AdminDashboardLogic";
+import {
+  UNSPECIFIED_PUROK,
+  type ApiAdminPotholeReport,
+  type ApiAdminPotholeReportDetail,
+  type ApiAdminPotholeSummary,
+  type PotholeAction,
+  type PotholeFilters,
+  type PotholeHistoryEntry,
+  type PotholeReport,
+  type PotholeReportDetail,
+  type PotholeSortKey,
+  type PotholeSortState,
+  type PotholeSummary,
+  type PotholeStatus,
 } from "../../Types/Admin/AdminPotholeManagementType";
 
 /* -------------------------------------------------------------------------- */
@@ -91,6 +98,19 @@ const AVAILABLE_ACTIONS: Record<PotholeStatus, PotholeAction[]> = {
   rejected: [],
 };
 
+/**
+ * Actions a Staff account may take (repair progress). Verifying or rejecting a
+ * resident's report is an administrator decision; the backend enforces the
+ * same rule, this only hides buttons that would be refused.
+ */
+const STAFF_ACTIONS: PotholeAction[] = ["start_maintenance", "resolve"];
+
+/** Above this many metres a GPS fix is flagged as low accuracy. */
+export const LOW_GPS_ACCURACY_M = 50;
+
+/** How often the page re-checks the server for new reports. */
+export const POTHOLE_REFRESH_INTERVAL_MS = 60_000;
+
 export const POTHOLE_PAGE_SIZE_OPTIONS = [5, 10, 25];
 export const DEFAULT_POTHOLE_PAGE_SIZE = 10;
 export const MAX_POTHOLE_REMARK_LENGTH = 500;
@@ -109,22 +129,79 @@ export const DEFAULT_POTHOLE_SORT: PotholeSortState = {
 };
 
 /* -------------------------------------------------------------------------- */
-/*  Stats                                                                     */
+/*  API mapping                                                               */
 /* -------------------------------------------------------------------------- */
 
-export const getPotholeStats = (reports: PotholeReport[]): PotholeStats => {
-  const countOf = (status: PotholeStatus) =>
-    reports.filter((report) => report.status === status).length;
-
-  return {
-    total: reports.length,
-    pending: countOf("pending"),
-    verified: countOf("verified"),
-    underMaintenance: countOf("under_maintenance"),
-    resolved: countOf("resolved"),
-    rejected: countOf("rejected"),
-  };
+const ROLE_LABELS: Record<string, string> = {
+  resident: "Resident",
+  staff: "Staff",
+  admin: "Administrator",
+  super_admin: "Super Admin",
 };
+
+export const mapApiPotholeReport = (
+  report: ApiAdminPotholeReport,
+): PotholeReport => ({
+  recordId: report.id,
+  id: report.report_number,
+  residentName: report.resident_name,
+  residentContact: report.resident_contact,
+  residentAddress: report.resident_address,
+  photo: {
+    originalFilename: report.photo.original_filename,
+    contentType: report.photo.content_type,
+    fileSize: report.photo.file_size,
+  },
+  purok: report.purok,
+  road: report.road_name,
+  location: report.location_description,
+  latitude: report.latitude,
+  longitude: report.longitude,
+  gpsAccuracyM: report.gps_accuracy_m,
+  locationSource: report.location_source,
+  locationCapturedAt: report.location_captured_at
+    ? toUtcTimestamp(report.location_captured_at)
+    : null,
+  reportedAt: toUtcTimestamp(report.reported_at),
+  updatedAt: toUtcTimestamp(report.updated_at),
+  description: report.notes,
+  status: report.status,
+});
+
+export const mapApiPotholeDetail = (
+  detail: ApiAdminPotholeReportDetail,
+): PotholeReportDetail => ({
+  ...mapApiPotholeReport(detail),
+  history: detail.history.map(
+    (entry): PotholeHistoryEntry => ({
+      id: entry.id,
+      author: entry.changed_by_name ?? "Deleted account",
+      authorRole: entry.changed_by_role
+        ? (ROLE_LABELS[entry.changed_by_role] ?? entry.changed_by_role)
+        : null,
+      oldStatus: entry.old_status,
+      newStatus: entry.new_status,
+      remark: entry.remark,
+      createdAt: toUtcTimestamp(entry.created_at),
+    }),
+  ),
+});
+
+export const mapApiPotholeSummary = (
+  summary: ApiAdminPotholeSummary,
+): PotholeSummary => ({
+  stats: {
+    total: summary.status_counts.total,
+    pending: summary.status_counts.pending,
+    verified: summary.status_counts.verified,
+    underMaintenance: summary.status_counts.under_maintenance,
+    resolved: summary.status_counts.resolved,
+    rejected: summary.status_counts.rejected,
+  },
+  byPurok: summary.by_purok,
+  unspecifiedPurok: summary.unspecified_purok,
+  withCoordinates: summary.with_coordinates,
+});
 
 /* -------------------------------------------------------------------------- */
 /*  Filtering, sorting and pagination                                         */
@@ -153,7 +230,11 @@ export const filterPotholeReports = (
   const term = filters.search.trim().toLowerCase();
 
   return reports.filter((report) => {
-    if (filters.purok !== "all" && report.purok !== filters.purok) {
+    if (filters.purok === UNSPECIFIED_PUROK) {
+      if (report.purok !== null) {
+        return false;
+      }
+    } else if (filters.purok !== "all" && report.purok !== filters.purok) {
       return false;
     }
 
@@ -179,7 +260,7 @@ export const filterPotholeReports = (
       report.purok,
       report.road,
       report.location,
-    ].some((value) => value.toLowerCase().includes(term));
+    ].some((value) => value?.toLowerCase().includes(term));
   });
 };
 
@@ -198,7 +279,15 @@ const compareBy = (
     );
   }
 
-  return a[key].localeCompare(b[key], undefined, {
+  if (key === "gpsAccuracyM") {
+    // Reports without a GPS accuracy sort after every measured one.
+    return (
+      (a.gpsAccuracyM ?? Number.POSITIVE_INFINITY) -
+      (b.gpsAccuracyM ?? Number.POSITIVE_INFINITY)
+    );
+  }
+
+  return (a[key] ?? "").localeCompare(b[key] ?? "", undefined, {
     numeric: true,
     sensitivity: "base",
   });
@@ -241,58 +330,16 @@ export const getPageNumbers = (
 };
 
 /* -------------------------------------------------------------------------- */
-/*  Report updates (immutable: they return a new list)                        */
+/*  Actions                                                                   */
 /* -------------------------------------------------------------------------- */
 
 export const getAvailablePotholeActions = (
   status: PotholeStatus,
-): PotholeAction[] => AVAILABLE_ACTIONS[status];
-
-export const addPotholeRemark = (
-  reports: PotholeReport[],
-  reportId: string,
-  text: string,
-  author: string,
-): PotholeReport[] =>
-  reports.map((report) =>
-    report.id === reportId
-      ? {
-          ...report,
-          remarks: [
-            ...report.remarks,
-            {
-              id: `${report.id}-R${report.remarks.length + 1}`,
-              author,
-              text,
-              createdAt: new Date().toISOString(),
-            },
-          ],
-        }
-      : report,
+  isAdministratorAccount: boolean,
+): PotholeAction[] =>
+  AVAILABLE_ACTIONS[status].filter(
+    (action) => isAdministratorAccount || STAFF_ACTIONS.includes(action),
   );
-
-/** Moves a report to the action's status, recording the remark if one is given. */
-export const applyPotholeAction = (
-  reports: PotholeReport[],
-  reportId: string,
-  action: PotholeAction,
-  remark: string,
-  author: string,
-): PotholeReport[] => {
-  const { targetStatus } = POTHOLE_ACTION_META[action];
-  const updated = reports.map((report) =>
-    report.id === reportId ? { ...report, status: targetStatus } : report,
-  );
-
-  return remark
-    ? addPotholeRemark(
-        updated,
-        reportId,
-        `${POTHOLE_STATUS_META[targetStatus].label}: ${remark}`,
-        author,
-      )
-    : updated;
-};
 
 /* -------------------------------------------------------------------------- */
 /*  Display helpers                                                           */
@@ -319,7 +366,66 @@ export const formatPotholeDateTime = (timestamp: string): string =>
     minute: "2-digit",
   });
 
+export const formatPotholeCoordinate = (value: number | null): string =>
+  value === null ? "—" : value.toFixed(6);
+
 export const formatPotholeCoordinates = (report: PotholeReport): string =>
   hasPotholeCoordinates(report)
-    ? `${report.latitude.toFixed(5)}, ${report.longitude.toFixed(5)}`
-    : "Not provided";
+    ? `${report.latitude.toFixed(6)}, ${report.longitude.toFixed(6)}`
+    : "Not captured";
+
+/** "±8 m" for GPS reports; manual pins and missing positions have none. */
+export const formatPotholeAccuracy = (report: PotholeReport): string => {
+  if (report.locationSource === "gps") {
+    return report.gpsAccuracyM === null
+      ? "Not reported"
+      : `±${Math.round(report.gpsAccuracyM)} m`;
+  }
+
+  return report.locationSource === "manual" ? "Manual pin" : "—";
+};
+
+export const isLowPotholeAccuracy = (report: PotholeReport): boolean =>
+  report.locationSource === "gps" &&
+  report.gpsAccuracyM !== null &&
+  report.gpsAccuracyM > LOW_GPS_ACCURACY_M;
+
+export const getPotholeLocationSourceLabel = (report: PotholeReport): string => {
+  if (report.locationSource === "gps") {
+    return "Device GPS";
+  }
+
+  if (report.locationSource === "manual") {
+    return "Pinned manually on the map (not GPS-verified)";
+  }
+
+  return "Not captured";
+};
+
+export const formatPotholeFileSize = (bytes: number): string => {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+};
+
+/** One line describing a history entry (submission, status change, remark). */
+export const describePotholeHistoryEntry = (
+  entry: PotholeHistoryEntry,
+): string => {
+  if (entry.newStatus && entry.oldStatus === null) {
+    return "Report submitted.";
+  }
+
+  if (entry.newStatus) {
+    const change = `Status changed to ${POTHOLE_STATUS_META[entry.newStatus].label}`;
+    return entry.remark ? `${change}: ${entry.remark}` : `${change}.`;
+  }
+
+  return entry.remark ?? "";
+};
+
+export const displayPurok = (purok: string | null): string =>
+  purok ?? "Not specified";
+
+export const displayRoad = (road: string | null): string =>
+  road ?? "Not specified";

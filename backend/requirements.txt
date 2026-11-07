@@ -4,3 +4,6 @@ mysql-connector-python>=9.0,<10.0
 python-dotenv>=1.0,<2.0
 # Required by FastAPI for multipart uploads (document request attachments).
 python-multipart>=0.0.9,<1.0
+# Data analytics for the Admin Dashboard and Reports (app/analytics.py).
+# NumPy is installed automatically as a Pandas dependency; it is not used directly.
+pandas>=2.2,<4.0

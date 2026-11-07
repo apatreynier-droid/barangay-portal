@@ -1,10 +1,16 @@
 import { useRef, useState } from "react";
 import type { MouseEvent } from "react";
 import type { AdminReportsMonthlyPoint } from "../../../Types/Admin/AdminReportsType";
+import { labelStride } from "../../../Utils/Admin/AdminAnalyticsDisplay";
 
 type CompletedRejectedBarChartProps = {
+  /** One point per period; `month` holds the period label. */
   data: AdminReportsMonthlyPoint[];
+  title?: string;
 };
+
+/** Most x-axis labels printed; denser trends label every n-th period. */
+const MAX_LABELS = 12;
 
 const WIDTH = 720;
 const HEIGHT = 300;
@@ -12,8 +18,8 @@ const PADDING_LEFT = 44;
 const PADDING_RIGHT = 16;
 const PADDING_TOP = 16;
 const PADDING_BOTTOM = 34;
-const BAR_WIDTH = 18;
-const BAR_GAP = 6;
+const MAX_BAR_WIDTH = 18;
+const MAX_BAR_GAP = 6;
 const GRID_INTERVALS = 4;
 
 const SERIES = [
@@ -28,6 +34,7 @@ type TooltipPosition = { x: number; y: number };
 
 const CompletedRejectedBarChart = ({
   data,
+  title = "Completed vs Rejected by Month",
 }: CompletedRejectedBarChartProps) => {
   const svgRef = useRef<SVGSVGElement | null>(null);
   const wrapperRef = useRef<HTMLDivElement | null>(null);
@@ -44,8 +51,15 @@ const CompletedRejectedBarChart = ({
 
   const plotWidth = WIDTH - PADDING_LEFT - PADDING_RIGHT;
   const plotHeight = HEIGHT - PADDING_TOP - PADDING_BOTTOM;
-  const groupWidth = BAR_WIDTH * SERIES.length + BAR_GAP * (SERIES.length - 1);
   const slot = plotWidth / Math.max(1, data.length);
+  // Bars shrink with the slot so long (daily/weekly) ranges never overlap.
+  const BAR_GAP = Math.min(MAX_BAR_GAP, slot * 0.08);
+  const BAR_WIDTH = Math.max(
+    1,
+    Math.min(MAX_BAR_WIDTH, (slot * 0.75 - BAR_GAP) / SERIES.length),
+  );
+  const groupWidth = BAR_WIDTH * SERIES.length + BAR_GAP * (SERIES.length - 1);
+  const stride = labelStride(data.length, MAX_LABELS);
 
   const valueToY = (value: number): number =>
     PADDING_TOP + plotHeight - (value / topValue) * plotHeight;
@@ -109,7 +123,7 @@ const CompletedRejectedBarChart = ({
 
   return (
     <section className="admin-panel reports-panel">
-      <h3 className="admin-panel-title">Completed vs Rejected by Month</h3>
+      <h3 className="admin-panel-title">{title}</h3>
 
       {data.length === 0 ? (
         <p className="reports-chart-empty">No request data available yet.</p>
@@ -184,21 +198,23 @@ const CompletedRejectedBarChart = ({
                           y={barY}
                           width={BAR_WIDTH}
                           height={Math.max(0, PADDING_TOP + plotHeight - barY)}
-                          rx={3}
+                          rx={Math.min(3, BAR_WIDTH / 2)}
                           fill={series.color}
                           aria-label={`${point.month} — ${series.label}: ${value}`}
                         />
                       );
                     })}
 
-                    <text
-                      x={groupX + groupWidth / 2}
-                      y={HEIGHT - 10}
-                      textAnchor="middle"
-                      className="admin-chart-axis-label"
-                    >
-                      {point.month}
-                    </text>
+                    {index % stride === 0 && (
+                      <text
+                        x={groupX + groupWidth / 2}
+                        y={HEIGHT - 10}
+                        textAnchor="middle"
+                        className="admin-chart-axis-label"
+                      >
+                        {point.month}
+                      </text>
+                    )}
                   </g>
                 );
               })}

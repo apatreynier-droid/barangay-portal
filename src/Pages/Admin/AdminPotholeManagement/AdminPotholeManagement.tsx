@@ -2,8 +2,17 @@ import "../../../Styles/Admin/Pages/AdminDashboard.css";
 import "../../../Styles/Admin/Pages/AdminLogs.css";
 import "../../../Styles/Admin/Pages/AdminResidents.css";
 import "../../../Styles/Admin/Pages/AdminPotholeManagement.css";
-import { useEffect, useMemo, useRef, useState } from "react";
-import { fetchAdminDashboard } from "../../../Utils/Shared/api";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { RefreshCw } from "lucide-react";
+import {
+  ApiError,
+  addAdminPotholeRemark,
+  fetchAdminDashboard,
+  fetchAdminPotholeReport,
+  fetchAdminPotholeReports,
+  fetchAdminPotholeSummary,
+  updateAdminPotholeStatus,
+} from "../../../Utils/Shared/api";
 import type { AuthUser } from "../../../Utils/Shared/api";
 import { getPortalProfileName } from "../../../Utils/Admin/AdminDisplay";
 import AdminSidebar from "../../../components/Admin/AdminDashboard/AdminSidebar";
@@ -11,6 +20,7 @@ import AdminTopbar from "../../../components/Admin/AdminDashboard/AdminTopbar";
 import PotholeConfirmModal from "../../../components/Admin/AdminPotholeManagement/PotholeConfirmModal";
 import PotholeDetailsModal from "../../../components/Admin/AdminPotholeManagement/PotholeDetailsModal";
 import PotholeMap from "../../../components/Admin/AdminPotholeManagement/PotholeMap";
+import PotholePurokSummary from "../../../components/Admin/AdminPotholeManagement/PotholePurokSummary";
 import PotholeReportsTable from "../../../components/Admin/AdminPotholeManagement/PotholeReportsTable";
 import PotholeStatsGrid from "../../../components/Admin/AdminPotholeManagement/PotholeStatsGrid";
 import PotholeToolbar from "../../../components/Admin/AdminPotholeManagement/PotholeToolbar";
@@ -19,34 +29,34 @@ import {
   DEFAULT_POTHOLE_PAGE_SIZE,
   DEFAULT_POTHOLE_SORT,
   POTHOLE_ACTION_META,
+  POTHOLE_REFRESH_INTERVAL_MS,
   POTHOLE_STATUSES,
   POTHOLE_STATUS_META,
-  addPotholeRemark,
-  applyPotholeAction,
   filterPotholeReports,
-  getPotholeStats,
   hasActivePotholeFilters,
   hasPotholeCoordinates,
+  mapApiPotholeDetail,
+  mapApiPotholeReport,
+  mapApiPotholeSummary,
   sortPotholeReports,
 } from "../../../Utils/Admin/AdminPotholeManagementLogic";
-import { SAMPLE_POTHOLE_REPORTS } from "../../../Utils/Admin/AdminPotholeSampleData";
+import { releasePotholePhotos } from "../../../Utils/Admin/potholePhotoCache";
 import type {
   PotholeAction,
   PotholeFilters,
+  PotholeHistoryEntry,
   PotholeReport,
+  PotholeReportDetail,
   PotholeSortKey,
   PotholeSortState,
+  PotholeSummary,
 } from "../../../Types/Admin/AdminPotholeManagementType";
+import { isAdministrator } from "../../../Utils/Shared/routePaths";
 import useResponsiveSidebar from "../../../Utils/Shared/useResponsiveSidebar";
 
-/**
- * The backend has no pothole endpoints yet, so this page runs on sample data
- * held in React state: changes last until the page is reloaded or left. When
- * the API exists, load the reports into `reports`, send the updates in
- * handleConfirmAction/handleAddRemark, and set this to false.
- */
-const IS_SAMPLE_DATA = true;
 const TOAST_DURATION_MS = 5000;
+
+type LoadState = "loading" | "ready" | "error";
 
 type AdminPotholeManagementProps = {
   user: AuthUser;
@@ -64,6 +74,12 @@ type AdminPotholeManagementProps = {
   onLogout: () => void;
 };
 
+const errorMessage = (error: unknown, fallback: string): string =>
+  error instanceof Error && error.message ? error.message : fallback;
+
+const formatTime = (moment: Date): string =>
+  moment.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
+
 const AdminPotholeManagement = ({
   user,
   unreadNotifications,
@@ -79,9 +95,12 @@ const AdminPotholeManagement = ({
   onNotifications,
   onLogout,
 }: AdminPotholeManagementProps) => {
-  const [reports, setReports] = useState<PotholeReport[]>(
-    SAMPLE_POTHOLE_REPORTS,
-  );
+  const [reports, setReports] = useState<PotholeReport[]>([]);
+  const [summary, setSummary] = useState<PotholeSummary | null>(null);
+  const [loadState, setLoadState] = useState<LoadState>("loading");
+  const [loadError, setLoadError] = useState("");
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [filters, setFilters] = useState<PotholeFilters>(
     DEFAULT_POTHOLE_FILTERS,
   );
@@ -91,14 +110,94 @@ const AdminPotholeManagement = ({
   /** The report highlighted in both the map and the table. */
   const [selectedReportId, setSelectedReportId] = useState<string | null>(null);
   const [detailsReportId, setDetailsReportId] = useState<string | null>(null);
+  const [history, setHistory] = useState<PotholeHistoryEntry[] | null>(null);
+  const [historyError, setHistoryError] = useState("");
+  const [historyReloadKey, setHistoryReloadKey] = useState(0);
   const [pendingAction, setPendingAction] = useState<PotholeAction | null>(null);
+  const [isSavingAction, setIsSavingAction] = useState(false);
+  const [actionError, setActionError] = useState("");
+  const [isSavingRemark, setIsSavingRemark] = useState(false);
   const [toast, setToast] = useState("");
   const [sidebarStats, setSidebarStats] = useState({
     pending: 0,
     pendingRegistrations: 0,
   });
   const mapSectionRef = useRef<HTMLElement | null>(null);
+  /** Report numbers already shown, to announce newly arrived reports. */
+  const knownIdsRef = useRef<Set<string> | null>(null);
   const { isDrawerOpen, closeDrawer, toggleDrawer } = useResponsiveSidebar();
+  const isAdministratorAccount = isAdministrator(user);
+
+  /**
+   * Loads every report and the database-computed statistics. A background
+   * refresh keeps the current data on screen if the server cannot be reached.
+   */
+  const loadData = useCallback(async (background: boolean) => {
+    if (background) {
+      setIsRefreshing(true);
+    }
+
+    try {
+      const [apiReports, apiSummary] = await Promise.all([
+        fetchAdminPotholeReports(),
+        fetchAdminPotholeSummary(),
+      ]);
+      const nextReports = apiReports.map(mapApiPotholeReport);
+
+      const known = knownIdsRef.current;
+      if (known) {
+        const arrived = nextReports.filter((report) => !known.has(report.id));
+        if (arrived.length > 0) {
+          setToast(
+            arrived.length === 1
+              ? `New pothole report received: ${arrived[0].id}.`
+              : `${arrived.length} new pothole reports received.`,
+          );
+        }
+      }
+      knownIdsRef.current = new Set(nextReports.map((report) => report.id));
+
+      setReports(nextReports);
+      setSummary(mapApiPotholeSummary(apiSummary));
+      setLastUpdated(new Date());
+      setLoadError("");
+      setLoadState("ready");
+    } catch (error) {
+      setLoadError(errorMessage(error, "Could not load the pothole reports."));
+      if (!background) {
+        setLoadState("error");
+      }
+    } finally {
+      setIsRefreshing(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void loadData(false);
+  }, [loadData]);
+
+  // New resident reports appear without reloading: re-check periodically and
+  // whenever the tab becomes visible again.
+  useEffect(() => {
+    const refreshIfVisible = () => {
+      if (document.visibilityState === "visible") {
+        void loadData(true);
+      }
+    };
+    const timer = window.setInterval(
+      refreshIfVisible,
+      POTHOLE_REFRESH_INTERVAL_MS,
+    );
+    document.addEventListener("visibilitychange", refreshIfVisible);
+
+    return () => {
+      window.clearInterval(timer);
+      document.removeEventListener("visibilitychange", refreshIfVisible);
+    };
+  }, [loadData]);
+
+  // Free the downloaded photos when the page closes.
+  useEffect(() => releasePotholePhotos, []);
 
   // Sidebar badges stay consistent with the dashboard without blocking the page.
   useEffect(() => {
@@ -131,7 +230,6 @@ const AdminPotholeManagement = ({
     return () => window.clearTimeout(timer);
   }, [toast]);
 
-  const stats = useMemo(() => getPotholeStats(reports), [reports]);
   const filteredReports = useMemo(
     () => filterPotholeReports(reports, filters),
     [reports, filters],
@@ -149,13 +247,59 @@ const AdminPotholeManagement = ({
     currentPage * pageSize,
   );
 
-  const reportsWithoutGps = filteredReports.filter(
+  const reportsWithoutLocation = filteredReports.filter(
     (report) => !hasPotholeCoordinates(report),
   ).length;
 
   // Looked up on every render so the open panel always shows the latest data.
   const detailsReport =
     reports.find((report) => report.id === detailsReportId) ?? null;
+  const detailsRecordId = detailsReport?.recordId ?? null;
+
+  /** Puts a fresh copy of one report (from a detail/update call) in the list. */
+  const applyDetail = useCallback((detail: PotholeReportDetail) => {
+    const { history: nextHistory, ...report } = detail;
+    setReports((current) =>
+      current.map((entry) =>
+        entry.recordId === report.recordId ? report : entry,
+      ),
+    );
+    setHistory(nextHistory);
+    setHistoryError("");
+  }, []);
+
+  // The history (status changes and remarks) is loaded per opened report.
+  useEffect(() => {
+    if (detailsRecordId === null) {
+      return;
+    }
+
+    let cancelled = false;
+    setHistory(null);
+    setHistoryError("");
+
+    fetchAdminPotholeReport(detailsRecordId)
+      .then((detail) => {
+        if (!cancelled) applyDetail(mapApiPotholeDetail(detail));
+      })
+      .catch((error: unknown) => {
+        if (!cancelled) {
+          setHistoryError(errorMessage(error, "Could not load the history."));
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [detailsRecordId, historyReloadKey, applyDetail]);
+
+  const refreshSummary = () => {
+    fetchAdminPotholeSummary()
+      .then((apiSummary) => setSummary(mapApiPotholeSummary(apiSummary)))
+      .catch(() => {
+        // The next background refresh corrects the statistics.
+      });
+  };
 
   const handleFiltersChange = (changes: Partial<PotholeFilters>) => {
     setFilters((previous) => ({ ...previous, ...changes }));
@@ -196,6 +340,12 @@ const AdminPotholeManagement = ({
   };
 
   const handleLocate = (reportId: string) => {
+    // A report hidden by the filters has no marker: show everything again.
+    if (!filteredReports.some((report) => report.id === reportId)) {
+      setFilters(DEFAULT_POTHOLE_FILTERS);
+      setPage(1);
+    }
+
     setSelectedReportId(reportId);
     mapSectionRef.current?.scrollIntoView({
       behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches
@@ -205,44 +355,72 @@ const AdminPotholeManagement = ({
     });
   };
 
-  const saveNotice = IS_SAMPLE_DATA ? " Sample data: not saved." : "";
+  const handleOpenDetails = (reportId: string) => {
+    setActionError("");
+    setDetailsReportId(reportId);
+  };
 
-  const handleConfirmAction = (remark: string) => {
-    if (!detailsReport || !pendingAction) {
+  const handleCloseDetails = () => {
+    setDetailsReportId(null);
+    setPendingAction(null);
+    setHistory(null);
+  };
+
+  const handleConfirmAction = async (remark: string) => {
+    if (!detailsReport || !pendingAction || isSavingAction) {
       return;
     }
 
     const { targetStatus } = POTHOLE_ACTION_META[pendingAction];
-
-    setReports((current) =>
-      applyPotholeAction(
-        current,
-        detailsReport.id,
-        pendingAction,
-        remark,
-        getPortalProfileName(user),
-      ),
-    );
-    setToast(
-      `${detailsReport.id} is now ${POTHOLE_STATUS_META[targetStatus].label}.${saveNotice}`,
-    );
-    setPendingAction(null);
-  };
-
-  const handleAddRemark = (text: string) => {
-    if (!detailsReport) {
+    if (targetStatus === "pending") {
       return;
     }
 
-    setReports((current) =>
-      addPotholeRemark(
-        current,
-        detailsReport.id,
-        text,
-        getPortalProfileName(user),
-      ),
-    );
-    setToast(`Remark added to ${detailsReport.id}.${saveNotice}`);
+    setIsSavingAction(true);
+    setActionError("");
+
+    try {
+      const detail = await updateAdminPotholeStatus(
+        detailsReport.recordId,
+        targetStatus,
+        remark,
+      );
+      applyDetail(mapApiPotholeDetail(detail));
+      refreshSummary();
+      setToast(
+        `${detailsReport.id} is now ${POTHOLE_STATUS_META[targetStatus].label}.`,
+      );
+      setPendingAction(null);
+    } catch (error) {
+      setActionError(errorMessage(error, "Could not update the report."));
+      // Someone else changed the report first: show its real status.
+      if (error instanceof ApiError && error.status === 409) {
+        void loadData(true);
+        setHistoryReloadKey((key) => key + 1);
+      }
+    } finally {
+      setIsSavingAction(false);
+    }
+  };
+
+  const handleAddRemark = async (text: string): Promise<boolean> => {
+    if (!detailsReport) {
+      return false;
+    }
+
+    setIsSavingRemark(true);
+
+    try {
+      const detail = await addAdminPotholeRemark(detailsReport.recordId, text);
+      applyDetail(mapApiPotholeDetail(detail));
+      setToast(`Remark added to ${detailsReport.id}.`);
+      return true;
+    } catch (error) {
+      setToast(errorMessage(error, "Could not save the remark."));
+      return false;
+    } finally {
+      setIsSavingRemark(false);
+    }
   };
 
   return (
@@ -284,98 +462,159 @@ const AdminPotholeManagement = ({
           fullName={getPortalProfileName(user) || "Administrator"}
           onMenuToggle={toggleDrawer}
           title="Pothole Management"
-          subtitle="Review pothole reports, see their locations, and track repairs."
+          subtitle="Review residents' pothole reports, see where they are, and track repairs."
           unreadNotifications={unreadNotifications}
           onNotifications={onNotifications}
         />
 
-        {IS_SAMPLE_DATA && (
-          <div className="pothole-sample-notice" role="note">
-            <strong>Sample data.</strong> The system has no pothole report
-            database yet, so these reports are examples. Status changes and
-            remarks only update this screen and are lost when you reload or
-            leave the page.
+        {loadState === "loading" && (
+          <div className="pothole-page-state" aria-busy="true">
+            Loading pothole reports…
           </div>
         )}
 
-        <PotholeStatsGrid stats={stats} />
-
-        <PotholeToolbar
-          filters={filters}
-          resultCount={filteredReports.length}
-          totalCount={reports.length}
-          onChange={handleFiltersChange}
-          onClear={handleClearFilters}
-        />
-
-        <section
-          ref={mapSectionRef}
-          className="admin-panel pothole-map-panel"
-          aria-labelledby="pothole-map-title"
-        >
-          <div className="admin-panel-header pothole-map-header">
-            <h2 id="pothole-map-title" className="admin-panel-title">
-              Pothole Map
-            </h2>
-
-            <ul className="pothole-legend" aria-label="Marker colors">
-              {POTHOLE_STATUSES.map((status) => (
-                <li key={status}>
-                  <span
-                    className={`pothole-legend-dot pothole-pin--${status}`}
-                    aria-hidden="true"
-                  >
-                    {POTHOLE_STATUS_META[status].glyph}
-                  </span>
-                  {POTHOLE_STATUS_META[status].label}
-                </li>
-              ))}
-            </ul>
+        {loadState === "error" && (
+          <div className="pothole-page-state is-error" role="alert">
+            <strong>Pothole reports could not be loaded.</strong>
+            <span>{loadError}</span>
+            <button
+              type="button"
+              className="pothole-button pothole-button--primary"
+              onClick={() => {
+                setLoadState("loading");
+                void loadData(false);
+              }}
+            >
+              Try again
+            </button>
           </div>
+        )}
 
-          <PotholeMap
-            reports={filteredReports}
-            selectedReportId={selectedReportId}
-            onSelect={handleMarkerSelect}
-            onDeselect={handleMarkerDeselect}
-            onViewDetails={setDetailsReportId}
-          />
+        {loadState === "ready" && summary && (
+          <>
+            <div className="pothole-refresh-bar">
+              <span className="pothole-refresh-text" role="status">
+                {loadError
+                  ? `Could not refresh: ${loadError}`
+                  : lastUpdated
+                    ? `Updated ${formatTime(lastUpdated)} · checks for new reports every minute`
+                    : ""}
+              </span>
+              <button
+                type="button"
+                className="pothole-button"
+                onClick={() => void loadData(true)}
+                disabled={isRefreshing}
+              >
+                <RefreshCw
+                  size={14}
+                  className={isRefreshing ? "pothole-photo-spin" : undefined}
+                  aria-hidden="true"
+                />
+                {isRefreshing ? "Refreshing…" : "Refresh"}
+              </button>
+            </div>
 
-          {reportsWithoutGps > 0 && (
-            <p className="pothole-map-footnote">
-              {reportsWithoutGps === 1
-                ? "1 report has no GPS coordinates and is only listed in the table."
-                : `${reportsWithoutGps} reports have no GPS coordinates and are only listed in the table.`}
-            </p>
-          )}
-        </section>
+            <PotholeStatsGrid stats={summary.stats} />
 
-        <PotholeReportsTable
-          reports={pageReports}
-          totalResults={sortedReports.length}
-          page={currentPage}
-          pageSize={pageSize}
-          sort={sort}
-          selectedReportId={selectedReportId}
-          canClearFilters={hasActivePotholeFilters(filters)}
-          onSort={handleSort}
-          onPageChange={setPage}
-          onPageSizeChange={handlePageSizeChange}
-          onViewDetails={setDetailsReportId}
-          onLocate={handleLocate}
-          onClearFilters={handleClearFilters}
-        />
+            <PotholeToolbar
+              filters={filters}
+              resultCount={filteredReports.length}
+              totalCount={reports.length}
+              onChange={handleFiltersChange}
+              onClear={handleClearFilters}
+            />
+
+            <div className="pothole-overview">
+              <section
+                ref={mapSectionRef}
+                className="admin-panel pothole-map-panel"
+                aria-labelledby="pothole-map-title"
+              >
+                <div className="admin-panel-header pothole-map-header">
+                  <h2 id="pothole-map-title" className="admin-panel-title">
+                    Pothole Map
+                  </h2>
+
+                  <ul className="pothole-legend" aria-label="Marker colors">
+                    {POTHOLE_STATUSES.map((status) => (
+                      <li key={status}>
+                        <span
+                          className={`pothole-legend-dot pothole-pin--${status}`}
+                          aria-hidden="true"
+                        >
+                          {POTHOLE_STATUS_META[status].glyph}
+                        </span>
+                        {POTHOLE_STATUS_META[status].label}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+
+                <PotholeMap
+                  reports={filteredReports}
+                  selectedReportId={selectedReportId}
+                  onSelect={handleMarkerSelect}
+                  onDeselect={handleMarkerDeselect}
+                  onViewDetails={handleOpenDetails}
+                />
+
+                {reportsWithoutLocation > 0 && (
+                  <p className="pothole-map-footnote">
+                    {reportsWithoutLocation === 1
+                      ? "1 report has no captured location and is only listed in the table."
+                      : `${reportsWithoutLocation} reports have no captured location and are only listed in the table.`}
+                  </p>
+                )}
+              </section>
+
+              <PotholePurokSummary
+                summary={summary}
+                activePurok={filters.purok}
+                onSelectPurok={(purok) => handleFiltersChange({ purok })}
+              />
+            </div>
+
+            <PotholeReportsTable
+              reports={pageReports}
+              totalResults={sortedReports.length}
+              page={currentPage}
+              pageSize={pageSize}
+              sort={sort}
+              selectedReportId={selectedReportId}
+              canClearFilters={hasActivePotholeFilters(filters)}
+              onSort={handleSort}
+              onPageChange={setPage}
+              onPageSizeChange={handlePageSizeChange}
+              onViewDetails={handleOpenDetails}
+              onLocate={handleLocate}
+              onClearFilters={handleClearFilters}
+            />
+          </>
+        )}
 
         {detailsReport && (
           <PotholeDetailsModal
             // Remount per report so its draft remark never carries over.
             key={detailsReport.id}
             report={detailsReport}
-            isSampleData={IS_SAMPLE_DATA}
+            history={history}
+            historyError={historyError}
+            isAdministratorAccount={isAdministratorAccount}
             isActive={pendingAction === null}
-            onClose={() => setDetailsReportId(null)}
-            onAction={setPendingAction}
+            isSavingRemark={isSavingRemark}
+            onClose={handleCloseDetails}
+            onAction={(action) => {
+              setActionError("");
+              setPendingAction(action);
+            }}
             onAddRemark={handleAddRemark}
+            onLocate={() => {
+              const reportId = detailsReport.id;
+              handleCloseDetails();
+              handleLocate(reportId);
+            }}
+            onRetryHistory={() => setHistoryReloadKey((key) => key + 1)}
           />
         )}
 
@@ -383,8 +622,13 @@ const AdminPotholeManagement = ({
           <PotholeConfirmModal
             action={pendingAction}
             reportId={detailsReport.id}
-            onCancel={() => setPendingAction(null)}
-            onConfirm={handleConfirmAction}
+            isSaving={isSavingAction}
+            saveError={actionError}
+            onCancel={() => {
+              setPendingAction(null);
+              setActionError("");
+            }}
+            onConfirm={(remark) => void handleConfirmAction(remark)}
           />
         )}
 
