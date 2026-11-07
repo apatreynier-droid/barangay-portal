@@ -12,6 +12,10 @@ import type {
   AdminDocumentRequestDetail,
 } from "../../Types/Admin/AdminDocumentRequestsType";
 import type { AdminRequestHistoryEntry } from "../../Types/Admin/AdminRequestHistoryType";
+import type {
+  AdminRegistration,
+  AdminRegistrationActionResult,
+} from "../../Types/Admin/AdminRegistrationsType";
 import type { AdminReportsData } from "../../Types/Admin/AdminReportsType";
 import type { AdminActivityLog } from "../../Types/Admin/AdminLogsType";
 import type {
@@ -21,7 +25,36 @@ import type {
   AdminStaffUpdatePayload,
 } from "../../Types/Admin/AdminUserManagementType";
 
-const API_BASE_URL = "http://127.0.0.1:8000";
+/** Port the FastAPI backend listens on (uvicorn ... --port 8000). */
+const API_PORT = 8000;
+
+/**
+ * Base URL of the FastAPI backend, used by every request in this file
+ * (including ``authedFetch``).
+ *
+ * 1. ``VITE_API_BASE_URL`` (e.g. in ``.env.local``) wins when it is set.
+ * 2. Otherwise the backend is assumed to run on the same computer that served
+ *    this page, on port 8000. Opening the portal at ``http://localhost:5173``
+ *    calls ``http://localhost:8000``; opening it from a phone at
+ *    ``http://100.100.109.59:5173`` calls ``http://100.100.109.59:8000``.
+ *    A hardcoded ``127.0.0.1`` would point a phone at *itself*.
+ */
+const resolveApiBaseUrl = (): string => {
+  const configured = (import.meta.env.VITE_API_BASE_URL ?? "").trim();
+  if (configured) {
+    return configured.replace(/\/+$/, "");
+  }
+
+  const { protocol, hostname } = window.location;
+  // IPv6 literals need brackets in a URL (browsers usually include them).
+  const host =
+    hostname.includes(":") && !hostname.startsWith("[")
+      ? `[${hostname}]`
+      : hostname;
+  return `${protocol}//${host}:${API_PORT}`;
+};
+
+const API_BASE_URL = resolveApiBaseUrl();
 
 export const TOKEN_STORAGE_KEY = "barangay_portal_access_token";
 export const USER_STORAGE_KEY = "barangay_portal_user";
@@ -32,12 +65,21 @@ export type AuthUser = {
   first_name: string;
   last_name: string;
   role: string;
+  purok: string | null;
 };
 
 export type AuthResponse = {
   access_token: string;
   token_type: string;
   user: AuthUser;
+};
+
+/** Result of a registration. No session: an Administrator must approve it first. */
+export type RegistrationResult = {
+  message: string;
+  email: string;
+  account_status: string;
+  reference_number: string;
 };
 
 export type ApiRequest = {
@@ -217,7 +259,7 @@ const authedFetch = async (
 
 export const registerUser = async (
   payload: RegisterPayload,
-): Promise<AuthResponse> => {
+): Promise<RegistrationResult> => {
   let response: Response;
 
   try {
@@ -250,9 +292,7 @@ export const registerUser = async (
     );
   }
 
-  const auth = body as AuthResponse;
-  saveSession(auth);
-  return auth;
+  return body as RegistrationResult;
 };
 
 export const loginUser = async (
@@ -281,6 +321,15 @@ export const loginUser = async (
       401,
       parseErrorMessage(body, "Incorrect email or password."),
       "password",
+    );
+  }
+
+  // Correct password, but the account is pending, rejected or deactivated.
+  if (response.status === 403) {
+    throw new ApiError(
+      403,
+      parseErrorMessage(body, "This account cannot sign in."),
+      "account",
     );
   }
 
@@ -589,6 +638,67 @@ export const resetStaffPassword = async (staffId: number): Promise<string> => {
   return (body as { message?: string } | null)?.message ?? "";
 };
 
+export const fetchRegistrations = async (): Promise<AdminRegistration[]> => {
+  const response = await authedFetch("/api/admin/registrations");
+  const body: unknown = await response.json().catch(() => null);
+
+  if (!response.ok) {
+    throw new ApiError(
+      response.status,
+      parseErrorMessage(body, "Could not load the registrations."),
+    );
+  }
+
+  return body as AdminRegistration[];
+};
+
+const postRegistrationAction = async (
+  path: string,
+  fallback: string,
+  payload?: { reason: string },
+): Promise<AdminRegistrationActionResult> => {
+  const response = await authedFetch(path, {
+    method: "POST",
+    ...(payload && {
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    }),
+  });
+  const body: unknown = await response.json().catch(() => null);
+
+  if (!response.ok) {
+    throw new ApiError(response.status, parseErrorMessage(body, fallback));
+  }
+
+  return body as AdminRegistrationActionResult;
+};
+
+export const approveRegistration = (
+  residentId: number,
+): Promise<AdminRegistrationActionResult> =>
+  postRegistrationAction(
+    `/api/admin/registrations/${residentId}/approve`,
+    "Could not approve the registration.",
+  );
+
+export const rejectRegistration = (
+  residentId: number,
+  reason: string,
+): Promise<AdminRegistrationActionResult> =>
+  postRegistrationAction(
+    `/api/admin/registrations/${residentId}/reject`,
+    "Could not reject the registration.",
+    { reason },
+  );
+
+export const retryRegistrationEmail = (
+  residentId: number,
+): Promise<AdminRegistrationActionResult> =>
+  postRegistrationAction(
+    `/api/admin/registrations/${residentId}/email/retry`,
+    "Could not retry the email.",
+  );
+
 export const fetchAdminDocumentRequests = async (): Promise<
   AdminDocumentRequest[]
 > => {
@@ -712,6 +822,62 @@ export const createDocumentRequest = async (
   }
 
   return body as ApiRequest;
+};
+
+/**
+ * Submits a document request together with its required image attachment
+ * (multipart). The backend creates the request and stores the image in one
+ * transaction, so a failed upload never leaves a request behind.
+ */
+export const createDocumentRequestWithAttachment = async (
+  documentTypeId: number,
+  purpose: string,
+  attachment: File,
+): Promise<ApiRequest> => {
+  const formData = new FormData();
+  formData.append("document_type_id", String(documentTypeId));
+  formData.append("purpose", purpose);
+  formData.append("attachment", attachment, attachment.name);
+
+  // No Content-Type header: the browser sets the multipart boundary itself.
+  const response = await authedFetch("/api/requests/with-attachment", {
+    method: "POST",
+    body: formData,
+  });
+  const body: unknown = await response.json().catch(() => null);
+
+  if (!response.ok) {
+    throw new ApiError(
+      response.status,
+      parseErrorMessage(body, "Could not submit your request."),
+    );
+  }
+
+  return body as ApiRequest;
+};
+
+/**
+ * Downloads the resident's image for an admin document request. The file is
+ * served only through this authenticated endpoint (Bearer token), so it is
+ * fetched as a Blob; callers display it with a short-lived object URL that
+ * they revoke when done (the image itself stays stored on the server).
+ */
+export const fetchAdminRequestAttachment = async (
+  requestId: number,
+): Promise<Blob> => {
+  const response = await authedFetch(
+    `/api/admin/document-requests/${requestId}/attachment`,
+  );
+
+  if (!response.ok) {
+    const body: unknown = await response.json().catch(() => null);
+    throw new ApiError(
+      response.status,
+      parseErrorMessage(body, "Could not load the attachment."),
+    );
+  }
+
+  return response.blob();
 };
 
 export const updateDocumentRequest = async (

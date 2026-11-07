@@ -3,28 +3,53 @@ from __future__ import annotations
 import calendar
 import logging
 import math
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
 from datetime import date, datetime, timedelta, timezone
 
 import mysql.connector
 import secrets
-from fastapi import Depends, FastAPI, HTTPException, Request, Response, status
+from fastapi import (
+    BackgroundTasks,
+    Depends,
+    FastAPI,
+    File,
+    Form,
+    HTTPException,
+    Request,
+    Response,
+    UploadFile,
+    status,
+)
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import RedirectResponse
+from fastapi.responses import FileResponse, RedirectResponse
 from mysql.connector import MySQLConnection
 from urllib.parse import quote
 
 from .config import settings
 from .database import create_connection, get_db
 from .activity_logs import record_activity_log
+from .attachments import (
+    ValidatedImage,
+    build_attachment_response,
+    delete_stored_file,
+    fetch_attachment_row,
+    insert_attachment_row,
+    load_attachment_meta,
+    read_validated_image,
+    store_image_file,
+)
 from .dependencies import (
     get_current_admin_portal_user,
     get_current_admin_user,
     get_current_user,
 )
 from .notifications import (
+    NOTIFICATION_TYPE_REGISTRATION,
     NOTIFICATION_TYPE_REQUEST,
     action_time_bucket,
     build_dedupe_key,
+    create_notification,
     notify_admins,
     record_admin_notification,
 )
@@ -32,6 +57,18 @@ from .email_service import (
     EmailDeliveryError,
     is_email_configured,
     send_password_reset_email,
+)
+from .email_templates import EVENT_APPROVED, EVENT_REGISTERED, EVENT_REJECTED
+from .registration_emails import (
+    DELIVERY_FAILED,
+    DELIVERY_IN_PROGRESS,
+    DELIVERY_SENT,
+    deliver_in_background,
+    deliver_registration_email,
+    enqueue_registration_email,
+    event_for_account_status,
+    reset_registration_emails,
+    start_registration_email_worker,
 )
 from .request_notifications import send_request_status_email
 from .schemas import (
@@ -46,6 +83,9 @@ from .schemas import (
     AdminRecentRegistration,
     AdminRecentRequest,
     AdminActivityLogResponse,
+    AdminRegistrationActionResponse,
+    AdminRegistrationRejectInput,
+    AdminRegistrationResponse,
     AdminResidentDetailResponse,
     AdminResidentRequestEntry,
     AdminResidentResponse,
@@ -70,6 +110,7 @@ from .schemas import (
     MessageResponse,
     NotificationResponse,
     RegisterInput,
+    RegistrationResponse,
     ResetPasswordInput,
     RequestDetailResponse,
     RequestResponse,
@@ -91,10 +132,20 @@ from .rate_limit import (
     password_reset_email_limiter,
     password_reset_ip_limiter,
     password_reset_submit_limiter,
+    registration_ip_limiter,
 )
 
 
-app = FastAPI(title="Barangay Portal API", version="1.0.0")
+@asynccontextmanager
+async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
+    stop_registration_email_worker = start_registration_email_worker()
+    try:
+        yield
+    finally:
+        stop_registration_email_worker()
+
+
+app = FastAPI(title="Barangay Portal API", version="1.0.0", lifespan=lifespan)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=list(settings.cors_origins),
@@ -108,6 +159,30 @@ logger = logging.getLogger(__name__)
 
 #: Frontend route the emailed reset link points at (see src/App.tsx).
 FRONTEND_RESET_PASSWORD_PATH = "/reset-password"
+
+#: MySQL error number for a duplicate value on a UNIQUE key.
+DUPLICATE_ENTRY_ERROR = 1062
+
+#: Asia/Manila has no daylight saving, so a fixed offset is always correct.
+MANILA_TIMEZONE = timezone(timedelta(hours=8))
+
+#: Sign-in answers for a correct password on an account that is not active.
+DEACTIVATED_LOGIN_MESSAGE = (
+    "Your account is currently deactivated. Please contact the Barangay "
+    "Administrator for assistance."
+)
+ACCOUNT_STATUS_LOGIN_MESSAGES = {
+    "pending": (
+        "Your registration is currently awaiting Administrator approval. You "
+        "will receive an email notification once your account has been approved."
+    ),
+    "rejected": (
+        "Your registration has been rejected. Please check your email for more "
+        "information or contact the Barangay Administrator."
+    ),
+    "inactive": DEACTIVATED_LOGIN_MESSAGE,
+    "suspended": DEACTIVATED_LOGIN_MESSAGE,
+}
 
 
 def normalize_email(email: str) -> str:
@@ -157,6 +232,16 @@ def actor_display_name(
     return name if name == label else f"{label} {name}"
 
 
+def format_manila_datetime(moment: datetime) -> str:
+    """Format an aware datetime for a notification, in Philippine time."""
+    local = moment.astimezone(MANILA_TIMEZONE)
+    hour = local.hour % 12 or 12
+    return (
+        f"{local:%B} {local.day}, {local.year} at "
+        f"{hour}:{local:%M} {local:%p}"
+    )
+
+
 def raise_rate_limited(retry_after: float, message: str) -> None:
     """Raise HTTP 429 for an active rate limit, with a Retry-After header."""
     retry_seconds = max(1, math.ceil(retry_after))
@@ -176,7 +261,7 @@ def build_auth_response(connection: MySQLConnection, user_id: int) -> AuthRespon
     cursor.execute(
         """
         SELECT users.id, users.email, users.role, resident_profiles.first_name,
-               resident_profiles.last_name
+               resident_profiles.last_name, resident_profiles.purok
         FROM users
         JOIN resident_profiles ON resident_profiles.user_id = users.id
         WHERE users.id = %s
@@ -227,72 +312,152 @@ def health_check() -> dict[str, str]:
     return {"status": "ok"}
 
 
-@app.post("/api/auth/register", response_model=AuthResponse, status_code=status.HTTP_201_CREATED)
+@app.post(
+    "/api/auth/register",
+    response_model=RegistrationResponse,
+    status_code=status.HTTP_201_CREATED,
+)
 def register(
     payload: RegisterInput,
+    request: Request,
+    background_tasks: BackgroundTasks,
     connection: MySQLConnection = Depends(get_db),
-) -> AuthResponse:
+) -> RegistrationResponse:
+    """Save a new resident as ``pending``. No session is issued here: signing
+    in stays impossible until an Administrator approves the registration.
+
+    A rejected resident may apply again with the same email. That reuses the
+    account, so the resident code stays the same. The previous decision stays
+    visible to the reviewer until the new decision replaces it.
+    """
+    retry_after = registration_ip_limiter.hit(get_client_ip(request))
+    if retry_after > 0:
+        raise_rate_limited(
+            retry_after,
+            "Too many registrations from this network.",
+        )
+
     cursor = connection.cursor(dictionary=True)
     email = normalize_email(payload.email)
     try:
-        cursor.execute("SELECT id FROM users WHERE email = %s", (email,))
-        if cursor.fetchone() is not None:
+        cursor.execute(
+            "SELECT id, role, account_status, reviewed_at FROM users WHERE email = %s",
+            (email,),
+        )
+        existing = cursor.fetchone()
+        is_resubmission = (
+            existing is not None
+            and existing["role"] == "resident"
+            and existing["account_status"] == "rejected"
+        )
+        if existing is not None and not is_resubmission:
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
                 detail="An account already exists for this email.",
             )
 
-        cursor.execute(
-            """
-            INSERT INTO users (email, password_hash)
-            VALUES (%s, %s)
-            """,
-            (email, hash_password(payload.password)),
+        profile_values = (
+            payload.first_name.strip(),
+            clean_optional(payload.middle_name),
+            payload.last_name.strip(),
+            clean_optional(payload.suffix),
+            payload.date_of_birth,
+            clean_optional(payload.place_of_birth),
+            clean_optional(payload.sex),
+            clean_optional(payload.civil_status),
+            clean_optional(payload.nationality),
+            clean_optional(payload.religion),
+            clean_optional(payload.voter_status),
+            clean_optional(payload.house_no),
+            clean_optional(payload.street),
+            clean_optional(payload.purok),
+            payload.years_of_residency,
+            clean_optional(payload.occupation),
+            clean_optional(payload.employer),
+            clean_optional(payload.emergency_contact_name),
+            clean_optional(payload.emergency_contact_relationship),
+            clean_optional(payload.emergency_contact_number),
+            clean_optional(payload.emergency_contact_address),
+            payload.phone.strip(),
+            payload.address.strip(),
         )
-        user_id = cursor.lastrowid
-        cursor.execute(
-            """
-            INSERT INTO resident_profiles
-              (user_id, first_name, middle_name, last_name, suffix,
-               date_of_birth, place_of_birth, sex, civil_status, nationality,
-               religion, voter_status, house_no, street, purok,
-               years_of_residency, occupation, employer,
-               emergency_contact_name, emergency_contact_relationship,
-               emergency_contact_number, emergency_contact_address,
-               contact_number, address)
-            VALUES (%s, %s, %s, %s, %s,
-                    %s, %s, %s, %s, %s,
-                    %s, %s, %s, %s, %s,
-                    %s, %s, %s,
-                    %s, %s, %s, %s,
-                    %s, %s)
-            """,
-            (
-                user_id,
-                payload.first_name.strip(),
-                clean_optional(payload.middle_name),
-                payload.last_name.strip(),
-                clean_optional(payload.suffix),
-                payload.date_of_birth,
-                clean_optional(payload.place_of_birth),
-                clean_optional(payload.sex),
-                clean_optional(payload.civil_status),
-                clean_optional(payload.nationality),
-                clean_optional(payload.religion),
-                clean_optional(payload.voter_status),
-                clean_optional(payload.house_no),
-                clean_optional(payload.street),
-                clean_optional(payload.purok),
-                payload.years_of_residency,
-                clean_optional(payload.occupation),
-                clean_optional(payload.employer),
-                clean_optional(payload.emergency_contact_name),
-                clean_optional(payload.emergency_contact_relationship),
-                clean_optional(payload.emergency_contact_number),
-                clean_optional(payload.emergency_contact_address),
-                payload.phone.strip(),
-                payload.address.strip(),
-            ),
+
+        if is_resubmission:
+            user_id = existing["id"]
+            # The status condition lets only one of several simultaneous
+            # submissions through, like the review endpoints.
+            cursor.execute(
+                """
+                UPDATE users
+                SET password_hash = %s,
+                    account_status = 'pending',
+                    created_at = UTC_TIMESTAMP()
+                WHERE id = %s AND role = 'resident' AND account_status = 'rejected'
+                """,
+                (hash_password(payload.password), user_id),
+            )
+            if cursor.rowcount != 1:
+                raise HTTPException(
+                    status_code=status.HTTP_409_CONFLICT,
+                    detail="An account already exists for this email.",
+                )
+            cursor.execute(
+                """
+                UPDATE resident_profiles
+                SET first_name = %s, middle_name = %s, last_name = %s, suffix = %s,
+                    date_of_birth = %s, place_of_birth = %s, sex = %s,
+                    civil_status = %s, nationality = %s, religion = %s,
+                    voter_status = %s, house_no = %s, street = %s, purok = %s,
+                    years_of_residency = %s, occupation = %s, employer = %s,
+                    emergency_contact_name = %s,
+                    emergency_contact_relationship = %s,
+                    emergency_contact_number = %s,
+                    emergency_contact_address = %s,
+                    contact_number = %s, address = %s,
+                    created_at = UTC_TIMESTAMP()
+                WHERE user_id = %s
+                """,
+                (*profile_values, user_id),
+            )
+            cursor.execute(
+                "SELECT id FROM resident_profiles WHERE user_id = %s",
+                (user_id,),
+            )
+            resident_id = cursor.fetchone()["id"]
+            reset_registration_emails(connection, user_id=user_id)
+        else:
+            cursor.execute(
+                """
+                INSERT INTO users (email, password_hash, role, account_status)
+                VALUES (%s, %s, 'resident', 'pending')
+                """,
+                (email, hash_password(payload.password)),
+            )
+            user_id = cursor.lastrowid
+            cursor.execute(
+                """
+                INSERT INTO resident_profiles
+                  (first_name, middle_name, last_name, suffix,
+                   date_of_birth, place_of_birth, sex, civil_status, nationality,
+                   religion, voter_status, house_no, street, purok,
+                   years_of_residency, occupation, employer,
+                   emergency_contact_name, emergency_contact_relationship,
+                   emergency_contact_number, emergency_contact_address,
+                   contact_number, address, user_id)
+                VALUES (%s, %s, %s, %s,
+                        %s, %s, %s, %s, %s,
+                        %s, %s, %s, %s, %s,
+                        %s, %s, %s,
+                        %s, %s, %s, %s,
+                        %s, %s, %s)
+                """,
+                (*profile_values, user_id),
+            )
+            resident_id = cursor.lastrowid
+        # Same transaction as the account: the email cannot be lost once the
+        # registration exists, and cannot exist without it.
+        enqueue_registration_email(
+            connection, user_id=user_id, event=EVENT_REGISTERED
         )
         connection.commit()
     except HTTPException:
@@ -300,6 +465,12 @@ def register(
         raise
     except mysql.connector.Error as error:
         connection.rollback()
+        if error.errno == DUPLICATE_ENTRY_ERROR:
+            # Two simultaneous submissions for one address: the first one won.
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="An account already exists for this email.",
+            ) from error
         raise HTTPException(status_code=500, detail="Could not create the account.") from error
     finally:
         cursor.close()
@@ -307,17 +478,53 @@ def register(
     # The account exists and is committed, so the administrator notification is
     # written now. Recording it is best-effort: a notification problem must
     # never fail a registration that already succeeded.
+    registered_at = format_manila_datetime(datetime.now(timezone.utc))
+    registered_verb = (
+        "registered again after a rejection"
+        if is_resubmission
+        else "registered"
+    )
     record_admin_notification(
         connection,
-        title="New resident account",
+        title="New resident registration",
         message=(
             f"{payload.first_name.strip()} {payload.last_name.strip()} "
-            f"created a resident account ({email})."
+            f"({email}) {registered_verb} on {registered_at} and is waiting "
+            "for your approval."
         ),
-        dedupe_key=build_dedupe_key("resident-registered", user_id),
+        notification_type=NOTIFICATION_TYPE_REGISTRATION,
+        # The previous decision's time makes each new application its own event.
+        dedupe_key=build_dedupe_key(
+            "resident-registered",
+            user_id,
+            *((existing["reviewed_at"],) if is_resubmission else ()),
+        ),
+        administrators_only=True,
     )
+    if is_resubmission:
+        record_activity_log(
+            connection,
+            user_id=user_id,
+            action_type="Update",
+            action="registered again after a rejection",
+            target=f"RES-{resident_id:03d}",
+            target_type="Resident",
+            ip_address=get_client_ip(request),
+        )
 
-    return build_auth_response(connection, user_id)
+    # Sent after the response so an unreachable mail server cannot slow the
+    # form down. A failed attempt stays queued for the retry worker.
+    background_tasks.add_task(deliver_in_background, user_id, EVENT_REGISTERED)
+
+    return RegistrationResponse(
+        message=(
+            "Your registration was received and is waiting for Administrator "
+            "approval. You will receive an email once it has been reviewed."
+        ),
+        email=email,
+        account_status="pending",
+        reference_number=f"RES-{resident_id:03d}",
+    )
 
 
 @app.post("/api/auth/login", response_model=AuthResponse)
@@ -349,9 +556,9 @@ def login(
     cursor = connection.cursor(dictionary=True)
     cursor.execute(
         """
-        SELECT id, password_hash
+        SELECT id, password_hash, account_status
         FROM users
-        WHERE email = %s AND account_status = 'active'
+        WHERE email = %s
         """,
         (normalize_email(payload.email),),
     )
@@ -370,8 +577,19 @@ def login(
             detail="Incorrect email or password.",
         )
 
-    # Successful login: give the client a clean slate again.
+    # Correct password: give the client a clean slate again.
     login_attempt_limiter.record_success(attempt_key)
+
+    # The status is only revealed to someone who proved the password, so this
+    # cannot be used to look up who has registered. No session is created.
+    if user["account_status"] != "active":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=ACCOUNT_STATUS_LOGIN_MESSAGES.get(
+                user["account_status"], DEACTIVATED_LOGIN_MESSAGE
+            ),
+        )
+
     response = build_auth_response(connection, user["id"])
 
     record_activity_log(
@@ -735,6 +953,78 @@ def create_request(
     connection: MySQLConnection = Depends(get_db),
     current_user: dict[str, object] = Depends(get_current_user),
 ) -> RequestResponse:
+    return create_document_request_record(
+        connection,
+        request,
+        current_user,
+        document_type_id=payload.document_type_id,
+        purpose=payload.purpose,
+        image=None,
+    )
+
+
+@app.post(
+    "/api/requests/with-attachment",
+    response_model=RequestResponse,
+    status_code=status.HTTP_201_CREATED,
+)
+def create_request_with_attachment(
+    request: Request,
+    document_type_id: int = Form(gt=0),
+    purpose: str = Form(min_length=1, max_length=2000),
+    attachment: UploadFile = File(),
+    connection: MySQLConnection = Depends(get_db),
+    current_user: dict[str, object] = Depends(get_current_user),
+) -> RequestResponse:
+    """Submit a document request together with its required image (multipart).
+
+    The request row, its attachment row and the stored file are created
+    atomically: if anything fails, nothing is kept (see
+    ``create_document_request_record``). ``POST /api/requests`` (JSON, no
+    attachment) stays available unchanged for existing clients.
+    """
+    if not purpose.strip():
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Please tell us why you need this document.",
+        )
+
+    image = read_validated_image(attachment)
+    return create_document_request_record(
+        connection,
+        request,
+        current_user,
+        document_type_id=document_type_id,
+        purpose=purpose,
+        image=image,
+    )
+
+
+@app.get("/api/requests/{request_id}/attachment", response_class=FileResponse)
+def get_request_attachment(
+    request_id: int,
+    download: bool = False,
+    connection: MySQLConnection = Depends(get_db),
+    current_user: dict[str, object] = Depends(get_current_user),
+) -> FileResponse:
+    """A resident's own attachment. Another resident's request answers 404."""
+    row = fetch_attachment_row(
+        connection, request_id, owner_user_id=current_user["id"]
+    )
+    return build_attachment_response(row, download=download)
+
+
+def create_document_request_record(
+    connection: MySQLConnection,
+    request: Request,
+    current_user: dict[str, object],
+    *,
+    document_type_id: int,
+    purpose: str,
+    image: ValidatedImage | None,
+) -> RequestResponse:
+    purpose = purpose.strip()
+    stored_filename: str | None = None
     cursor = connection.cursor(dictionary=True)
     try:
         cursor.execute(
@@ -743,7 +1033,7 @@ def create_request(
             FROM document_types
             WHERE id = %s AND is_active = 1
             """,
-            (payload.document_type_id,),
+            (document_type_id,),
         )
         document_type = cursor.fetchone()
         if document_type is None:
@@ -758,8 +1048,8 @@ def create_request(
             (
                 f"TEMP-{secrets.token_hex(12)}",
                 current_user["id"],
-                payload.document_type_id,
-                payload.purpose.strip(),
+                document_type_id,
+                purpose,
             ),
         )
         request_id = cursor.lastrowid
@@ -804,18 +1094,38 @@ def create_request(
             dedupe_key=build_dedupe_key(
                 "request-submitted",
                 current_user["id"],
-                payload.document_type_id,
-                payload.purpose.strip(),
+                document_type_id,
+                purpose,
                 action_time_bucket(),
             ),
         )
+        # The image is written and recorded inside the same transaction, so a
+        # request is never created without the attachment it was sent with.
+        if image is not None:
+            stored_filename = store_image_file(image)
+            insert_attachment_row(
+                cursor,
+                request_id=request_id,
+                image=image,
+                stored_filename=stored_filename,
+                uploaded_by=current_user["id"],
+            )
         connection.commit()
     except HTTPException:
         connection.rollback()
+        delete_stored_file(stored_filename)
         raise
     except mysql.connector.Error as error:
         connection.rollback()
+        delete_stored_file(stored_filename)
         raise HTTPException(status_code=500, detail="Could not create the request.") from error
+    except OSError as error:
+        connection.rollback()
+        delete_stored_file(stored_filename)
+        logger.exception("Could not store a request attachment")
+        raise HTTPException(
+            status_code=500, detail="Could not save the attached image."
+        ) from error
 
     cursor.execute(
         """
@@ -960,8 +1270,18 @@ def delete_request(
             detail="Only requests that are still pending can be deleted.",
         )
 
+    # Owner-scoped lookup; None when there is no attachment (or no table yet).
+    attachment = fetch_attachment_row(
+        connection, request_id, owner_user_id=current_user["id"]
+    )
+
     cursor = connection.cursor()
     try:
+        if attachment is not None:
+            cursor.execute(
+                "DELETE FROM request_attachments WHERE request_id = %s",
+                (request_id,),
+            )
         cursor.execute(
             "DELETE FROM request_status_history WHERE request_id = %s",
             (request_id,),
@@ -995,6 +1315,10 @@ def delete_request(
         ) from error
     finally:
         cursor.close()
+
+    # Only after the commit: a failed delete keeps the request and its image.
+    if attachment is not None:
+        delete_stored_file(str(attachment["stored_filename"]))
 
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
@@ -1030,10 +1354,14 @@ def admin_dashboard(
 
     cursor.execute(
         """
-        SELECT COUNT(*) AS total_residents,
-               COALESCE(SUM(users.created_at
+        SELECT COALESCE(SUM(users.account_status NOT IN ('pending', 'rejected')), 0)
+                   AS total_residents,
+               COALESCE(SUM(users.account_status NOT IN ('pending', 'rejected')
+                            AND users.created_at
                             >= DATE(CONVERT_TZ(NOW(), '+00:00', '+08:00')) - INTERVAL (DAY(DATE(CONVERT_TZ(NOW(), '+00:00', '+08:00'))) - 1) DAY), 0)
-                   AS new_residents_this_month
+                   AS new_residents_this_month,
+               COALESCE(SUM(users.account_status = 'pending'), 0)
+                   AS pending_registrations
         FROM users
         WHERE users.role = 'resident'
         """
@@ -1146,7 +1474,8 @@ def admin_dashboard(
         """
         SELECT CONCAT(resident_profiles.first_name, ' ', resident_profiles.last_name)
                    AS resident_name,
-               resident_profiles.created_at
+               resident_profiles.created_at,
+               users.account_status
         FROM resident_profiles
         JOIN users ON users.id = resident_profiles.user_id
         WHERE users.role = 'resident'
@@ -1158,6 +1487,7 @@ def admin_dashboard(
         AdminRecentRegistration(
             resident_name=row["resident_name"],
             created_at=row["created_at"],
+            status=row["account_status"],
         )
         for row in cursor.fetchall()
     ]
@@ -1198,6 +1528,7 @@ def admin_dashboard(
             processing=request_stats["processing"],
             completed=request_stats["completed"],
             rejected=request_stats["rejected"],
+            pending_registrations=resident_stats["pending_registrations"],
         ),
         monthly=monthly,
         document_types=document_types,
@@ -1220,6 +1551,7 @@ def admin_reports(
                COALESCE(SUM(users.account_status = 'active'), 0) AS active_residents
         FROM users
         WHERE users.role = 'resident'
+          AND users.account_status NOT IN ('pending', 'rejected')
         """
     )
     resident_stats = cursor.fetchone()
@@ -1282,6 +1614,7 @@ def admin_reports(
         FROM resident_profiles
         JOIN users ON users.id = resident_profiles.user_id
         WHERE users.role = 'resident'
+              AND users.account_status NOT IN ('pending', 'rejected')
               AND resident_profiles.purok IS NOT NULL
               AND TRIM(resident_profiles.purok) <> ''
         GROUP BY resident_profiles.purok
@@ -1381,6 +1714,7 @@ def list_residents(
         FROM resident_profiles
         JOIN users ON users.id = resident_profiles.user_id
         WHERE users.role = 'resident'
+          AND users.account_status NOT IN ('pending', 'rejected')
         ORDER BY resident_profiles.id ASC
         """
     )
@@ -1624,7 +1958,7 @@ def set_resident_status(
     cursor = connection.cursor(dictionary=True)
     cursor.execute(
         """
-        SELECT users.id AS user_id,
+        SELECT users.id AS user_id, users.account_status,
                CONCAT(resident_profiles.first_name, ' ',
                       resident_profiles.last_name) AS resident_name
         FROM resident_profiles
@@ -1637,6 +1971,17 @@ def set_resident_status(
     if resident is None:
         cursor.close()
         raise HTTPException(status_code=404, detail="Resident was not found.")
+
+    # Activating here would skip the review, its record and the resident's email.
+    if resident["account_status"] in ("pending", "rejected"):
+        cursor.close()
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=(
+                "This registration has not been approved. Use the Approvals "
+                "page to review it."
+            ),
+        )
 
     try:
         cursor.execute(
@@ -1702,6 +2047,302 @@ def set_resident_status(
     )
 
     return load_resident_detail(connection, resident_id)
+
+
+REGISTRATION_SELECT = """
+    SELECT resident_profiles.id, users.id AS user_id,
+           CONCAT_WS(' ', NULLIF(resident_profiles.first_name, ''),
+                          NULLIF(resident_profiles.middle_name, ''),
+                          NULLIF(resident_profiles.last_name, ''),
+                          NULLIF(resident_profiles.suffix, '')) AS name,
+           users.email, users.account_status,
+           users.created_at AS registered_at,
+           users.reviewed_at, users.rejection_reason,
+           TRIM(CONCAT(reviewer.first_name, ' ', reviewer.last_name)) AS reviewed_by,
+           registration_emails.delivery_status AS email_status,
+           resident_profiles.contact_number, resident_profiles.address,
+           resident_profiles.purok, resident_profiles.date_of_birth,
+           resident_profiles.place_of_birth, resident_profiles.sex,
+           resident_profiles.civil_status, resident_profiles.nationality,
+           resident_profiles.religion, resident_profiles.voter_status,
+           resident_profiles.house_no, resident_profiles.street,
+           resident_profiles.years_of_residency, resident_profiles.occupation,
+           resident_profiles.employer,
+           resident_profiles.emergency_contact_name,
+           resident_profiles.emergency_contact_relationship,
+           resident_profiles.emergency_contact_number,
+           resident_profiles.emergency_contact_address
+    FROM resident_profiles
+    JOIN users ON users.id = resident_profiles.user_id
+    LEFT JOIN resident_profiles reviewer ON reviewer.user_id = users.reviewed_by
+    LEFT JOIN registration_emails
+           ON registration_emails.user_id = users.id
+          AND registration_emails.event_type = CASE users.account_status
+                  WHEN 'pending' THEN 'registered'
+                  WHEN 'active' THEN 'approved'
+                  WHEN 'rejected' THEN 'rejected'
+              END
+    WHERE users.role = 'resident'
+"""
+
+
+def registration_response(row: dict[str, object]) -> AdminRegistrationResponse:
+    return AdminRegistrationResponse(
+        **{
+            key: value
+            for key, value in row.items()
+            if key not in ("user_id", "account_status")
+        },
+        resident_code=f"RES-{row['id']:03d}",
+        status=row["account_status"],
+    )
+
+
+def load_registration_row(
+    connection: MySQLConnection, resident_id: int
+) -> dict[str, object]:
+    cursor = connection.cursor(dictionary=True)
+    try:
+        cursor.execute(
+            f"{REGISTRATION_SELECT} AND resident_profiles.id = %s",
+            (resident_id,),
+        )
+        row = cursor.fetchone()
+    finally:
+        cursor.close()
+    if row is None:
+        raise HTTPException(status_code=404, detail="Registration was not found.")
+    return row
+
+
+def registration_email_message(outcome: str, success: str) -> str:
+    """Tell the administrator what happened to the decision and to the email."""
+    if outcome == DELIVERY_SENT:
+        return f"{success} The resident was notified by email."
+    if outcome == DELIVERY_IN_PROGRESS:
+        return f"{success} The email to the resident is being sent."
+    if outcome == DELIVERY_FAILED:
+        return (
+            f"{success} The email could not be sent yet. It will be retried "
+            "automatically, or you can retry it now."
+        )
+    return success
+
+
+def review_registration(
+    connection: MySQLConnection,
+    *,
+    resident_id: int,
+    reviewer: dict[str, object],
+    new_status: str,
+    event: str,
+    rejection_reason: str | None,
+    notification_title: str,
+    notification_message: str,
+) -> dict[str, object]:
+    """Move a registration out of ``pending`` exactly once.
+
+    The ``account_status = 'pending'`` condition makes the change atomic: of
+    two simultaneous reviews only one updates a row, so only one decision is
+    stored and only one email and notification exist. The caller sends the
+    email after this commits.
+    """
+    registration = load_registration_row(connection, resident_id)
+    cursor = connection.cursor()
+    try:
+        cursor.execute(
+            """
+            UPDATE users
+            SET account_status = %s,
+                reviewed_by = %s,
+                reviewed_at = UTC_TIMESTAMP(),
+                rejection_reason = %s
+            WHERE id = %s AND role = 'resident' AND account_status = 'pending'
+            """,
+            (new_status, reviewer["id"], rejection_reason, registration["user_id"]),
+        )
+        if cursor.rowcount != 1:
+            connection.rollback()
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="This registration has already been reviewed.",
+            )
+        enqueue_registration_email(
+            connection, user_id=registration["user_id"], event=event
+        )
+        create_notification(
+            connection,
+            user_id=registration["user_id"],
+            title=notification_title,
+            message=notification_message,
+            notification_type=NOTIFICATION_TYPE_REGISTRATION,
+            # An account can be reviewed once per application.
+            dedupe_key=build_dedupe_key(
+                f"registration-{event}",
+                registration["user_id"],
+                registration["registered_at"],
+            ),
+        )
+        connection.commit()
+    except mysql.connector.Error as error:
+        connection.rollback()
+        logger.exception("Could not save the registration review.")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Could not save the review. Please try again.",
+        ) from error
+    finally:
+        cursor.close()
+    return registration
+
+
+@app.get("/api/admin/registrations", response_model=list[AdminRegistrationResponse])
+def list_registrations(
+    connection: MySQLConnection = Depends(get_db),
+    current_user: dict[str, object] = Depends(get_current_admin_user),
+) -> list[AdminRegistrationResponse]:
+    """Registrations awaiting review plus those already decided.
+
+    Accounts created before this workflow were never reviewed, so they are not
+    registrations and stay out of this list.
+    """
+    cursor = connection.cursor(dictionary=True)
+    try:
+        cursor.execute(
+            f"""
+            {REGISTRATION_SELECT}
+              AND (users.account_status IN ('pending', 'rejected')
+                   OR users.reviewed_at IS NOT NULL)
+            ORDER BY users.created_at DESC, users.id DESC
+            """
+        )
+        return [registration_response(row) for row in cursor.fetchall()]
+    finally:
+        cursor.close()
+
+
+@app.post(
+    "/api/admin/registrations/{resident_id}/approve",
+    response_model=AdminRegistrationActionResponse,
+)
+def approve_registration(
+    resident_id: int,
+    request: Request,
+    connection: MySQLConnection = Depends(get_db),
+    current_user: dict[str, object] = Depends(get_current_admin_user),
+) -> AdminRegistrationActionResponse:
+    decided_at = format_manila_datetime(datetime.now(timezone.utc))
+    registration = review_registration(
+        connection,
+        resident_id=resident_id,
+        reviewer=current_user,
+        new_status="active",
+        event=EVENT_APPROVED,
+        rejection_reason=None,
+        notification_title="Registration approved",
+        notification_message=(
+            f"Your registration was approved on {decided_at}. Your account is "
+            "now active."
+        ),
+    )
+    record_activity_log(
+        connection,
+        user_id=current_user["id"],
+        action_type="Approve",
+        action="approved resident registration",
+        target=f"RES-{resident_id:03d}",
+        target_type="Resident",
+        ip_address=get_client_ip(request),
+    )
+    outcome = deliver_registration_email(
+        connection, user_id=registration["user_id"], event=EVENT_APPROVED
+    )
+    return AdminRegistrationActionResponse(
+        registration=registration_response(
+            load_registration_row(connection, resident_id)
+        ),
+        email_delivery=outcome,
+        message=registration_email_message(outcome, "Registration approved."),
+    )
+
+
+@app.post(
+    "/api/admin/registrations/{resident_id}/reject",
+    response_model=AdminRegistrationActionResponse,
+)
+def reject_registration(
+    resident_id: int,
+    payload: AdminRegistrationRejectInput,
+    request: Request,
+    connection: MySQLConnection = Depends(get_db),
+    current_user: dict[str, object] = Depends(get_current_admin_user),
+) -> AdminRegistrationActionResponse:
+    decided_at = format_manila_datetime(datetime.now(timezone.utc))
+    registration = review_registration(
+        connection,
+        resident_id=resident_id,
+        reviewer=current_user,
+        new_status="rejected",
+        event=EVENT_REJECTED,
+        rejection_reason=payload.reason,
+        notification_title="Registration rejected",
+        notification_message=(
+            f"Your registration was rejected on {decided_at}. "
+            f"Reason: {payload.reason}"
+        ),
+    )
+    record_activity_log(
+        connection,
+        user_id=current_user["id"],
+        action_type="Reject",
+        action="rejected resident registration",
+        target=f"RES-{resident_id:03d}",
+        target_type="Resident",
+        ip_address=get_client_ip(request),
+    )
+    outcome = deliver_registration_email(
+        connection, user_id=registration["user_id"], event=EVENT_REJECTED
+    )
+    return AdminRegistrationActionResponse(
+        registration=registration_response(
+            load_registration_row(connection, resident_id)
+        ),
+        email_delivery=outcome,
+        message=registration_email_message(outcome, "Registration rejected."),
+    )
+
+
+@app.post(
+    "/api/admin/registrations/{resident_id}/email/retry",
+    response_model=AdminRegistrationActionResponse,
+)
+def retry_registration_email(
+    resident_id: int,
+    connection: MySQLConnection = Depends(get_db),
+    current_user: dict[str, object] = Depends(get_current_admin_user),
+) -> AdminRegistrationActionResponse:
+    """Resend the email for the current status, only if it was not delivered."""
+    registration = load_registration_row(connection, resident_id)
+    event = event_for_account_status(str(registration["account_status"]))
+    if event is None or registration["email_status"] != DELIVERY_FAILED:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="There is no failed email to retry for this registration.",
+        )
+    outcome = deliver_registration_email(
+        connection, user_id=registration["user_id"], event=event
+    )
+    return AdminRegistrationActionResponse(
+        registration=registration_response(
+            load_registration_row(connection, resident_id)
+        ),
+        email_delivery=outcome,
+        message=(
+            "The email was sent."
+            if outcome == DELIVERY_SENT
+            else registration_email_message(outcome, "The retry did not finish.")
+        ),
+    )
 
 
 @app.get("/api/admin/document-requests", response_model=list[AdminDocumentRequestResponse])
@@ -1859,6 +2500,7 @@ def load_document_request_detail(
         pickup_date=request["pickup_date"],
         fee=float(request["fee"]),
         processed_by=request["processed_by"],
+        attachment=load_attachment_meta(connection, request_id),
     )
 
 
@@ -1872,6 +2514,23 @@ def get_document_request_detail(
     current_user: dict[str, object] = Depends(get_current_admin_portal_user),
 ) -> AdminDocumentRequestDetailResponse:
     return load_document_request_detail(connection, request_id)
+
+
+@app.get(
+    "/api/admin/document-requests/{request_id}/attachment",
+    response_class=FileResponse,
+)
+def get_document_request_attachment(
+    request_id: int,
+    download: bool = False,
+    connection: MySQLConnection = Depends(get_db),
+    current_user: dict[str, object] = Depends(get_current_admin_portal_user),
+) -> FileResponse:
+    """The resident's image for this request (Staff and administrators only;
+    the same roles that can open the request details)."""
+    return build_attachment_response(
+        fetch_attachment_row(connection, request_id), download=download
+    )
 
 
 @app.patch(

@@ -4,6 +4,10 @@ import {
   getAvatarClass,
   getInitials,
 } from "../../../Utils/Admin/AdminDashboardLogic";
+import {
+  getRegistrationStatusMeta,
+  PENDING_REGISTRATION_STATUS,
+} from "../../../Utils/Admin/AdminRegistrationsLogic";
 
 type RecentRegistrationsProps = {
   registrations: AdminRecentRegistration[];
@@ -33,6 +37,17 @@ const RecentRegistrations = ({ registrations }: RecentRegistrationsProps) => {
                 <strong>{registration.resident_name}</strong>
                 <span>{formatShortDate(registration.created_at)}</span>
               </div>
+
+              {(registration.status === PENDING_REGISTRATION_STATUS ||
+                registration.status === "rejected") && (
+                <span
+                  className={`admin-status-pill ${
+                    getRegistrationStatusMeta(registration.status).className
+                  }`}
+                >
+                  {getRegistrationStatusMeta(registration.status).label}
+                </span>
+              )}
             </li>
           ))}
         </ul>

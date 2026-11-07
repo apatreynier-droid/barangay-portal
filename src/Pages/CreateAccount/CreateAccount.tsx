@@ -38,8 +38,9 @@ const CreateAccount = ({ onBackToLogin }: CreateAccountProps) => {
           <p className="success-reference-value">{successReference}</p>
 
           <p className="success-note">
-            Your registration has been received and is pending verification by
-            the Barangay Office. Please bring a valid ID for verification.
+            Your application is waiting for Administrator approval, so you
+            cannot sign in yet. You will receive a confirmation email shortly,
+            and another email once your registration has been reviewed.
           </p>
 
           <button
@@ -55,7 +56,7 @@ const CreateAccount = ({ onBackToLogin }: CreateAccountProps) => {
             className="success-secondary-link"
             onClick={onBackToLogin}
           >
-            Continue to Sign In
+            Back to Sign In
           </button>
         </div>
       </div>

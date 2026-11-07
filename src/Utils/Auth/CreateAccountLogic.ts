@@ -3,7 +3,11 @@ import type {
   CreateAccountErrors,
 } from "../../Types/Auth/CreateAccountType";
 
-import { ApiError, registerUser } from "../Shared/api";
+import {
+  ApiError,
+  registerUser,
+  type RegistrationResult,
+} from "../Shared/api";
 
 const PHONE_PATTERN = /^[0-9+\-\s]{10,15}$/;
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -134,8 +138,8 @@ const optionalYear = (value: string): number | null => {
 
 export const submitRegistration = async (
   formData: CreateAccountFormData,
-): Promise<void> => {
-  await registerUser({
+): Promise<RegistrationResult> =>
+  registerUser({
     first_name: formData.firstName.trim(),
     middle_name: optional(formData.middleName),
     last_name: formData.lastName.trim(),
@@ -164,10 +168,6 @@ export const submitRegistration = async (
     emergency_contact_number: optional(formData.emergencyContactNumber),
     emergency_contact_address: optional(formData.emergencyAddress),
   });
-};
-
-export const generateReferenceNumber = (): string =>
-  `BRY-${Math.floor(100000 + Math.random() * 900000)}`;
 
 export const getCreateAccountError = (error: unknown): string => {
   if (error instanceof ApiError) {

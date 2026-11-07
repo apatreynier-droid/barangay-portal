@@ -66,7 +66,11 @@ const AdminUserManagement = ({
   );
   const [isProcessing, setIsProcessing] = useState(false);
   const [actionError, setActionError] = useState("");
-  const [sidebarStats, setSidebarStats] = useState({ pending: 0, approved: 0 });
+  const [sidebarStats, setSidebarStats] = useState({
+    pending: 0,
+    approved: 0,
+    pendingRegistrations: 0,
+  });
 
   const loadAccounts = useCallback(async () => {
     setIsLoading(true);
@@ -94,6 +98,7 @@ const AdminUserManagement = ({
         if (!cancelled) {
           setSidebarStats({
             pending: data.stats.pending,
+            pendingRegistrations: data.stats.pending_registrations,
             approved: data.stats.approved,
           });
         }
@@ -169,7 +174,9 @@ const AdminUserManagement = ({
     <div className="admin-dashboard">
       <AdminSidebar
         pendingRequests={sidebarStats.pending}
-        pendingApprovals={sidebarStats.pending}
+        pendingApprovals={
+          sidebarStats.pending + sidebarStats.pendingRegistrations
+        }
         unreadNotifications={unreadNotifications}
         user={user}
         activeItem="user-management"

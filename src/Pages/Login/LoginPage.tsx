@@ -517,6 +517,12 @@ const LoginPage = ({
               </div>
             )}
 
+            {errors.account && (
+              <div className="account-status-notice" role="alert">
+                {errors.account}
+              </div>
+            )}
+
             <form onSubmit={handleSubmit} className="login-form">
               <div className="form-group">
                 <label htmlFor="email" className="field-label">

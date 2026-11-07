@@ -6,6 +6,7 @@ export type AdminStats = {
   processing: number;
   completed: number;
   rejected: number;
+  pending_registrations: number;
 };
 
 export type AdminMonthlyDataPoint = {
@@ -31,6 +32,7 @@ export type AdminRecentRequest = {
 export type AdminRecentRegistration = {
   resident_name: string;
   created_at: string;
+  status: string;
 };
 
 export type AdminActivityEntry = {

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { ArrowLeft } from "lucide-react";
 import type { AdminDocumentRequestDetail } from "../../../Types/Admin/AdminDocumentRequestsType";
 import { fetchAdminDocumentRequestDetail } from "../../../Utils/Shared/api";
 import {
@@ -7,6 +8,7 @@ import {
   getDocumentRequestStatusMeta,
 } from "../../../Utils/Admin/AdminDocumentRequestsLogic";
 import AdminActionsPanel from "./AdminActionsPanel";
+import RequestAttachmentCard from "./RequestAttachmentCard";
 
 type RequestDetailsViewProps = {
   requestId: number;
@@ -56,8 +58,14 @@ const RequestDetailsView = ({
 
   return (
     <div className="residents-details-view">
-      <button type="button" className="residents-back-link" onClick={onBack}>
-        ← Back to Requests
+      <button
+        type="button"
+        className="docreq-back-button"
+        onClick={onBack}
+        aria-label="Back to the document requests list"
+      >
+        <ArrowLeft size={16} strokeWidth={2} aria-hidden="true" />
+        <span>Back to Request</span>
       </button>
 
       {error && (
@@ -75,55 +83,63 @@ const RequestDetailsView = ({
         request &&
         statusMeta && (
           <div className="docreq-detail-grid">
-            <section className="residents-info-card">
-              <div className="docreq-details-header">
-                <h3>Request Details</h3>
-                <span className={`residents-status ${statusMeta.className}`}>
-                  {statusMeta.label}
-                </span>
-              </div>
+            <div className="docreq-detail-stack">
+              <section className="residents-info-card">
+                <div className="docreq-details-header">
+                  <h3>Request Details</h3>
+                  <span className={`residents-status ${statusMeta.className}`}>
+                    {statusMeta.label}
+                  </span>
+                </div>
 
-              <dl className="residents-info-grid">
-                <div className="residents-info-item">
-                  <dt>Request ID</dt>
-                  <dd className="residents-code">
-                    {request.request_number}
-                  </dd>
-                </div>
-                <div className="residents-info-item">
-                  <dt>Resident</dt>
-                  <dd>{request.resident_name}</dd>
-                </div>
-                <div className="residents-info-item">
-                  <dt>Document Type</dt>
-                  <dd>{request.document}</dd>
-                </div>
-                <div className="residents-info-item">
-                  <dt>Purpose</dt>
-                  <dd>{request.purpose}</dd>
-                </div>
-                <div className="residents-info-item">
-                  <dt>Fee</dt>
-                  <dd>{formatFee(request.fee)}</dd>
-                </div>
-                <div className="residents-info-item">
-                  <dt>Submitted</dt>
-                  <dd>{formatSubmittedDateTime(request.submitted_at)}</dd>
-                </div>
-                <div className="residents-info-item">
-                  <dt>Last Updated</dt>
-                  <dd>{formatSubmittedDateTime(request.last_updated)}</dd>
-                </div>
-                <div className="residents-info-item">
-                  <dt>Processed By</dt>
-                  <dd>{request.processed_by ?? "—"}</dd>
-                </div>
-                <div className="residents-info-item">
-                  <dt>Pickup Date</dt>
-                  <dd>{request.pickup_date?.slice(0, 10) ?? "—"}</dd>
-                </div>
-              </dl>
-            </section>
+                <dl className="residents-info-grid">
+                  <div className="residents-info-item">
+                    <dt>Request ID</dt>
+                    <dd className="residents-code">
+                      {request.request_number}
+                    </dd>
+                  </div>
+                  <div className="residents-info-item">
+                    <dt>Resident</dt>
+                    <dd>{request.resident_name}</dd>
+                  </div>
+                  <div className="residents-info-item">
+                    <dt>Document Type</dt>
+                    <dd>{request.document}</dd>
+                  </div>
+                  <div className="residents-info-item">
+                    <dt>Purpose</dt>
+                    <dd>{request.purpose}</dd>
+                  </div>
+                  <div className="residents-info-item">
+                    <dt>Fee</dt>
+                    <dd>{formatFee(request.fee)}</dd>
+                  </div>
+                  <div className="residents-info-item">
+                    <dt>Submitted</dt>
+                    <dd>{formatSubmittedDateTime(request.submitted_at)}</dd>
+                  </div>
+                  <div className="residents-info-item">
+                    <dt>Last Updated</dt>
+                    <dd>{formatSubmittedDateTime(request.last_updated)}</dd>
+                  </div>
+                  <div className="residents-info-item">
+                    <dt>Processed By</dt>
+                    <dd>{request.processed_by ?? "—"}</dd>
+                  </div>
+                  <div className="residents-info-item">
+                    <dt>Pickup Date</dt>
+                    <dd>{request.pickup_date?.slice(0, 10) ?? "—"}</dd>
+                  </div>
+                </dl>
+              </section>
+
+              <RequestAttachmentCard
+                key={request.id}
+                requestId={request.id}
+                attachment={request.attachment}
+              />
+            </div>
 
             <AdminActionsPanel
               key={request.id}

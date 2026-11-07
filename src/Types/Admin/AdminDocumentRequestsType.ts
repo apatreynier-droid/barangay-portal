@@ -9,6 +9,15 @@ export type AdminDocumentRequest = {
   fee: number;
 };
 
+/** Metadata of the resident's image (bytes come from the attachment endpoint). */
+export type AdminRequestAttachment = {
+  id: number;
+  original_filename: string;
+  content_type: string;
+  file_size: number;
+  uploaded_at: string;
+};
+
 export type AdminDocumentRequestDetail = {
   id: number;
   request_number: string;
@@ -23,6 +32,8 @@ export type AdminDocumentRequestDetail = {
   pickup_date: string | null;
   fee: number;
   processed_by: string | null;
+  /** Null for requests submitted without an image (e.g. older requests). */
+  attachment?: AdminRequestAttachment | null;
 };
 
 export type AdminDocumentRequestActionPayload = {

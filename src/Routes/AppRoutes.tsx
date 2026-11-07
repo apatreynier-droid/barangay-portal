@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { Suspense, lazy, useCallback, useEffect, useState } from "react";
 import { Navigate, Route, Routes, useNavigate } from "react-router-dom";
 import LoginPage from "../Pages/Login/LoginPage";
 import CreateAccount from "../Pages/CreateAccount/CreateAccount";
@@ -40,6 +40,7 @@ import {
   ADMIN_REPORTS_PATH,
   ADMIN_RESIDENTS_PATH,
   ADMIN_ACTIVITY_LOGS_PATH,
+  ADMIN_POTHOLE_MANAGEMENT_PATH,
   ADMIN_USER_MANAGEMENT_PATH,
   CREATE_ACCOUNT_PATH,
   FORGOT_PASSWORD_PATH,
@@ -63,6 +64,11 @@ import {
   RequireAuth,
   RequireResident,
 } from "../Utils/Shared/guards";
+
+// Loaded on demand so the map library is only downloaded by those who open it.
+const AdminPotholeManagement = lazy(
+  () => import("../Pages/Admin/AdminPotholeManagement/AdminPotholeManagement"),
+);
 
 /**
  * How often the notification list is re-read from GET /api/notifications while
@@ -535,6 +541,43 @@ function AppRoutes() {
                 onNotifications={() => navigate(NOTIFICATIONS_PATH)}
                 onLogout={handleLogout}
               />
+            )}
+          </RequireAdminPortal>
+        }
+      />
+
+      <Route
+        path={ADMIN_POTHOLE_MANAGEMENT_PATH}
+        element={
+          <RequireAdminPortal user={user}>
+            {(authUser) => (
+              <Suspense
+                fallback={
+                  <p style={{ padding: 48, textAlign: "center" }}>
+                    Loading Pothole Management…
+                  </p>
+                }
+              >
+                <AdminPotholeManagement
+                  user={authUser}
+                  unreadNotifications={unreadCount}
+                  onDashboard={() => navigate(ADMIN_HOME_PATH)}
+                  onResidents={() => navigate(ADMIN_RESIDENTS_PATH)}
+                  onDocumentRequests={() =>
+                    navigate(ADMIN_DOCUMENT_REQUESTS_PATH)
+                  }
+                  onRequestHistory={() => navigate(ADMIN_REQUEST_HISTORY_PATH)}
+                  onApprovals={() => navigate(ADMIN_APPROVALS_PATH)}
+                  onDocumentManagement={() =>
+                    navigate(ADMIN_DOCUMENT_MANAGEMENT_PATH)
+                  }
+                  onReports={() => navigate(ADMIN_REPORTS_PATH)}
+                  onActivityLogs={() => navigate(ADMIN_ACTIVITY_LOGS_PATH)}
+                  onUserManagement={() => navigate(ADMIN_USER_MANAGEMENT_PATH)}
+                  onNotifications={() => navigate(NOTIFICATIONS_PATH)}
+                  onLogout={handleLogout}
+                />
+              </Suspense>
             )}
           </RequireAdminPortal>
         }

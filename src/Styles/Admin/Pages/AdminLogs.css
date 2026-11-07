@@ -131,9 +131,10 @@
   white-space: nowrap;
 }
 
+/* Lucide icon: inherits the badge's text color (stroke="currentColor"). */
 .admin-logs-type-icon {
-  font-size: 11px;
-  line-height: 1;
+  display: block;
+  flex-shrink: 0;
 }
 
 .admin-logs-type.type-approve {

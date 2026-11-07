@@ -205,6 +205,11 @@ login_ip_limiter = IPRateLimiter(_rate_limit_config)
 # - ``password_reset_ip_limiter``     -> reset emails per client IP
 # - ``password_reset_email_limiter``  -> reset emails per target address
 # - ``password_reset_submit_limiter`` -> reset submissions per client IP
+registration_ip_limiter = IPRateLimiter(
+    _rate_limit_config,
+    max_requests=settings.registration_ip_max_requests,
+    window_seconds=settings.registration_ip_window_seconds,
+)
 password_reset_ip_limiter = IPRateLimiter(
     _rate_limit_config,
     max_requests=settings.password_reset_ip_max_requests,

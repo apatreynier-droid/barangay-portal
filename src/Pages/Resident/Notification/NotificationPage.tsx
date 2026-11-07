@@ -173,7 +173,10 @@ function NotificationPage({
   const [now, setNow] = useState(() => Date.now());
 
   useEffect(() => {
-    const timer = setInterval(() => setNow(Date.now()), RELATIVE_TIME_REFRESH_MS);
+    const timer = setInterval(
+      () => setNow(Date.now()),
+      RELATIVE_TIME_REFRESH_MS,
+    );
     return () => clearInterval(timer);
   }, []);
 
@@ -249,6 +252,7 @@ function NotificationPage({
         }
         isOpen={isDrawerOpen}
         onNavigate={closeDrawer}
+        unreadCount={unreadCount}
       />
 
       {isDrawerOpen && (
@@ -267,6 +271,7 @@ function NotificationPage({
           unreadCount={unreadCount}
           onNotifications={() => navigate(NOTIFICATIONS_PATH)}
           onMenuToggle={toggleDrawer}
+          onLogout={onLogout}
         />
 
         {actionError && (
@@ -365,10 +370,7 @@ function NotificationPage({
                           dateTime={notification.created_at}
                           title={formatFullDateTime(notification.created_at)}
                         >
-                          {formatRelativeTime(
-                            notification.created_at,
-                            now,
-                          )}
+                          {formatRelativeTime(notification.created_at, now)}
                         </time>
                       </div>
                       <p>{notification.message}</p>

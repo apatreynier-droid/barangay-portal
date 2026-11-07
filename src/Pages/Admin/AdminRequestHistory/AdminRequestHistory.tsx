@@ -63,7 +63,11 @@ const AdminRequestHistory = ({
   const [filters, setFilters] = useState<AdminRequestHistoryFiltersState>(
     DEFAULT_ADMIN_REQUEST_HISTORY_FILTERS,
   );
-  const [sidebarStats, setSidebarStats] = useState({ pending: 0, approved: 0 });
+  const [sidebarStats, setSidebarStats] = useState({
+    pending: 0,
+    approved: 0,
+    pendingRegistrations: 0,
+  });
 
   const loadHistory = useCallback(async () => {
     setIsLoading(true);
@@ -91,6 +95,7 @@ const AdminRequestHistory = ({
         if (!cancelled) {
           setSidebarStats({
             pending: data.stats.pending,
+            pendingRegistrations: data.stats.pending_registrations,
             approved: data.stats.approved,
           });
         }
@@ -122,7 +127,9 @@ const AdminRequestHistory = ({
     <div className="admin-dashboard">
       <AdminSidebar
         pendingRequests={sidebarStats.pending}
-        pendingApprovals={sidebarStats.pending}
+        pendingApprovals={
+          sidebarStats.pending + sidebarStats.pendingRegistrations
+        }
         unreadNotifications={unreadNotifications}
         user={user}
         activeItem="request-history"

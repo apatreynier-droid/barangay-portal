@@ -1,14 +1,36 @@
 import { useEffect, useMemo, useState } from "react";
+import {
+  ArrowRight,
+  Bell,
+  BellDot,
+  BellOff,
+  Check,
+  CheckCheck,
+  CheckCircle,
+  CircleCheck,
+  CircleX,
+  Clock,
+  Construction,
+  FileText,
+  FileX,
+  Inbox,
+  Info,
+  ListFilter,
+  LoaderCircle,
+  PackageCheck,
+  UserPlus,
+  type LucideIcon,
+} from "lucide-react";
 import "../../../Styles/Admin/Pages/AdminDashboard.css";
 import "../../../Styles/Admin/Pages/AdminNotification.css";
 import type { ApiNotification, AuthUser } from "../../../Utils/Shared/api";
 import {
   ApiError,
-  fetchAdminDocumentRequests,
+  fetchAdminDashboard,
   markAllNotificationsRead,
   markNotificationRead,
 } from "../../../Utils/Shared/api";
-import { getPendingApprovals } from "../../../Utils/Admin/AdminApprovalsLogic";
+import { formatManilaDateTime } from "../../../Utils/Admin/AdminRegistrationsLogic";
 import { getPortalProfileName } from "../../../Utils/Admin/AdminDisplay";
 import {
   formatRelativeTime,
@@ -39,37 +61,88 @@ type AdminNotificationProps = {
 
 type NotificationFilter = "all" | "unread";
 
-type NotificationKind = "request" | "ready" | "rejected" | "system" | "update";
+type NotificationKind =
+  | "registration"
+  | "request"
+  | "approved"
+  | "rejected"
+  | "ready"
+  | "completed"
+  | "processing"
+  | "removed"
+  | "pothole"
+  | "system"
+  | "update";
+
+/** Shared sizing so every Lucide icon on this page renders consistently. */
+const ICON_STROKE = 2;
+const KIND_ICON_SIZE = 18;
+const ACTION_ICON_SIZE = 16;
+const PILL_ICON_SIZE = 14;
 
 const NOTIFICATION_KIND_META: Record<
   NotificationKind,
-  { icon: string; color: string }
+  { icon: LucideIcon; color: string; label: string }
 > = {
-  request: { icon: "📄", color: "blue" },
-  ready: { icon: "✓", color: "green" },
-  rejected: { icon: "✕", color: "red" },
-  system: { icon: "⚙️", color: "slate" },
-  update: { icon: "🔔", color: "amber" },
+  registration: { icon: UserPlus, color: "indigo", label: "New resident registration" },
+  request: { icon: FileText, color: "blue", label: "Document request" },
+  approved: { icon: CircleCheck, color: "emerald", label: "Approved" },
+  rejected: { icon: CircleX, color: "red", label: "Rejected" },
+  ready: { icon: PackageCheck, color: "teal", label: "Ready for pickup" },
+  completed: { icon: CheckCircle, color: "green", label: "Completed" },
+  processing: { icon: Clock, color: "amber", label: "Processing" },
+  removed: { icon: FileX, color: "red", label: "Request removed" },
+  pothole: { icon: Construction, color: "orange", label: "Pothole report" },
+  system: { icon: Info, color: "slate", label: "System update" },
+  update: { icon: Bell, color: "amber", label: "Update" },
 };
 
 /**
  * Maps a stored notification (title + notification_type from the
- * notifications table) to its display icon/color. Mirrors the keyword
- * matching used by the resident NotificationPage.
+ * notifications table) to its display icon/color. Titles come from the
+ * backend (e.g. "New resident registration", "New document request",
+ * "Request status: Ready for Pickup", "Registration rejected").
  */
 const resolveKind = (notification: ApiNotification): NotificationKind => {
-  if (notification.notification_type === "system") {
-    return "system";
+  const title = notification.title.toLowerCase();
+  const type = notification.notification_type;
+
+  if (title.includes("pothole")) {
+    return "pothole";
   }
 
-  const title = notification.title.toLowerCase();
+  if (type === "registration") {
+    if (title.includes("rejected")) return "rejected";
+    if (title.includes("approved")) return "approved";
+    return "registration";
+  }
 
   if (title.includes("rejected")) {
     return "rejected";
   }
 
-  if (title.includes("ready") || title.includes("completed")) {
+  if (title.includes("deleted") || title.includes("cancel")) {
+    return "removed";
+  }
+
+  if (title.includes("ready") || title.includes("pickup")) {
     return "ready";
+  }
+
+  if (title.includes("completed")) {
+    return "completed";
+  }
+
+  if (title.includes("approved")) {
+    return "approved";
+  }
+
+  if (title.includes("processing")) {
+    return "processing";
+  }
+
+  if (type === "system") {
+    return "system";
   }
 
   if (
@@ -109,14 +182,16 @@ function AdminNotification({
   const [actionError, setActionError] = useState("");
   // Sidebar badges stay consistent with the other Admin pages.
   const [pendingRequests, setPendingRequests] = useState(0);
+  const [pendingRegistrations, setPendingRegistrations] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
 
-    fetchAdminDocumentRequests()
-      .then((requests) => {
+    fetchAdminDashboard()
+      .then((data) => {
         if (!cancelled) {
-          setPendingRequests(getPendingApprovals(requests).length);
+          setPendingRequests(data.stats.pending);
+          setPendingRegistrations(data.stats.pending_registrations);
         }
       })
       .catch(() => {
@@ -180,7 +255,7 @@ function AdminNotification({
     <div className="admin-dashboard">
       <AdminSidebar
         pendingRequests={pendingRequests}
-        pendingApprovals={pendingRequests}
+        pendingApprovals={pendingRequests + pendingRegistrations}
         unreadNotifications={unreadNotifications}
         user={user}
         activeItem="notifications"
@@ -222,13 +297,26 @@ function AdminNotification({
             role="group"
             aria-label="Filter notifications"
           >
+            <span className="admin-notifications-filter-label" title="Filter">
+              <ListFilter
+                size={ACTION_ICON_SIZE}
+                strokeWidth={ICON_STROKE}
+                aria-hidden="true"
+              />
+            </span>
             <button
               type="button"
               className={`admin-notification-filter-pill${
                 filter === "all" ? " active" : ""
               }`}
               onClick={() => setFilter("all")}
+              aria-pressed={filter === "all"}
             >
+              <Inbox
+                size={PILL_ICON_SIZE}
+                strokeWidth={ICON_STROKE}
+                aria-hidden="true"
+              />
               All
             </button>
             <button
@@ -237,7 +325,13 @@ function AdminNotification({
                 filter === "unread" ? " active" : ""
               }`}
               onClick={() => setFilter("unread")}
+              aria-pressed={filter === "unread"}
             >
+              <BellDot
+                size={PILL_ICON_SIZE}
+                strokeWidth={ICON_STROKE}
+                aria-hidden="true"
+              />
               Unread ({unreadNotifications})
             </button>
           </div>
@@ -248,7 +342,21 @@ function AdminNotification({
             onClick={() => void handleMarkAllAsRead()}
             disabled={unreadNotifications === 0 || isMarkingAll}
           >
-            {isMarkingAll ? "Updating…" : "Mark all as read"}
+            {isMarkingAll ? (
+              <LoaderCircle
+                className="admin-notification-spin"
+                size={ACTION_ICON_SIZE}
+                strokeWidth={ICON_STROKE}
+                aria-hidden="true"
+              />
+            ) : (
+              <CheckCheck
+                size={ACTION_ICON_SIZE}
+                strokeWidth={ICON_STROKE}
+                aria-hidden="true"
+              />
+            )}
+            <span>{isMarkingAll ? "Updating…" : "Mark all as read"}</span>
           </button>
         </div>
 
@@ -266,6 +374,9 @@ function AdminNotification({
 
         {visibleNotifications.length === 0 ? (
           <div className="admin-notifications-empty">
+            <span className="admin-notifications-empty-icon" aria-hidden="true">
+              <BellOff size={22} strokeWidth={ICON_STROKE} />
+            </span>
             <p>
               {filter === "unread"
                 ? "You have no unread notifications."
@@ -282,7 +393,9 @@ function AdminNotification({
             {visibleNotifications.map((notification) => {
               const kind = resolveKind(notification);
               const meta = NOTIFICATION_KIND_META[kind];
+              const KindIcon = meta.icon;
               const isUnread = !notification.is_read;
+              const isPending = pendingId === notification.id;
 
               return (
                 <li
@@ -314,9 +427,10 @@ function AdminNotification({
                 >
                   <span
                     className={`admin-notification-icon ${meta.color}`}
+                    title={meta.label}
                     aria-hidden="true"
                   >
-                    {meta.icon}
+                    <KindIcon size={KIND_ICON_SIZE} strokeWidth={ICON_STROKE} />
                   </span>
 
                   <div className="admin-notification-body">
@@ -333,12 +447,66 @@ function AdminNotification({
                     <time
                       className="admin-notification-time"
                       dateTime={notification.created_at}
+                      title={formatManilaDateTime(notification.created_at)}
                     >
                       {formatRelativeTime(
                         toUtcTimestamp(notification.created_at),
                       )}
                     </time>
+                    {notification.notification_type === "registration" && (
+                      <button
+                        type="button"
+                        className="admin-notification-review"
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          if (isUnread) {
+                            void handleMarkAsRead(notification.id);
+                          }
+                          onApprovals();
+                        }}
+                        onKeyDown={(event) => event.stopPropagation()}
+                      >
+                        <span>Review registration</span>
+                        <ArrowRight
+                          size={PILL_ICON_SIZE}
+                          strokeWidth={ICON_STROKE}
+                          aria-hidden="true"
+                        />
+                      </button>
+                    )}
                   </div>
+
+                  {isUnread && (
+                    <button
+                      type="button"
+                      className="admin-notification-action"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        if (!isPending) {
+                          void handleMarkAsRead(notification.id);
+                        }
+                      }}
+                      onKeyDown={(event) => event.stopPropagation()}
+                      disabled={isPending}
+                      aria-label="Mark as read"
+                      title="Mark as read"
+                    >
+                      {isPending ? (
+                        <LoaderCircle
+                          className="admin-notification-spin"
+                          size={ACTION_ICON_SIZE}
+                          strokeWidth={ICON_STROKE}
+                          aria-hidden="true"
+                        />
+                      ) : (
+                        <Check
+                          size={ACTION_ICON_SIZE}
+                          strokeWidth={ICON_STROKE}
+                          aria-hidden="true"
+                        />
+                      )}
+                    </button>
+                  )}
                 </li>
               );
             })}

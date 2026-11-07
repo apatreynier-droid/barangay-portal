@@ -46,6 +46,8 @@ logger = logging.getLogger(__name__)
 #: ``notifications.notification_type`` values that already exist in the schema.
 NOTIFICATION_TYPE_REQUEST = "request"
 NOTIFICATION_TYPE_SYSTEM = "system"
+#: Added by migration 010; lets the Admin page link to the Approvals page.
+NOTIFICATION_TYPE_REGISTRATION = "registration"
 
 #: MySQL error number for "unknown column" (migration 007 not applied yet).
 UNKNOWN_COLUMN_ERROR = 1054
@@ -138,14 +140,16 @@ def notify_admins(
     notification_type: str = NOTIFICATION_TYPE_SYSTEM,
     related_request_id: int | None = None,
     dedupe_key: str | None = None,
+    administrators_only: bool = False,
 ) -> int:
     """Write the notification to every active administrator account.
 
+    Set ``administrators_only`` for work Staff accounts cannot act on.
     Returns how many rows were created (``0`` when the same action was already
     recorded). Nothing is committed here.
     """
     created = 0
-    for admin_id in _load_admin_ids(connection):
+    for admin_id in _load_admin_ids(connection, administrators_only):
         if create_notification(
             connection,
             user_id=admin_id,
@@ -169,6 +173,7 @@ def record_admin_notification(
     notification_type: str = NOTIFICATION_TYPE_SYSTEM,
     related_request_id: int | None = None,
     dedupe_key: str | None = None,
+    administrators_only: bool = False,
 ) -> int:
     """Best-effort :func:`notify_admins` for an already committed action.
 
@@ -183,6 +188,7 @@ def record_admin_notification(
             notification_type=notification_type,
             related_request_id=related_request_id,
             dedupe_key=dedupe_key,
+            administrators_only=administrators_only,
         )
         connection.commit()
         return created
@@ -263,23 +269,33 @@ def _scope_key(dedupe_key: str, user_id: int) -> str:
     return f"{event}:u{user_id}:{digest}"[:DEDUPE_KEY_MAX_LENGTH]
 
 
-def _load_admin_ids(connection: MySQLConnection) -> list[int]:
+def _load_admin_ids(
+    connection: MySQLConnection, administrators_only: bool = False
+) -> list[int]:
     """Return the ids of every active Admin Portal account.
 
-    Staff accounts are included: they process the same document requests, so
-    they need the same operational notifications (new requests, registrations,
-    status changes) as the administrators.
+    Staff accounts are included by default: they process the same document
+    requests, so they need the same operational notifications as the
+    administrators. Only administrators can review registrations, so those
+    notifications pass ``administrators_only``.
     """
+    roles = (
+        ("admin", "super_admin")
+        if administrators_only
+        else ("staff", "admin", "super_admin")
+    )
+    placeholders = ", ".join(["%s"] * len(roles))
     cursor = connection.cursor(dictionary=True)
     try:
         cursor.execute(
-            """
+            f"""
             SELECT id
             FROM users
-            WHERE role IN ('staff', 'admin', 'super_admin')
+            WHERE role IN ({placeholders})
               AND account_status = 'active'
             ORDER BY id ASC
-            """
+            """,
+            roles,
         )
         return [int(row["id"]) for row in cursor.fetchall()]
     finally:

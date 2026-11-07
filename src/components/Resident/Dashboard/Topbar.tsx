@@ -2,7 +2,7 @@ import "../../../Styles/Resident/Components/ResidentTopBar.css";
 
 import { Bell } from "lucide-react";
 import { useLocation } from "react-router-dom";
-import MobileMenuButton from "../../Shared/MobileMenuButton";
+import MobileLogoutButton from "../../Shared/MobileLogoutButton";
 import ThemeToggle from "../../Shared/ThemeToggle";
 import {
   LEGACY_RESIDENT_HOME_PATH,
@@ -17,8 +17,11 @@ import {
 type TopbarProps = {
   unreadCount?: number;
   onNotifications?: () => void;
-  /** Opens the mobile drawer (rendered only below 769px via CSS). */
+  /** No longer used: the hamburger was replaced by the mobile logout button.
+   *  Kept so pages that still pass it compile unchanged. */
   onMenuToggle?: () => void;
+  /** Shows the logout button on phones. */
+  onLogout?: () => void;
   /** Optional title override. When omitted, the title is derived from the
    *  current resident route so it always matches the active page. */
   title?: string;
@@ -42,7 +45,7 @@ const resolveTitle = (pathname: string): string =>
 const Topbar = ({
   unreadCount = 0,
   onNotifications,
-  onMenuToggle,
+  onLogout,
   title,
   description,
 }: TopbarProps) => {
@@ -52,8 +55,6 @@ const Topbar = ({
   return (
     <header className="topbar">
       <div className="topbar-leading">
-        {onMenuToggle && <MobileMenuButton onOpen={onMenuToggle} />}
-
         <div>
           <p className="topbar-label">Resident Portal</p>
           <h1>{resolvedTitle}</h1>
@@ -82,6 +83,8 @@ const Topbar = ({
             )}
           </button>
         )}
+
+        {onLogout && <MobileLogoutButton onLogout={onLogout} />}
       </div>
     </header>
   );

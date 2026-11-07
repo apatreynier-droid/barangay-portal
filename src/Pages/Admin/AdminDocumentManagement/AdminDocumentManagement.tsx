@@ -1,6 +1,7 @@
 import "../../../Styles/Admin/Pages/AdminDashboard.css";
 import "../../../Styles/Admin/Pages/AdminDocumentManagement.css";
 import { useCallback, useEffect, useState } from "react";
+import { Eye, FileDown, Printer } from "lucide-react";
 import type { AuthUser } from "../../../Utils/Shared/api";
 import {
   fetchAdminDashboard,
@@ -54,7 +55,11 @@ const AdminDocumentManagement = ({
   const [records, setRecords] = useState<AdminRequestHistoryEntry[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
-  const [sidebarStats, setSidebarStats] = useState({ pending: 0, approved: 0 });
+  const [sidebarStats, setSidebarStats] = useState({
+    pending: 0,
+    approved: 0,
+    pendingRegistrations: 0,
+  });
 
   const loadData = useCallback(async () => {
     setIsLoading(true);
@@ -90,6 +95,7 @@ const AdminDocumentManagement = ({
         if (!cancelled) {
           setSidebarStats({
             pending: data.stats.pending,
+            pendingRegistrations: data.stats.pending_registrations,
             approved: data.stats.approved,
           });
         }
@@ -111,7 +117,9 @@ const AdminDocumentManagement = ({
     <div className="admin-dashboard">
       <AdminSidebar
         pendingRequests={sidebarStats.pending}
-        pendingApprovals={sidebarStats.pending}
+        pendingApprovals={
+          sidebarStats.pending + sidebarStats.pendingRegistrations
+        }
         unreadNotifications={unreadNotifications}
         user={user}
         activeItem="document-management"
@@ -164,6 +172,7 @@ const AdminDocumentManagement = ({
               const templateMeta = getDocumentTemplateMeta(
                 template.document_name,
               );
+              const TemplateIcon = templateMeta.icon;
 
               return (
                 <article key={template.id} className="docmgmt-template-card">
@@ -171,7 +180,7 @@ const AdminDocumentManagement = ({
                     className={`docmgmt-template-icon ${templateMeta.className}`}
                     aria-hidden="true"
                   >
-                    {templateMeta.icon}
+                    <TemplateIcon size={22} strokeWidth={2} />
                   </span>
 
                   <h3 className="docmgmt-template-name">
@@ -189,7 +198,8 @@ const AdminDocumentManagement = ({
                       previewDocumentTemplate(template.document_name)
                     }
                   >
-                    Preview
+                    <Eye size={14} strokeWidth={2} aria-hidden="true" />
+                    <span>Preview</span>
                   </button>
                 </article>
               );
@@ -261,14 +271,24 @@ const AdminDocumentManagement = ({
                               className="docmgmt-action-button docmgmt-print"
                               onClick={() => printIssuanceRecord(record)}
                             >
-                              <span aria-hidden="true">🖨</span> Print
+                              <Printer
+                                size={14}
+                                strokeWidth={2}
+                                aria-hidden="true"
+                              />
+                              <span>Print</span>
                             </button>
                             <button
                               type="button"
                               className="docmgmt-action-button docmgmt-pdf"
                               onClick={() => saveIssuanceRecordAsPdf(record)}
                             >
-                              <span aria-hidden="true">↓</span> PDF
+                              <FileDown
+                                size={14}
+                                strokeWidth={2}
+                                aria-hidden="true"
+                              />
+                              <span>PDF</span>
                             </button>
                           </div>
                         </td>

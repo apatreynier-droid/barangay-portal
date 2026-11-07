@@ -51,7 +51,11 @@ const AdminReports = ({
   const [data, setData] = useState<AdminReportsData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
-  const [sidebarStats, setSidebarStats] = useState({ pending: 0, approved: 0 });
+  const [sidebarStats, setSidebarStats] = useState({
+    pending: 0,
+    approved: 0,
+    pendingRegistrations: 0,
+  });
 
   const loadReports = useCallback(async () => {
     setIsLoading(true);
@@ -79,6 +83,7 @@ const AdminReports = ({
         if (!cancelled) {
           setSidebarStats({
             pending: dashboardData.stats.pending,
+            pendingRegistrations: dashboardData.stats.pending_registrations,
             approved: dashboardData.stats.approved,
           });
         }
@@ -100,7 +105,9 @@ const AdminReports = ({
     <div className="admin-dashboard">
       <AdminSidebar
         pendingRequests={sidebarStats.pending}
-        pendingApprovals={sidebarStats.pending}
+        pendingApprovals={
+          sidebarStats.pending + sidebarStats.pendingRegistrations
+        }
         unreadNotifications={unreadNotifications}
         user={user}
         activeItem="reports"

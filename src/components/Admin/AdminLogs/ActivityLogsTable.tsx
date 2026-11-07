@@ -34,6 +34,7 @@ const ActivityLogsTable = ({ logs }: ActivityLogsTableProps) => {
           ) : (
             logs.map((log) => {
               const typeMeta = getActivityLogTypeMeta(log.action_type);
+              const TypeIcon = typeMeta.icon;
               const actorName = formatLogActorName(
                 log.actor_name,
                 log.actor_role,
@@ -47,9 +48,12 @@ const ActivityLogsTable = ({ logs }: ActivityLogsTableProps) => {
                   </td>
                   <td>
                     <span className={`admin-logs-type ${typeMeta.className}`}>
-                      <span className="admin-logs-type-icon" aria-hidden="true">
-                        {typeMeta.icon}
-                      </span>
+                      <TypeIcon
+                        className="admin-logs-type-icon"
+                        size={13}
+                        strokeWidth={2.25}
+                        aria-hidden="true"
+                      />
                       {typeMeta.label}
                     </span>
                   </td>

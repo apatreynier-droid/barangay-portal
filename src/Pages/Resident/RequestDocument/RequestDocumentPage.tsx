@@ -1,11 +1,19 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import type { ChangeEvent, DragEvent, FormEvent } from "react";
-import { Bell, ImagePlus, RefreshCw, Send, Trash2 } from "lucide-react";
+import {
+  Bell,
+  Camera,
+  ImagePlus,
+  Images,
+  RefreshCw,
+  Send,
+  Trash2,
+} from "lucide-react";
 import Sidebar from "../../../components/Resident/Dashboard/Sidebar";
 import {
   ApiError,
-  createDocumentRequest,
+  createDocumentRequestWithAttachment,
   fetchDocumentTypes,
   type DocumentTypeOption,
   type AuthUser,
@@ -16,7 +24,7 @@ import {
   RESIDENT_REQUEST_DOCUMENT_PATH,
 } from "../../../Utils/Shared/routePaths";
 import useResponsiveSidebar from "../../../Utils/Shared/useResponsiveSidebar";
-import MobileMenuButton from "../../../components/Shared/MobileMenuButton";
+import MobileLogoutButton from "../../../components/Shared/MobileLogoutButton";
 import ThemeToggle from "../../../components/Shared/ThemeToggle";
 import "../../../Styles/Resident/Components/ResidentTopBar.css";
 import "../../../Styles/Resident/Pages/Dashboard.css";
@@ -80,9 +88,11 @@ function RequestDocumentPage({
   const [attachmentError, setAttachmentError] = useState("");
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  // Opens the phone's rear camera directly (ignored on desktop browsers).
+  const cameraInputRef = useRef<HTMLInputElement>(null);
   const previewUrlRef = useRef<string | null>(null);
 
-  const { isDrawerOpen, closeDrawer, toggleDrawer } = useResponsiveSidebar();
+  const { isDrawerOpen, closeDrawer } = useResponsiveSidebar();
 
   useEffect(() => {
     let cancelled = false;
@@ -218,7 +228,13 @@ function RequestDocumentPage({
     setFormError("");
 
     try {
-      await createDocumentRequest(documentTypeId, formData.purpose.trim());
+      // The selected image is uploaded with the request and stored on the
+      // server (the blob: preview URL is only used for the on-page preview).
+      await createDocumentRequestWithAttachment(
+        documentTypeId,
+        formData.purpose.trim(),
+        attachment.file,
+      );
       onRequestSubmitted();
     } catch (error) {
       if (error instanceof ApiError && error.status === 401) {
@@ -252,6 +268,7 @@ function RequestDocumentPage({
         role={RESIDENT_ROLE_LABEL}
         isOpen={isDrawerOpen}
         onNavigate={closeDrawer}
+        unreadCount={unreadCount}
       />
 
       {isDrawerOpen && (
@@ -266,8 +283,6 @@ function RequestDocumentPage({
       <main className="request-document-page">
         <header className="topbar">
           <div className="topbar-leading">
-            {toggleDrawer && <MobileMenuButton onOpen={toggleDrawer} />}
-
             <div>
               <p className="topbar-label">Resident Portal</p>
               <h1>Request a Document</h1>
@@ -296,6 +311,8 @@ function RequestDocumentPage({
                 <span className="notification-dot">{unreadCount}</span>
               )}
             </button>
+
+            <MobileLogoutButton onLogout={onLogout} />
           </div>
         </header>
 
@@ -379,6 +396,15 @@ function RequestDocumentPage({
                   <div className="request-document-preview-actions">
                     <button
                       type="button"
+                      className="request-document-file-button photo-touch-only"
+                      onClick={() => cameraInputRef.current?.click()}
+                      disabled={isSubmitting}
+                    >
+                      <Camera size={15} strokeWidth={2} aria-hidden="true" />
+                      Retake
+                    </button>
+                    <button
+                      type="button"
                       className="request-document-file-button"
                       onClick={() => fileInputRef.current?.click()}
                       disabled={isSubmitting}
@@ -413,6 +439,43 @@ function RequestDocumentPage({
                   <strong>Drop an image here or click to browse</strong>
                   <span>JPG, PNG or WebP, up to {MAX_IMAGE_MB} MB</span>
                 </label>
+              )}
+
+              {/* Kept after the dropzone so the "input + dropzone" focus
+                  style in RequestDocumentPage.css still works. */}
+              <input
+                ref={cameraInputRef}
+                type="file"
+                className="request-document-file-input"
+                accept="image/*"
+                capture="environment"
+                onChange={handleFileInputChange}
+                disabled={isSubmitting}
+                tabIndex={-1}
+                aria-hidden="true"
+              />
+
+              {!attachment && (
+                <div className="photo-source">
+                  <button
+                    type="button"
+                    className="photo-source-btn is-primary"
+                    onClick={() => cameraInputRef.current?.click()}
+                    disabled={isSubmitting}
+                  >
+                    <Camera size={18} strokeWidth={2} aria-hidden="true" />
+                    Take a photo
+                  </button>
+                  <button
+                    type="button"
+                    className="photo-source-btn"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={isSubmitting}
+                  >
+                    <Images size={18} strokeWidth={2} aria-hidden="true" />
+                    Gallery
+                  </button>
+                </div>
               )}
 
               <p id="attachment-hint" className="request-document-hint">

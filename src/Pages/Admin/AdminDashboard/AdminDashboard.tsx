@@ -4,6 +4,7 @@ import type { ApiNotification, AuthUser } from "../../../Utils/Shared/api";
 import { fetchAdminDashboard } from "../../../Utils/Shared/api";
 import type { AdminDashboardData } from "../../../Types/Admin/AdminDashboardType";
 import { getPortalProfileName } from "../../../Utils/Admin/AdminDisplay";
+import { isAdministrator } from "../../../Utils/Shared/routePaths";
 import type { AdminStatusFilter } from "../../../Utils/Admin/AdminDashboardLogic";
 import AdminSidebar from "../../../components/Admin/AdminDashboard/AdminSidebar";
 import AdminTopbar from "../../../components/Admin/AdminDashboard/AdminTopbar";
@@ -85,7 +86,9 @@ const AdminDashboard = ({
     <div className="admin-dashboard">
       <AdminSidebar
         pendingRequests={data?.stats.pending ?? 0}
-        pendingApprovals={data?.stats.pending ?? 0}
+        pendingApprovals={
+          (data?.stats.pending ?? 0) + (data?.stats.pending_registrations ?? 0)
+        }
         unreadNotifications={unreadNotifications}
         user={user}
         activeItem="dashboard"
@@ -126,6 +129,19 @@ const AdminDashboard = ({
             <span>{error}</span>
             <button type="button" onClick={() => void loadDashboard()}>
               Retry
+            </button>
+          </div>
+        )}
+
+        {isAdministrator(user) && Boolean(data?.stats.pending_registrations) && (
+          <div className="admin-registrations-callout" role="status">
+            <span>
+              {data?.stats.pending_registrations} resident registration
+              {data?.stats.pending_registrations === 1 ? " is" : "s are"} waiting
+              for your approval.
+            </span>
+            <button type="button" onClick={onApprovals}>
+              Review
             </button>
           </div>
         )}

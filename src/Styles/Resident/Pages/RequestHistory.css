@@ -279,3 +279,10 @@
     padding: 14px;
   }
 }
+
+@media (max-width: 768px) {
+  .history-header {
+    flex-direction: row;
+    align-items: center;
+  }
+}

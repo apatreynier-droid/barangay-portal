@@ -5,6 +5,7 @@ import {
   formatSubmittedDateTime,
 } from "../../../Utils/Admin/AdminDocumentRequestsLogic";
 import { updateAdminDocumentRequest } from "../../../Utils/Shared/api";
+import { ApprovalStatusPill, ApproveIcon, RejectIcon } from "./ApprovalIcons";
 
 type ApprovalRequestCardProps = {
   request: AdminDocumentRequest;
@@ -39,7 +40,11 @@ const ApprovalRequestCard = ({
     <section className="approvals-card">
       <div className="approvals-card-header">
         <span className="approvals-card-id">{request.request_number}</span>
-        <span className="admin-status-pill status-pending">Pending</span>
+        <ApprovalStatusPill
+          status="pending"
+          label="Pending"
+          className="status-pending"
+        />
       </div>
 
       <dl className="approvals-card-grid">
@@ -82,7 +87,8 @@ const ApprovalRequestCard = ({
           disabled={isSubmitting}
           onClick={() => void processRequest("Approved")}
         >
-          ✓ Approve
+          <ApproveIcon />
+          <span>Approve</span>
         </button>
         <button
           type="button"
@@ -90,7 +96,8 @@ const ApprovalRequestCard = ({
           disabled={isSubmitting}
           onClick={() => void processRequest("Rejected")}
         >
-          ✕ Reject
+          <RejectIcon />
+          <span>Reject</span>
         </button>
       </div>
     </section>

@@ -1,9 +1,15 @@
 from __future__ import annotations
 
+import re
 from datetime import date, datetime
 from typing import Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
+
+from .puroks import validate_purok
+
+#: A registration now sends mail, so the address must at least look deliverable.
+_EMAIL_PATTERN = re.compile(r"^[^\s@]+@[^\s@]+\.[^\s@]+$")
 
 
 class RegisterInput(BaseModel):
@@ -27,6 +33,19 @@ class RegisterInput(BaseModel):
     street: str | None = Field(default=None, max_length=150)
     purok: str | None = Field(default=None, max_length=50)
     years_of_residency: int | None = Field(default=None, ge=0, le=150)
+
+    @field_validator("email")
+    @classmethod
+    def _validate_email(cls, value: str) -> str:
+        if not _EMAIL_PATTERN.match(value.strip()):
+            raise ValueError("Enter a valid email address.")
+        return value
+
+    @field_validator("purok")
+    @classmethod
+    def _validate_purok(cls, value: str | None) -> str | None:
+        """Accept only the seven standardized Purok names (or None/empty)."""
+        return validate_purok(value)
     occupation: str | None = Field(default=None, max_length=100)
     employer: str | None = Field(default=None, max_length=150)
     emergency_contact_name: str | None = Field(default=None, max_length=150)
@@ -61,12 +80,23 @@ class MessageResponse(BaseModel):
     message: str
 
 
+class RegistrationResponse(BaseModel):
+    """Result of a registration. It never carries a token: the account waits
+    for an Administrator's review before it can sign in."""
+
+    message: str
+    email: str
+    account_status: str
+    reference_number: str
+
+
 class UserResponse(BaseModel):
     id: int
     email: str
     first_name: str
     last_name: str
     role: str
+    purok: str | None = None
 
 
 class AuthResponse(BaseModel):
@@ -147,6 +177,7 @@ class AdminStatusStats(BaseModel):
     processing: int
     completed: int
     rejected: int
+    pending_registrations: int
 
 
 class AdminMonthlyDataPoint(BaseModel):
@@ -172,6 +203,7 @@ class AdminRecentRequest(BaseModel):
 class AdminRecentRegistration(BaseModel):
     resident_name: str
     created_at: datetime
+    status: str
 
 
 class AdminActivityEntry(BaseModel):
@@ -247,9 +279,68 @@ class AdminResidentUpdateInput(BaseModel):
     address: str | None = Field(default=None, max_length=255)
     contact_number: str | None = Field(default=None, max_length=20)
 
+    @field_validator("purok")
+    @classmethod
+    def _validate_purok(cls, value: str | None) -> str | None:
+        """Accept only the seven standardized Purok names (or None/empty)."""
+        return validate_purok(value)
+
 
 class AdminResidentStatusInput(BaseModel):
     account_status: Literal["active", "inactive"]
+
+
+class AdminRegistrationResponse(BaseModel):
+    """One resident registration on the Admin Approvals page."""
+
+    id: int
+    resident_code: str
+    name: str
+    email: str
+    contact_number: str | None
+    address: str | None
+    purok: str | None
+    status: str
+    registered_at: datetime
+    reviewed_at: datetime | None
+    reviewed_by: str | None
+    rejection_reason: str | None
+    # Delivery state of the email describing the current status.
+    email_status: str | None
+    date_of_birth: date | None
+    place_of_birth: str | None
+    sex: str | None
+    civil_status: str | None
+    nationality: str | None
+    religion: str | None
+    voter_status: str | None
+    house_no: str | None
+    street: str | None
+    years_of_residency: int | None
+    occupation: str | None
+    employer: str | None
+    emergency_contact_name: str | None
+    emergency_contact_relationship: str | None
+    emergency_contact_number: str | None
+    emergency_contact_address: str | None
+
+
+class AdminRegistrationRejectInput(BaseModel):
+    reason: str = Field(min_length=1, max_length=1000)
+
+    @field_validator("reason")
+    @classmethod
+    def _require_reason(cls, value: str) -> str:
+        stripped = value.strip()
+        if not stripped:
+            raise ValueError("A rejection reason is required.")
+        return stripped
+
+
+class AdminRegistrationActionResponse(BaseModel):
+    registration: AdminRegistrationResponse
+    email_delivery: str
+    message: str
 
 
 class AdminDocumentRequestResponse(BaseModel):
@@ -273,6 +364,17 @@ class AdminRequestHistoryResponse(BaseModel):
     processed_by: str | None
 
 
+class RequestAttachmentResponse(BaseModel):
+    """Metadata of a resident's image attachment (the bytes are served by the
+    authenticated ``.../attachment`` endpoints, never in this payload)."""
+
+    id: int
+    original_filename: str
+    content_type: str
+    file_size: int
+    uploaded_at: datetime
+
+
 class AdminDocumentRequestDetailResponse(BaseModel):
     id: int
     request_number: str
@@ -287,6 +389,7 @@ class AdminDocumentRequestDetailResponse(BaseModel):
     pickup_date: date | None
     fee: float
     processed_by: str | None
+    attachment: RequestAttachmentResponse | None = None
 
 
 class AdminRequestActionInput(BaseModel):

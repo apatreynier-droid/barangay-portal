@@ -225,7 +225,7 @@ def main() -> None:
         "staff login returns role 'staff' (not 'resident' and not 'admin')",
     )
 
-    status, resident_auth = request_json(
+    status, registered = request_json(
         "/api/auth/register",
         method="POST",
         body={
@@ -239,6 +239,20 @@ def main() -> None:
     )
     check(status == 201, "resident can register")
     if status != 201:
+        remove_probe_accounts()
+        summarize()
+        return
+    # A registration waits for an administrator before it can sign in.
+    resident_id = int(registered["reference_number"].split("-")[1])
+    status, _ = request_json(
+        f"/api/admin/registrations/{resident_id}/approve",
+        method="POST",
+        token=admin_token,
+    )
+    check(status == 200, f"administrator approves the registration (got {status})")
+    status, resident_auth = login(RESIDENT_EMAIL, RESIDENT_PASSWORD)
+    check(status == 200, f"approved resident can sign in (got {status})")
+    if status != 200:
         remove_probe_accounts()
         summarize()
         return

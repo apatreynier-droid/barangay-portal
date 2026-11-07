@@ -59,13 +59,14 @@ def make_test_user(
 ) -> dict[str, Any]:
     """Insert a resident account + profile. Returns ``{"id", "email"}``."""
     cursor.execute(
-        "INSERT INTO users (email, password_hash, role) VALUES (%s, %s, 'resident')",
+        "INSERT INTO users (email, password_hash, role, account_status) "
+        "VALUES (%s, %s, 'resident', 'active')",
         (email, hash_password("TestPassword123!")),
     )
     user_id = int(cursor.lastrowid)
     cursor.execute(
         "INSERT INTO resident_profiles (user_id, first_name, last_name, purok) "
-        "VALUES (%s, %s, %s, 'Purok Test')",
+        "VALUES (%s, %s, %s, 'Purok - 1')",
         (user_id, first_name, last_name),
     )
     return {"id": user_id, "email": email}
@@ -101,7 +102,8 @@ def get_admin_user_id(cursor: mysql.connector.cursor.MySQLCursor) -> int:
     if row is not None:
         return int(row["id"])
     cursor.execute(
-        "INSERT INTO users (email, password_hash, role) VALUES (%s, %s, 'admin')",
+        "INSERT INTO users (email, password_hash, role, account_status) "
+        "VALUES (%s, %s, 'admin', 'active')",
         (f"admin.{TEST_DOMAIN}", hash_password("TestPassword123!")),
     )
     return int(cursor.lastrowid)

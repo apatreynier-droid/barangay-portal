@@ -47,6 +47,9 @@ type SidebarProps = {
 
   /** Closes the mobile drawer when a navigation item is chosen. */
   onNavigate?: () => void;
+
+  /** Unread notifications; shown as a badge on the mobile tab bar. */
+  unreadCount?: number;
 };
 
 const NAV_ITEMS: {
@@ -85,6 +88,16 @@ const NAV_ITEMS: {
   },
 ];
 
+// Shorter labels for the bottom tab bar on phones.
+const TAB_LABELS: Record<(typeof NAV_ITEMS)[number]["key"], string> = {
+  dashboard: "Dashboard",
+  "my-requests": "My Requests",
+  "request-document": "Request",
+  "request-history": "History",
+  notifications: "Notifications",
+  "pothole-detection": "Potholes",
+};
+
 // Dropdown under "My Requests".
 const REQUEST_FILTERS: { key: RequestsTab; label: string; icon: LucideIcon }[] =
   [
@@ -106,6 +119,7 @@ const Sidebar = ({
   onLogout,
   isOpen = false,
   onNavigate,
+  unreadCount = 0,
 }: SidebarProps) => {
   const handlers = {
     onDashboard,
@@ -139,6 +153,12 @@ const Sidebar = ({
     if (onMyRequests) closeThen(onMyRequests)();
   };
 
+  // Bottom tab bar: "My Requests" always opens the full list.
+  const handleRequestsTab = () => {
+    selectRequestsTab("all");
+    if (!isRequestsPage) onMyRequests?.();
+  };
+
   const handleRequestsFilter = (tab: RequestsTab) => {
     selectRequestsTab(tab);
 
@@ -151,106 +171,149 @@ const Sidebar = ({
   };
 
   return (
-    <aside className={`sidebar${isOpen ? " is-open" : ""}`}>
-      <div className="sidebar-logo">
-        <div className="sidebar-logo-circle">
-          <img src={wingsLogo} alt="Barangay Logo" />
+    <>
+      <aside className={`sidebar${isOpen ? " is-open" : ""}`}>
+        <div className="sidebar-logo">
+          <div className="sidebar-logo-circle">
+            <img src={wingsLogo} alt="Barangay Logo" />
+          </div>
+
+          <div>
+            <h2>Lagab-e Portal</h2>
+            <span>Community Portal</span>
+          </div>
         </div>
 
-        <div>
-          <h2>Lagab-e Portal</h2>
-          <span>Community Portal</span>
-        </div>
-      </div>
+        <nav className="sidebar-nav">
+          {NAV_ITEMS.map((item) => {
+            const handler = handlers[item.handlerKey];
+            const isActive = activePage === item.key;
+            const Icon = item.icon;
 
-      <nav className="sidebar-nav">
-        {NAV_ITEMS.map((item) => {
-          const handler = handlers[item.handlerKey];
-          const isActive = activePage === item.key;
-          const Icon = item.icon;
+            if (item.key === "my-requests") {
+              return (
+                <div className="nav-group" key={item.key}>
+                  <button
+                    type="button"
+                    className={`nav-item nav-button nav-group-toggle ${
+                      isActive ? "active" : ""
+                    }`}
+                    onClick={handleRequestsToggle}
+                    disabled={!handler}
+                    aria-expanded={isRequestsOpen}
+                    aria-controls="sidebar-requests-menu"
+                  >
+                    <span className="nav-icon">
+                      <Icon size={19} strokeWidth={1.9} aria-hidden="true" />
+                    </span>
+                    {item.label}
+                    <ChevronDown
+                      className="nav-chevron"
+                      size={16}
+                      strokeWidth={2}
+                      aria-hidden="true"
+                    />
+                  </button>
 
-          if (item.key === "my-requests") {
-            return (
-              <div className="nav-group" key={item.key}>
-                <button
-                  type="button"
-                  className={`nav-item nav-button nav-group-toggle ${
-                    isActive ? "active" : ""
-                  }`}
-                  onClick={handleRequestsToggle}
-                  disabled={!handler}
-                  aria-expanded={isRequestsOpen}
-                  aria-controls="sidebar-requests-menu"
-                >
-                  <span className="nav-icon">
-                    <Icon size={19} strokeWidth={1.9} aria-hidden="true" />
-                  </span>
-                  {item.label}
-                  <ChevronDown
-                    className="nav-chevron"
-                    size={16}
-                    strokeWidth={2}
-                    aria-hidden="true"
-                  />
-                </button>
+                  <div
+                    id="sidebar-requests-menu"
+                    className={`nav-submenu${isRequestsOpen ? " is-open" : ""}`}
+                  >
+                    <div className="nav-submenu-inner">
+                      {REQUEST_FILTERS.map((filter) => {
+                        const FilterIcon = filter.icon;
+                        const isCurrent =
+                          isRequestsPage && currentTab === filter.key;
 
-                <div
-                  id="sidebar-requests-menu"
-                  className={`nav-submenu${isRequestsOpen ? " is-open" : ""}`}
-                >
-                  <div className="nav-submenu-inner">
-                    {REQUEST_FILTERS.map((filter) => {
-                      const FilterIcon = filter.icon;
-                      const isCurrent =
-                        isRequestsPage && currentTab === filter.key;
-
-                      return (
-                        <button
-                          key={filter.key}
-                          type="button"
-                          className={`nav-subitem${isCurrent ? " active" : ""}`}
-                          onClick={() => handleRequestsFilter(filter.key)}
-                          aria-current={isCurrent ? "true" : undefined}
-                        >
-                          <FilterIcon
-                            size={16}
-                            strokeWidth={1.9}
-                            aria-hidden="true"
-                          />
-                          {filter.label}
-                        </button>
-                      );
-                    })}
+                        return (
+                          <button
+                            key={filter.key}
+                            type="button"
+                            className={`nav-subitem${isCurrent ? " active" : ""}`}
+                            onClick={() => handleRequestsFilter(filter.key)}
+                            aria-current={isCurrent ? "true" : undefined}
+                          >
+                            <FilterIcon
+                              size={16}
+                              strokeWidth={1.9}
+                              aria-hidden="true"
+                            />
+                            {filter.label}
+                          </button>
+                        );
+                      })}
+                    </div>
                   </div>
                 </div>
-              </div>
+              );
+            }
+
+            return (
+              <button
+                key={item.key}
+                type="button"
+                className={`nav-item nav-button ${isActive ? "active" : ""}`}
+                onClick={handler ? closeThen(handler) : undefined}
+                disabled={isActive || !handler}
+              >
+                <span className="nav-icon">
+                  <Icon size={19} strokeWidth={1.9} aria-hidden="true" />
+                </span>
+                {item.label}
+              </button>
             );
-          }
+          })}
+        </nav>
+
+        <SidebarUserFooter
+          firstName={firstName}
+          lastName={lastName}
+          role={role}
+          onLogout={onLogout}
+        />
+      </aside>
+
+      {/* Bottom tab bar, shown only on phones (see ResidentSidebar.css). */}
+      <nav className="mobile-tabbar" aria-label="Primary">
+        {NAV_ITEMS.map((item) => {
+          const Icon = item.icon;
+          const handler = handlers[item.handlerKey];
+          const isActive =
+            activePage === item.key ||
+            (item.key === "my-requests" && activePage === "request-history");
+          const showCount = item.key === "notifications" && unreadCount > 0;
+
+          const handleClick = () => {
+            if (item.key === "my-requests") {
+              handleRequestsTab();
+              return;
+            }
+            if (!isActive) handler?.();
+          };
 
           return (
             <button
               key={item.key}
               type="button"
-              className={`nav-item nav-button ${isActive ? "active" : ""}`}
-              onClick={handler ? closeThen(handler) : undefined}
-              disabled={isActive || !handler}
+              className={`mobile-tab${isActive ? " is-active" : ""}`}
+              onClick={handleClick}
+              disabled={!handler}
+              aria-current={isActive ? "page" : undefined}
             >
-              <span className="nav-icon">
-                <Icon size={19} strokeWidth={1.9} aria-hidden="true" />
+              <span className="mobile-tab-icon">
+                <Icon size={22} strokeWidth={1.9} aria-hidden="true" />
+                {showCount && (
+                  <span className="mobile-tab-count">
+                    {unreadCount > 99 ? "99+" : unreadCount}
+                  </span>
+                )}
               </span>
-              {item.label}
+              <span className="mobile-tab-label">{TAB_LABELS[item.key]}</span>
             </button>
           );
         })}
       </nav>
-
-      <SidebarUserFooter
-        firstName={firstName}
-        lastName={lastName}
-        role={role}
-        onLogout={onLogout}
-      />
-    </aside>
+    </>
   );
 };
 
