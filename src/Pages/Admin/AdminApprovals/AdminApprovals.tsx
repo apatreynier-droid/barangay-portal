@@ -3,17 +3,23 @@ import "../../../Styles/Admin/Pages/AdminResidents.css";
 import "../../../Styles/Admin/Pages/AdminApprovals.css";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { AuthUser } from "../../../Utils/Shared/api";
-import { fetchAdminDocumentRequests } from "../../../Utils/Shared/api";
+import {
+  fetchAdminDocumentRequests,
+  fetchRegistrations,
+} from "../../../Utils/Shared/api";
 import type { AdminDocumentRequest } from "../../../Types/Admin/AdminDocumentRequestsType";
+import type { AdminRegistration } from "../../../Types/Admin/AdminRegistrationsType";
 import { getPortalProfileName } from "../../../Utils/Admin/AdminDisplay";
 import AdminSidebar from "../../../components/Admin/AdminDashboard/AdminSidebar";
 import AdminTopbar from "../../../components/Admin/AdminDashboard/AdminTopbar";
 import useResponsiveSidebar from "../../../Utils/Shared/useResponsiveSidebar";
 import ApprovalRequestCard from "../../../components/Admin/AdminApprovals/ApprovalRequestCard";
+import RegistrationApprovals from "../../../components/Admin/AdminApprovals/RegistrationApprovals";
 import {
   getPendingApprovals,
   removeRequestById,
 } from "../../../Utils/Admin/AdminApprovalsLogic";
+import { countPendingRegistrations } from "../../../Utils/Admin/AdminRegistrationsLogic";
 
 type AdminApprovalsProps = {
   user: AuthUser;
@@ -30,6 +36,8 @@ type AdminApprovalsProps = {
   onLogout: () => void;
 };
 
+type ApprovalsTab = "registrations" | "documents";
+
 const AdminApprovals = ({
   user,
   unreadNotifications,
@@ -44,7 +52,9 @@ const AdminApprovals = ({
   onUserManagement,
   onLogout,
 }: AdminApprovalsProps) => {
+  const [activeTab, setActiveTab] = useState<ApprovalsTab>("registrations");
   const [requests, setRequests] = useState<AdminDocumentRequest[]>([]);
+  const [registrations, setRegistrations] = useState<AdminRegistration[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -53,7 +63,12 @@ const AdminApprovals = ({
     setError("");
 
     try {
-      setRequests(await fetchAdminDocumentRequests());
+      const [loadedRequests, loadedRegistrations] = await Promise.all([
+        fetchAdminDocumentRequests(),
+        fetchRegistrations(),
+      ]);
+      setRequests(loadedRequests);
+      setRegistrations(loadedRegistrations);
     } catch {
       setError("Could not load the pending approvals. Please try again.");
     } finally {
@@ -70,6 +85,11 @@ const AdminApprovals = ({
     [requests],
   );
 
+  const pendingRegistrations = useMemo(
+    () => countPendingRegistrations(registrations),
+    [registrations],
+  );
+
   const fullName = getPortalProfileName(user);
 
   const { isDrawerOpen, closeDrawer, toggleDrawer } = useResponsiveSidebar();
@@ -78,7 +98,7 @@ const AdminApprovals = ({
     <div className="admin-dashboard">
       <AdminSidebar
         pendingRequests={pendingApprovals.length}
-        pendingApprovals={pendingApprovals.length}
+        pendingApprovals={pendingApprovals.length + pendingRegistrations}
         unreadNotifications={unreadNotifications}
         user={user}
         activeItem="approvals"
@@ -111,7 +131,7 @@ const AdminApprovals = ({
           fullName={fullName || "Administrator"}
           onMenuToggle={toggleDrawer}
           title="Approvals"
-          subtitle="Requests awaiting your approval."
+          subtitle="Registrations and requests awaiting your approval."
         />
 
         {error && (
@@ -123,8 +143,43 @@ const AdminApprovals = ({
           </div>
         )}
 
-        {isLoading && requests.length === 0 ? (
+        <div className="approvals-tabs" role="group" aria-label="Approval type">
+          <button
+            type="button"
+            className={`approvals-tab${
+              activeTab === "registrations" ? " active" : ""
+            }`}
+            aria-pressed={activeTab === "registrations"}
+            onClick={() => setActiveTab("registrations")}
+          >
+            Resident Registrations ({pendingRegistrations})
+          </button>
+          <button
+            type="button"
+            className={`approvals-tab${
+              activeTab === "documents" ? " active" : ""
+            }`}
+            aria-pressed={activeTab === "documents"}
+            onClick={() => setActiveTab("documents")}
+          >
+            Document Requests ({pendingApprovals.length})
+          </button>
+        </div>
+
+        {isLoading && requests.length === 0 && registrations.length === 0 ? (
           <p className="admin-loading-state">Loading the approvals…</p>
+        ) : activeTab === "registrations" ? (
+          <RegistrationApprovals
+            registrations={registrations}
+            onRegistrationUpdated={(updated) =>
+              setRegistrations((previous) =>
+                previous.map((registration) =>
+                  registration.id === updated.id ? updated : registration,
+                ),
+              )
+            }
+            onReload={() => void loadRequests()}
+          />
         ) : (
           <>
             <span className="approvals-count-pill">

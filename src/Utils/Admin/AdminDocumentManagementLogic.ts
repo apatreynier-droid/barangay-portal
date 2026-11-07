@@ -1,3 +1,13 @@
+import {
+  Award,
+  FileCheck,
+  FileText,
+  HandHeart,
+  MapPinHouse,
+  ScrollText,
+  Store,
+  type LucideIcon,
+} from "lucide-react";
 import type { AdminRequestHistoryEntry } from "../../Types/Admin/AdminRequestHistoryType";
 
 export type DocumentManagementFiltersState = {
@@ -68,7 +78,7 @@ export function filterIssuanceRecords(
 }
 
 export type DocumentTemplateMeta = {
-  icon: string;
+  icon: LucideIcon;
   className: string;
 };
 
@@ -78,32 +88,32 @@ const TEMPLATE_META: Array<{
 }> = [
   {
     keywords: ["good moral", "moral character"],
-    meta: { icon: "⭐", className: "template-gold" },
+    meta: { icon: Award, className: "template-gold" },
   },
   {
     keywords: ["business permit"],
-    meta: { icon: "🏪", className: "template-rose" },
+    meta: { icon: Store, className: "template-rose" },
   },
   {
     keywords: ["indigency"],
-    meta: { icon: "🏠", className: "template-green" },
+    meta: { icon: HandHeart, className: "template-green" },
   },
   {
     keywords: ["residency"],
-    meta: { icon: "🏘️", className: "template-slate" },
+    meta: { icon: MapPinHouse, className: "template-slate" },
   },
   {
     keywords: ["clearance"],
-    meta: { icon: "📄", className: "template-blue" },
+    meta: { icon: FileCheck, className: "template-blue" },
   },
   {
     keywords: ["certificate"],
-    meta: { icon: "📜", className: "template-purple" },
+    meta: { icon: ScrollText, className: "template-purple" },
   },
 ];
 
 const DEFAULT_TEMPLATE_META: DocumentTemplateMeta = {
-  icon: "📄",
+  icon: FileText,
   className: "template-blue",
 };
 

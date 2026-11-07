@@ -9,6 +9,13 @@
    5. Modal safety net
    6. Small-screen spacing/typography and touch targets
    7. Reduced-motion preferences
+   8. Photo source buttons (camera / gallery) on touch devices
+   9. Mobile logout button (replaces the hamburger on phones)
+
+   Page padding is set through --pad-x / --pad-top so the sticky top bar's
+   negative margins always match the real padding. Below 769px the resident
+   pages also leave room at the bottom for the mobile tab bar
+   (see ResidentSidebar.css).
 
    Colors, branding and the desktop layout are intentionally NOT redefined
    here; page stylesheets keep owning their look. Only behavior and
@@ -84,10 +91,13 @@ body {
   .my-requests-page .requests-main,
   .request-history-layout .request-history-page,
   .notifications-layout .notifications-page,
-  .request-document-layout .request-document-page {
+  .request-document-layout .request-document-page,
+  .pd-page .pd-main {
+    --pad-x: 24px;
+    --pad-top: 24px;
     width: calc(100% - 80px);
     margin-left: 80px;
-    padding: 24px;
+    padding: var(--pad-top) var(--pad-x) 48px;
   }
 
   .admin-dashboard .admin-main {
@@ -105,7 +115,6 @@ body {
   }
 }
 
-
 /* ----------------------- 2b. Drawer (max-width: 768px) ------------------------ */
 /* <=768px: the sidebar slides off-canvas; the hamburger in the sticky Top Bar
    opens it above a dimmed backdrop. `.is-open` is toggled by the shared
@@ -115,11 +124,22 @@ body {
    block only takes over once the rail is no longer used. */
 
 @media (max-width: 768px) {
+  /* Resident pages: full width, with room for the bottom tab bar and the
+     phone's home indicator. */
   .dashboard .dashboard-main,
   .my-requests-page .requests-main,
   .request-history-layout .request-history-page,
   .notifications-layout .notifications-page,
   .request-document-layout .request-document-page,
+  .pd-page .pd-main {
+    --pad-x: 16px;
+    --pad-top: 16px;
+    width: 100%;
+    margin-left: 0;
+    padding: var(--pad-top) var(--pad-x)
+      calc(96px + env(safe-area-inset-bottom, 0px));
+  }
+
   .admin-dashboard .admin-main {
     width: 100%;
     margin-left: 0;
@@ -245,8 +265,10 @@ body {
   .my-requests-page .requests-main,
   .request-history-layout .request-history-page,
   .notifications-layout .notifications-page,
-  .request-document-layout .request-document-page {
-    padding: 18px 16px 48px;
+  .request-document-layout .request-document-page,
+  .pd-page .pd-main {
+    --pad-x: 14px;
+    --pad-top: 14px;
   }
 
   .admin-dashboard .admin-main {
@@ -260,6 +282,10 @@ body {
   .request-history-layout .request-history-page,
   .notifications-layout .notifications-page,
   .request-document-layout .request-document-page,
+  .pd-page .pd-main {
+    --pad-x: 12px;
+  }
+
   .admin-dashboard .admin-main {
     padding-left: 12px;
     padding-right: 12px;
@@ -449,8 +475,6 @@ body {
   flex-wrap: wrap;
 }
 
-
-
 /* --------------------------------- 5. Modals ------------------------------- */
 
 /* Safety net: modal dialogs never exceed the viewport height (dvh handles
@@ -542,5 +566,100 @@ body {
   .sidebar,
   .admin-sidebar {
     transition: none;
+  }
+}
+
+/* ------------------- 8. Photo source buttons (touch) ---------------------- */
+/* "Take a photo" / "Gallery" under the upload boxes, plus "Retake" in the
+   preview. Shown on phones, and on any touch-first device, because desktop
+   browsers ignore the camera `capture` attribute. */
+
+.photo-source,
+.photo-touch-only {
+  display: none;
+}
+
+@media (max-width: 768px), (hover: none) and (pointer: coarse) {
+  .photo-source {
+    display: flex;
+    gap: 10px;
+  }
+
+  .photo-touch-only {
+    display: inline-flex;
+  }
+}
+
+.photo-source-btn {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 48px;
+  padding: 10px 14px;
+  border: 1px solid var(--db-line, #d9e3dd);
+  border-radius: 12px;
+  background: var(--db-surface, #ffffff);
+  color: var(--db-ink, #10261f);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.photo-source-btn.is-primary {
+  border-color: var(--db-brand, #17614b);
+  background: var(--db-brand, #17614b);
+  color: var(--db-on-brand, #ffffff);
+}
+
+.photo-source-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.photo-source-btn:focus-visible {
+  outline: 2px solid var(--db-brand, #17614b);
+  outline-offset: 2px;
+}
+
+/* ----------------------- 9. Mobile logout button -------------------------- */
+/* Replaces the hamburger menu on phones. Desktop keeps the sidebar logout. */
+
+.mobile-logout-button {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .mobile-logout-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    flex-shrink: 0;
+    padding: 0;
+    border: 1px solid var(--db-err-line, #fecaca);
+    border-radius: 12px;
+    background: var(--db-surface, #ffffff);
+    color: var(--db-err-ink, #b91c1c);
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .mobile-logout-button:hover {
+    background: var(--db-err-bg, #fef2f2);
+  }
+
+  .mobile-logout-button:focus-visible {
+    outline: 2px solid var(--db-err-ink, #b91c1c);
+    outline-offset: 2px;
+  }
+
+  /* The hamburger is no longer rendered; this hides any leftover one. */
+  .sidebar-toggle {
+    display: none;
   }
 }

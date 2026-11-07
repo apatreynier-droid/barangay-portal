@@ -1,5 +1,6 @@
 import "../../../Styles/Admin/Components/AdminSidebar.css";
 
+import { useNavigate } from "react-router-dom";
 import SidebarUserFooter from "../../SidebarUserFooter/SidebarUserFooter";
 import type { AuthUser } from "../../../Utils/Shared/api";
 import {
@@ -7,7 +8,10 @@ import {
   getPortalLastName,
   getPortalRoleLabel,
 } from "../../../Utils/Admin/AdminDisplay";
-import { isAdministrator } from "../../../Utils/Shared/routePaths";
+import {
+  ADMIN_POTHOLE_MANAGEMENT_PATH,
+  isAdministrator,
+} from "../../../Utils/Shared/routePaths";
 import dashboardIcon from "../../../assets/icons/ADash.png";
 import residentsIcon from "../../../assets/icons/Residents.png";
 import documentRequestsIcon from "../../../assets/icons/DR.png";
@@ -18,6 +22,7 @@ import reportsIcon from "../../../assets/icons/Reports.png";
 import notificationsIcon from "../../../assets/icons/notification-bell.png";
 import userManagementIcon from "../../../assets/icons/UM.png";
 import activityLogsIcon from "../../../assets/icons/Logs.png";
+import potholeIcon from "../../../assets/icons/pothole.png";
 
 type AdminNavItem = {
   key: string;
@@ -89,6 +94,7 @@ const AdminSidebar = ({
   isOpen = false,
   onNavigate,
 }: AdminSidebarProps) => {
+  const navigate = useNavigate();
   const isAdministratorAccount = isAdministrator(user);
   // Grouped into related sections with subtle labels; items, routes, badges
   // and handlers are unchanged.
@@ -133,6 +139,12 @@ const AdminSidebar = ({
           label: "Document Management",
           icon: documentManagementIcon,
           onClick: onDocumentManagement,
+        },
+        {
+          key: "pothole-management",
+          label: "Pothole Management",
+          icon: potholeIcon,
+          onClick: () => navigate(ADMIN_POTHOLE_MANAGEMENT_PATH),
         },
       ],
     },

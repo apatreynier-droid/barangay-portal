@@ -26,6 +26,14 @@
   border: 1px solid #e2e8f0;
   border-radius: 14px;
   background: #ffffff;
+  transition:
+    border-color 0.18s ease,
+    box-shadow 0.18s ease;
+}
+
+.docmgmt-template-card:hover {
+  border-color: #cbd5e1;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.06);
 }
 
 .docmgmt-template-icon {
@@ -36,31 +44,46 @@
   height: 46px;
   margin-bottom: 22px;
   border-radius: 12px;
-  font-size: 22px;
+  transition: transform 0.18s ease;
 }
 
+.docmgmt-template-icon svg {
+  flex-shrink: 0;
+}
+
+.docmgmt-template-card:hover .docmgmt-template-icon {
+  transform: scale(1.05);
+}
+
+/* Soft tile background + matching icon stroke color per template type. */
 .docmgmt-template-icon.template-blue {
   background: #dbeafe;
+  color: #2563eb;
 }
 
 .docmgmt-template-icon.template-purple {
   background: #ede9fe;
+  color: #7c3aed;
 }
 
 .docmgmt-template-icon.template-green {
   background: #dcfce7;
+  color: #16a34a;
 }
 
 .docmgmt-template-icon.template-slate {
   background: #e2e8f0;
+  color: #475569;
 }
 
 .docmgmt-template-icon.template-rose {
   background: #ffe4e6;
+  color: #e11d48;
 }
 
 .docmgmt-template-icon.template-gold {
   background: #fef9c3;
+  color: #ca8a04;
 }
 
 .docmgmt-template-name {
@@ -78,6 +101,9 @@
 }
 
 .docmgmt-preview-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   align-self: flex-start;
   margin-top: auto;
   padding: 6px 16px;
@@ -94,6 +120,11 @@
 
 .docmgmt-preview-button:hover {
   background: #d4defc;
+}
+
+.docmgmt-preview-button svg,
+.docmgmt-action-button svg {
+  flex-shrink: 0;
 }
 
 .docmgmt-preview-button:focus-visible {
@@ -279,5 +310,16 @@
   .docmgmt-actions {
     flex-direction: column;
     align-items: stretch;
+  }
+
+  /* Keep icon + label centered when the buttons stretch full width. */
+  .docmgmt-action-button {
+    justify-content: center;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .docmgmt-template-card:hover .docmgmt-template-icon {
+    transform: none;
   }
 }

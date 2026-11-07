@@ -285,3 +285,112 @@
     transition: none;
   }
 }
+
+/* ------------------------- Mobile bottom tab bar ------------------------- */
+/* Replaces the sidebar as the main navigation on phones. The sidebar is still
+   reachable through the hamburger drawer for logout and request filters. */
+
+.mobile-tabbar {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .mobile-tabbar {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 30; /* above content, below the drawer (39/40) and modals (50) */
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 2px;
+    padding: 6px max(8px, env(safe-area-inset-right, 0px))
+      calc(6px + env(safe-area-inset-bottom, 0px))
+      max(8px, env(safe-area-inset-left, 0px));
+    background: var(--db-surface, #ffffff);
+    border-top: 1px solid var(--db-line, #d9e3dd);
+    box-shadow: 0 -4px 18px rgba(16, 38, 31, 0.06);
+    font-family: "Public Sans", "Segoe UI", system-ui, sans-serif;
+  }
+
+  .mobile-tab {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    min-width: 0;
+    min-height: 52px;
+    padding: 4px 2px;
+    border: 0;
+    border-radius: 12px;
+    background: transparent;
+    color: var(--db-muted, #586c63);
+    font: inherit;
+    font-size: 11.5px;
+    font-weight: 500;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .mobile-tab-icon {
+    position: relative;
+    display: grid;
+    place-items: center;
+    width: 52px;
+    height: 30px;
+    border-radius: 99px;
+    transition: background-color 0.18s ease;
+  }
+
+  .mobile-tab.is-active {
+    color: var(--db-brand, #17614b);
+    font-weight: 700;
+  }
+
+  .mobile-tab.is-active .mobile-tab-icon {
+    background: var(--db-brand-soft, #dcefe6);
+  }
+
+  .mobile-tab-count {
+    position: absolute;
+    top: -5px;
+    right: 4px;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 5px;
+    display: grid;
+    place-items: center;
+    border: 2px solid var(--db-surface, #ffffff);
+    border-radius: 99px;
+    background: var(--db-gold-bright, #e2b04a);
+    color: #2b1d00;
+    font-size: 10.5px;
+    font-weight: 700;
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .mobile-tab-label {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .mobile-tab:disabled {
+    opacity: 0.5;
+    cursor: default;
+  }
+
+  .mobile-tab:focus-visible {
+    outline: 2px solid var(--db-brand, #17614b);
+    outline-offset: -2px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mobile-tab-icon {
+    transition: none;
+  }
+}

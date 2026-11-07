@@ -69,7 +69,10 @@ class Settings:
     smtp_port: int = int(os.getenv("SMTP_PORT", "587"))
     smtp_username: str = os.getenv("SMTP_USERNAME", "").strip()
     smtp_password: str = os.getenv("SMTP_PASSWORD", "")
-    smtp_from: str = os.getenv("SMTP_FROM", "").strip()
+    # SMTP_FROM_EMAIL is the preferred name; SMTP_FROM keeps older .env files working.
+    smtp_from: str = (
+        os.getenv("SMTP_FROM_EMAIL") or os.getenv("SMTP_FROM") or ""
+    ).strip()
     # STARTTLS on submission ports (587/25). Port 465 always uses implicit SSL.
     smtp_use_tls: bool = os.getenv("SMTP_USE_TLS", "true").strip().lower() in {
         "1",
@@ -83,6 +86,32 @@ class Settings:
     )
     # Keep SMTP calls short so requests cannot hang on a dead server.
     smtp_timeout_seconds: int = int(os.getenv("SMTP_TIMEOUT_SECONDS", "15"))
+    # -- Resident registration (see app/registration_emails.py) --------------
+    # Every registration sends an email, so cap them per client IP.
+    registration_ip_max_requests: int = int(
+        os.getenv("REGISTRATION_IP_MAX_REQUESTS", "20")
+    )
+    registration_ip_window_seconds: int = int(
+        os.getenv("REGISTRATION_IP_WINDOW_SECONDS", "3600")
+    )
+    # How often failed registration emails are retried (0 disables the worker).
+    registration_email_worker_interval_seconds: int = int(
+        os.getenv("REGISTRATION_EMAIL_WORKER_INTERVAL_SECONDS", "60")
+    )
+    # Automatic attempts per email; an administrator can still retry afterwards.
+    registration_email_max_attempts: int = int(
+        os.getenv("REGISTRATION_EMAIL_MAX_ATTEMPTS", "6")
+    )
+    # -- Document request attachments (see app/attachments.py) -------------
+    # Persistent folder for uploaded resident images. Never served statically:
+    # files are streamed only through the authenticated attachment endpoints.
+    upload_dir: Path = Path(
+        os.getenv("UPLOAD_DIR", str(Path(__file__).resolve().parents[1] / "uploads"))
+    ).resolve()
+    # Matches MAX_IMAGE_MB on the Resident "Request a Document" page.
+    request_attachment_max_bytes: int = int(
+        os.getenv("REQUEST_ATTACHMENT_MAX_BYTES", str(5 * 1024 * 1024))
+    )
     cors_origins: tuple[str, ...] = tuple(
         origin.strip()
         for origin in os.getenv("CORS_ORIGINS", "http://localhost:5173").split(",")

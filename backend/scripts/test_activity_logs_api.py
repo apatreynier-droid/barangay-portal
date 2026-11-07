@@ -333,7 +333,7 @@ def run_logging_flow(admin_token: str) -> None:
                 "first_name": "Audit",
                 "last_name": "Probe",
                 "email": PROBE_EMAIL,
-                "purok": "Purok Test",
+                "purok": "Purok - 1",
             },
             token=admin_token,
         )

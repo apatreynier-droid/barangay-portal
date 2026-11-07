@@ -65,6 +65,21 @@ it once (idempotent - safe to run more than once):
 .\.venv\Scripts\python.exe scripts\apply_activity_logs_migration.py
 ```
 
+Resident registration approval needs migration `010`. Apply it once (idempotent
+- safe to run more than once, and existing accounts keep their status):
+
+```powershell
+.\.venv\Scripts\python.exe scripts\apply_registration_approval_migration.py
+```
+
+Document request image attachments need migration `011` (the
+`request_attachments` table) and create the upload folder. Apply it once
+(idempotent). Until it is applied, requests keep working without attachments:
+
+```powershell
+.\.venv\Scripts\python.exe scripts\apply_request_attachments_migration.py
+```
+
 
 ## 4. Optional: initialize the database through Python
 
@@ -79,10 +94,27 @@ python scripts\initialize_database.py
 ## 5. Run the API
 
 ```powershell
-uvicorn app.main:app --reload --port 8000
+uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
-Open `http://127.0.0.1:8000/docs` for the generated API documentation.
+`--host 0.0.0.0` lets phones and other computers on the same network reach the
+API (without it, uvicorn only listens on `127.0.0.1`). Open
+`http://127.0.0.1:8000/docs` (or `http://<this-computer's-IP>:8000/docs`) for
+the generated API documentation. Port `5173` is the React app, so
+`:5173/docs` shows the portal, not the API docs.
+
+**Using the portal from a phone.** Start the frontend with `npm run dev` (Vite
+listens on the network, see `vite.config.ts`) and open
+`http://<this-computer's-IP>:5173` on the phone. The frontend calls the API on
+the same host at port 8000 automatically (`src/Utils/Shared/api.ts`; override
+with `VITE_API_BASE_URL`). Add that origin to `CORS_ORIGINS` in `backend/.env`,
+for example:
+
+```
+CORS_ORIGINS=http://localhost:5173,http://127.0.0.1:5173,http://100.100.109.59:5173
+```
+
+If the computer's IP address changes, update that line and restart the API.
 
 ## API routes
 
@@ -93,6 +125,9 @@ Open `http://127.0.0.1:8000/docs` for the generated API documentation.
 - `POST /api/auth/reset-password` (sets a new password from the reset token)
 - `GET /api/document-types`
 - `GET`, `POST /api/requests`
+- `POST /api/requests/with-attachment` (multipart: request + required image)
+- `GET /api/requests/{request_id}/attachment` (the resident's own image only)
+- `GET /api/admin/document-requests/{request_id}/attachment` (Staff/administrators)
 - `GET /api/dashboard-summary`
 - `GET /api/notifications`
 - `PATCH /api/notifications/{notification_id}/read`
@@ -134,6 +169,44 @@ server (e.g. after a deploy) clears all blocks and counters.
 Password reset reuses the same limiter classes with separate budgets, so it
 can neither bypass nor consume the login limits (see below).
 
+## Resident registration approval
+
+A new resident is saved as `pending` and gets no session. An administrator
+reviews the registration on the Admin Approvals page.
+
+| Stored status | Shown as | Resident Portal access |
+|---|---|---|
+| `pending` | Pending | No |
+| `active` | Active | Yes |
+| `rejected` | Rejected | No |
+| `inactive`, `suspended` | Deactivated | No |
+
+- `POST /api/auth/register` saves the account and queues the confirmation email.
+  A rejected resident can register again with the same email. This reuses the
+  account and resident code, replaces the password and profile, and returns it
+  to `pending`. The previous decision stays visible to the reviewer until the
+  new decision replaces it. Any other existing email answers HTTP 409.
+- `POST /api/auth/login` answers HTTP 403 with a status message when the password
+  is correct but the account is not active, and creates no session.
+- `GET /api/admin/registrations`, `POST .../{id}/approve`, `POST .../{id}/reject`
+  (requires `reason`) and `POST .../{id}/email/retry` are limited to the `admin`
+  and `super_admin` roles. Staff accounts get HTTP 403.
+
+Each decision and its email are committed together to the `registration_emails`
+outbox, then sent. A mail failure never reverses the decision. Failed emails are
+retried automatically with increasing delays, and an administrator can retry
+one from the Approvals page. Each email can only be delivered once per event.
+
+| Variable | Purpose | Default |
+|---|---|---|
+| `REGISTRATION_IP_MAX_REQUESTS` | registrations per client IP per window | 20 |
+| `REGISTRATION_IP_WINDOW_SECONDS` | length of that window | 3600 |
+| `REGISTRATION_EMAIL_WORKER_INTERVAL_SECONDS` | seconds between retry passes, 0 disables | 60 |
+| `REGISTRATION_EMAIL_MAX_ATTEMPTS` | automatic attempts per email | 6 |
+
+`scripts/test_registration_approval.py` tests the whole flow against the local
+database with a fake SMTP server, so it never sends real mail.
+
 ## SMTP email delivery (Forgot Password)
 
 All outgoing mail goes through one reusable service, `app/email_service.py`
@@ -157,7 +230,7 @@ credential is ever sent to the frontend.
 | `SMTP_PORT`               | submission port (587 STARTTLS / 465 SSL)    | 587 |
 | `SMTP_USERNAME`           | SMTP account                                | (empty) |
 | `SMTP_PASSWORD`           | SMTP password / app password                | (empty) |
-| `SMTP_FROM`               | From address (falls back to `SMTP_USERNAME`)| (empty) |
+| `SMTP_FROM_EMAIL`         | From address (falls back to `SMTP_FROM`, then `SMTP_USERNAME`) | (empty) |
 | `SMTP_USE_TLS`            | STARTTLS for ports other than 465           | true |
 | `SMTP_FROM_NAME`          | display name on outgoing mail               | Barangay Lagab Document Portal |
 | `SMTP_TIMEOUT_SECONDS`    | give up on an unreachable server after N s  | 15 |
@@ -178,6 +251,38 @@ python scripts\\test_smtp.py --check-only
 python scripts\\test_smtp.py
 python scripts\\test_smtp.py --to someone@example.com
 ```
+
+### Email design, previews and template tests
+
+All emails (registration received/approved/rejected, document request
+received/approved/processing/ready for pickup/completed/rejected, password
+reset) share one branded layout in `app/email_templates.py`: navy header with
+the Barangay seal, a white content card, color-coded status (green approved/
+completed, amber pending/processing, red rejected, blue received/info) and a
+Barangay Administration footer. It is built from tables with inline CSS for
+Gmail, adapts to phones, and every email has a plain-text part. Dates are shown
+in Philippine time (PHT). Residents' names, request IDs, documents, reasons,
+pickup dates and event times come from the database.
+
+```powershell
+# Render every email with SAMPLE data (nothing is sent) and open the gallery:
+python scripts\\preview_emails.py            # -> backend\email_previews\index.html
+# Offline checks: content, colors, links, escaping, PHT dates, Gmail-safe HTML:
+python scripts\\test_email_templates.py
+```
+
+**Lucide icons in emails.** Gmail strips inline `<svg>` and blocks `data:`
+images, so Lucide icons (currently used by the "Request Completed" email:
+`CircleCheck`, `FileCheck`, `CalendarDays`, `Building2`) are stored as small
+PNGs in `app/email_assets/`, drawn from the original Lucide SVGs. They are
+attached to the message as inline `cid:` images (`app/email_assets.py`), so they
+show in Gmail without loading anything from the internet. Emails without icons
+are sent exactly as before. To change or add icons (needs Microsoft Edge):
+`python scripts\\generate_email_icons.py`.
+
+The "request received" design exists but is not sent: emails are only
+triggered for the statuses in `NOTIFIABLE_STATUSES`
+(`app/request_notifications.py`).
 
 ## Password reset flow and token security
 
@@ -281,3 +386,34 @@ Every notable action in the portal is written once to the append-only
   paths, then submits and processes a document request to prove every call site
   writes its own entry. Disposable accounts, requests, and the audit rows the
   run created are removed again afterwards.
+
+## Document request attachments
+
+Residents attach one image (JPG, PNG or WebP, up to 5 MB) when they submit a
+document request; administrators and Staff see it under **Resident Attachment**
+in the request details, can open a larger preview and download the original.
+
+- **Storage:** the file is saved in `backend/uploads/request_attachments/`
+  (override with `UPLOAD_DIR`) under a random `<uuid>.<ext>` name. The
+  `request_attachments` table (migration `011`) stores the original filename,
+  type, size, uploader and upload time, linked to `requests.id` (one image per
+  request). Files are kept on disk rather than as MySQL BLOBs so the database
+  and its backups stay small. **Back up the `uploads` folder together with the
+  database.**
+- **Atomic upload:** `POST /api/requests/with-attachment` creates the request
+  and stores the image in one transaction; if either fails, nothing is kept.
+  Deleting a pending request also deletes its image.
+- **Validation:** the type is detected from the file contents (magic bytes),
+  never from the filename or the browser's `Content-Type`; size is capped by
+  `REQUEST_ATTACHMENT_MAX_BYTES` (default 5 MB). Anything else is rejected with
+  HTTP 413/415/422.
+- **Access:** the upload folder is never served statically. The admin endpoint
+  requires a Staff/administrator session; the resident endpoint only returns the
+  signed-in resident's own image (another resident's request answers 404).
+  Responses carry `nosniff`, a sandboxing CSP and `Cache-Control: private,
+  no-store`.
+- **Tests:** with the API running, run
+  `.\.venv\Scripts\python.exe scripts\test_request_attachments.py`. It covers
+  upload, storage, the database link, admin preview/download, access control,
+  requests without images, invalid uploads, persistence in a freshly started
+  backend process and deletion, then removes everything it created.

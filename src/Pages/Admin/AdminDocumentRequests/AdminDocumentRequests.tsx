@@ -1,7 +1,14 @@
 import "../../../Styles/Admin/Pages/AdminDashboard.css";
 import "../../../Styles/Admin/Pages/AdminResidents.css";
 import "../../../Styles/Admin/Pages/AdminDocumentRequests.css";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import type { AuthUser } from "../../../Utils/Shared/api";
 import {
@@ -64,7 +71,11 @@ const AdminDocumentRequests = ({
   const [selectedRequestId, setSelectedRequestId] = useState<number | null>(
     null,
   );
-  const [sidebarStats, setSidebarStats] = useState({ pending: 0, approved: 0 });
+  const [sidebarStats, setSidebarStats] = useState({
+    pending: 0,
+    approved: 0,
+    pendingRegistrations: 0,
+  });
 
   /**
    * Deep link from the Admin Dashboard's Recent Requests list: the dashboard
@@ -122,6 +133,7 @@ const AdminDocumentRequests = ({
         if (!cancelled) {
           setSidebarStats({
             pending: data.stats.pending,
+            pendingRegistrations: data.stats.pending_registrations,
             approved: data.stats.approved,
           });
         }
@@ -134,6 +146,32 @@ const AdminDocumentRequests = ({
       cancelled = true;
     };
   }, []);
+
+  /**
+   * The details view replaces the list in place (no route change), so the
+   * filters above survive in this component's state. The list's scroll
+   * position is remembered here so "Back to Request" returns the
+   * administrator to the same spot instead of the top of the page.
+   */
+  const listScrollY = useRef<number | null>(null);
+
+  const openRequestDetails = (requestId: number) => {
+    listScrollY.current = window.scrollY;
+    setSelectedRequestId(requestId);
+    window.scrollTo({ top: 0 });
+  };
+
+  const backToRequestList = () => {
+    setSelectedRequestId(null);
+  };
+
+  // Layout effect: restore before paint so the list never flashes at the top.
+  useLayoutEffect(() => {
+    if (selectedRequestId === null && listScrollY.current !== null) {
+      window.scrollTo({ top: listScrollY.current });
+      listScrollY.current = null;
+    }
+  }, [selectedRequestId]);
 
   const filteredRequests = useMemo(
     () => filterDocumentRequests(requests, filters),
@@ -148,7 +186,9 @@ const AdminDocumentRequests = ({
     <div className="admin-dashboard">
       <AdminSidebar
         pendingRequests={sidebarStats.pending}
-        pendingApprovals={sidebarStats.pending}
+        pendingApprovals={
+          sidebarStats.pending + sidebarStats.pendingRegistrations
+        }
         unreadNotifications={unreadNotifications}
         user={user}
         activeItem="document-requests"
@@ -197,7 +237,7 @@ const AdminDocumentRequests = ({
           <RequestDetailsView
             requestId={selectedRequestId}
             canReview={isAdministrator(user)}
-            onBack={() => setSelectedRequestId(null)}
+            onBack={backToRequestList}
             onChanged={() => void loadRequests()}
           />
         ) : (
@@ -227,7 +267,7 @@ const AdminDocumentRequests = ({
             ) : (
               <DocumentRequestsTable
                 requests={filteredRequests}
-                onView={(request) => setSelectedRequestId(request.id)}
+                onView={(request) => openRequestDetails(request.id)}
               />
             )}
           </>

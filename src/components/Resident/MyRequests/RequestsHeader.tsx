@@ -1,13 +1,16 @@
 import "../../../Styles/Resident/Components/ResidentTopBar.css";
 
 import { Bell } from "lucide-react";
-import MobileMenuButton from "../../Shared/MobileMenuButton";
+import MobileLogoutButton from "../../Shared/MobileLogoutButton";
 import ThemeToggle from "../../Shared/ThemeToggle";
 
 type RequestsHeaderProps = {
   firstName: string;
-  /** Opens the mobile drawer (rendered only below 769px via CSS). */
+  /** No longer used: the hamburger was replaced by the mobile logout button.
+   *  Kept so pages that still pass it compile unchanged. */
   onMenuToggle?: () => void;
+  /** Shows the logout button on phones. */
+  onLogout?: () => void;
   /** When provided, the bell button is shown. */
   onNotifications?: () => void;
   /** Shows a count badge on the bell when greater than zero. */
@@ -16,15 +19,13 @@ type RequestsHeaderProps = {
 
 const RequestsHeader = ({
   firstName,
-  onMenuToggle,
+  onLogout,
   onNotifications,
   unreadCount = 0,
 }: RequestsHeaderProps) => {
   return (
     <header className="topbar">
       <div className="topbar-leading">
-        {onMenuToggle && <MobileMenuButton onOpen={onMenuToggle} />}
-
         <div>
           <p className="topbar-label">Resident Portal</p>
           <h1>My Requests</h1>
@@ -55,6 +56,8 @@ const RequestsHeader = ({
             )}
           </button>
         )}
+
+        {onLogout && <MobileLogoutButton onLogout={onLogout} />}
       </div>
     </header>
   );

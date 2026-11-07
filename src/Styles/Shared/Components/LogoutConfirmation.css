@@ -23,17 +23,63 @@
   text-align: center;
 }
 
+/* Lucide LogOut icon in a soft red badge that matches the red "Log out"
+   button. The outer ring (box-shadow) gives it depth without extra markup. */
 .logout-confirmation-icon {
   display: grid;
-  width: 46px;
-  height: 46px;
-  margin: 0 auto 14px;
+  width: 48px;
+  height: 48px;
+  margin: 0 auto 16px;
   place-items: center;
   border-radius: 50%;
-  background: #fff7ed;
-  color: #ea580c;
-  font-size: 22px;
-  font-weight: 800;
+  background: #fee2e2;
+  color: #dc2626;
+  box-shadow: 0 0 0 6px #fef2f2;
+  animation: logout-icon-pop 0.28s ease-out;
+}
+
+.logout-confirmation-icon svg {
+  display: block;
+  flex-shrink: 0;
+  transition: transform 0.2s ease;
+}
+
+/* Subtle cue: the arrow nudges outward while "Log out" is hovered/focused. */
+.logout-confirmation-dialog:has(.logout-confirm-button:hover)
+  .logout-confirmation-icon
+  svg,
+.logout-confirmation-dialog:has(.logout-confirm-button:focus-visible)
+  .logout-confirmation-icon
+  svg {
+  transform: translateX(2px);
+}
+
+@keyframes logout-icon-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.85);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .logout-confirmation-icon {
+    animation: none;
+  }
+
+  .logout-confirmation-icon svg {
+    transition: none;
+  }
+
+  .logout-confirmation-dialog:has(.logout-confirm-button:hover)
+    .logout-confirmation-icon
+    svg {
+    transform: none;
+  }
 }
 
 .logout-confirmation-dialog h2 {

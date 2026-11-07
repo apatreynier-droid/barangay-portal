@@ -1,7 +1,14 @@
 import { useEffect, useRef, useState } from "react";
 import type { ChangeEvent, DragEvent, FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
-import { AlertTriangle, RefreshCw, Trash2, Upload } from "lucide-react";
+import {
+  AlertTriangle,
+  Camera,
+  Images,
+  RefreshCw,
+  Trash2,
+  Upload,
+} from "lucide-react";
 import Sidebar from "../../../components/Resident/Dashboard/Sidebar";
 import Topbar from "../../../components/Resident/Dashboard/Topbar";
 import { RESIDENT_ROLE_LABEL } from "../../../Utils/Resident/ResidentDisplay";
@@ -83,6 +90,8 @@ function PotholeDetection({ user, onLogout }: PotholeDetectionProps) {
   const [reports, setReports] = useState<PotholeReport[]>(DEMO_REPORTS);
   const [sentMessage, setSentMessage] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
+  // Opens the phone's rear camera directly (ignored on desktop browsers).
+  const cameraInputRef = useRef<HTMLInputElement>(null);
   const previewUrlRef = useRef<string | null>(null);
   const { isDrawerOpen, closeDrawer, toggleDrawer } = useResponsiveSidebar();
 
@@ -204,6 +213,7 @@ function PotholeDetection({ user, onLogout }: PotholeDetectionProps) {
           unreadCount={0}
           onNotifications={() => navigate(NOTIFICATIONS_PATH)}
           onMenuToggle={toggleDrawer}
+          onLogout={onLogout}
         />
 
         <div className="pd-layout">
@@ -233,6 +243,18 @@ function PotholeDetection({ user, onLogout }: PotholeDetectionProps) {
                 tabIndex={selectedFile ? -1 : 0}
               />
 
+              <input
+                type="file"
+                id="pd-camera"
+                ref={cameraInputRef}
+                accept="image/*"
+                capture="environment"
+                onChange={handleFileChange}
+                className="pd-file-input"
+                tabIndex={-1}
+                aria-hidden="true"
+              />
+
               {selectedFile && previewUrl ? (
                 <div className="pd-preview">
                   <div className="pd-preview-frame">
@@ -254,6 +276,14 @@ function PotholeDetection({ user, onLogout }: PotholeDetectionProps) {
                     </div>
 
                     <div className="pd-preview-actions">
+                      <button
+                        type="button"
+                        className="pd-btn photo-touch-only"
+                        onClick={() => cameraInputRef.current?.click()}
+                      >
+                        <Camera size={15} strokeWidth={2} aria-hidden="true" />
+                        Retake
+                      </button>
                       <button
                         type="button"
                         className="pd-btn"
@@ -278,23 +308,45 @@ function PotholeDetection({ user, onLogout }: PotholeDetectionProps) {
                   </div>
                 </div>
               ) : (
-                <label
-                  htmlFor="pd-photo"
-                  className={`pd-drop${isDragging ? " is-dragging" : ""}${
-                    fileError ? " has-error" : ""
-                  }`}
-                  onDragOver={handleDragOver}
-                  onDragLeave={() => setIsDragging(false)}
-                  onDrop={handleDrop}
-                >
-                  <Upload size={26} strokeWidth={1.8} aria-hidden="true" />
-                  <strong className="pd-drop-title">
-                    Drop a photo here or tap to browse
-                  </strong>
-                  <span className="pd-drop-hint">
-                    JPG, PNG or WebP, up to {MAX_IMAGE_MB} MB
-                  </span>
-                </label>
+                <>
+                  <label
+                    htmlFor="pd-photo"
+                    className={`pd-drop${isDragging ? " is-dragging" : ""}${
+                      fileError ? " has-error" : ""
+                    }`}
+                    onDragOver={handleDragOver}
+                    onDragLeave={() => setIsDragging(false)}
+                    onDrop={handleDrop}
+                  >
+                    <Upload size={26} strokeWidth={1.8} aria-hidden="true" />
+                    <strong className="pd-drop-title">
+                      Drop a photo here or tap to browse
+                    </strong>
+                    <span className="pd-drop-hint">
+                      JPG, PNG or WebP, up to {MAX_IMAGE_MB} MB
+                    </span>
+                  </label>
+
+                  {/* Phones and tablets: take the photo on the spot. */}
+                  <div className="photo-source">
+                    <button
+                      type="button"
+                      className="photo-source-btn is-primary"
+                      onClick={() => cameraInputRef.current?.click()}
+                    >
+                      <Camera size={18} strokeWidth={2} aria-hidden="true" />
+                      Take a photo
+                    </button>
+                    <button
+                      type="button"
+                      className="photo-source-btn"
+                      onClick={() => fileInputRef.current?.click()}
+                    >
+                      <Images size={18} strokeWidth={2} aria-hidden="true" />
+                      Gallery
+                    </button>
+                  </div>
+                </>
               )}
 
               {fileError && (

@@ -60,7 +60,7 @@ CREATE TABLE `notifications` (
   `user_id` int(11) NOT NULL,
   `title` varchar(255) NOT NULL,
   `message` text NOT NULL,
-  `notification_type` enum('request','announcement','system') NOT NULL DEFAULT 'system',
+  `notification_type` enum('request','announcement','system','registration') NOT NULL DEFAULT 'system',
   `related_request_id` int(11) DEFAULT NULL,
   `is_read` tinyint(1) NOT NULL DEFAULT 0,
   `dedupe_key` varchar(191) DEFAULT NULL,
@@ -165,9 +165,12 @@ CREATE TABLE `users` (
   `email` varchar(255) NOT NULL,
   `password_hash` varchar(255) NOT NULL,
   `role` enum('resident','staff','admin','super_admin') NOT NULL DEFAULT 'resident',
-  `account_status` enum('active','inactive','suspended') NOT NULL DEFAULT 'active',
+  `account_status` enum('active','inactive','suspended','pending','rejected') NOT NULL DEFAULT 'pending',
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
-  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  `reviewed_by` int(11) DEFAULT NULL,
+  `reviewed_at` timestamp NULL DEFAULT NULL,
+  `rejection_reason` varchar(1000) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
@@ -311,7 +314,8 @@ CREATE TABLE `activity_logs` (
 --
 ALTER TABLE `users`
   ADD PRIMARY KEY (`id`),
-  ADD UNIQUE KEY `email` (`email`);
+  ADD UNIQUE KEY `email` (`email`),
+  ADD KEY `fk_users_reviewed_by` (`reviewed_by`);
 
 --
 -- Indexes for table `password_reset_tokens`
@@ -409,13 +413,70 @@ ALTER TABLE `request_status_history`
 -- Constraints for table `resident_profiles`
 --
 ALTER TABLE `resident_profiles`
-  ADD CONSTRAINT `fk_profile_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+  ADD CONSTRAINT `fk_profile_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  ADD CONSTRAINT `chk_resident_profiles_purok` CHECK (`purok` IS NULL OR `purok` IN (
+    'Purok - 1', 'Purok - 2', 'Purok - 3', 'Purok - 4', 'Purok - 5', 'Purok - 6', 'Purok - 7'
+  ));
 
 --
 -- Constraints for table `password_reset_tokens`
 --
 ALTER TABLE `password_reset_tokens`
   ADD CONSTRAINT `fk_password_reset_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+--
+-- Constraints for table `users`
+--
+ALTER TABLE `users`
+  ADD CONSTRAINT `fk_users_reviewed_by` FOREIGN KEY (`reviewed_by`) REFERENCES `users` (`id`) ON DELETE SET NULL ON UPDATE CASCADE;
+
+--
+-- Table structure for table `registration_emails`
+--
+-- Outbox for the resident registration emails. Written in the same transaction
+-- as the account change, one row per (user, event).
+
+CREATE TABLE `registration_emails` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `user_id` int(11) NOT NULL,
+  `event_type` enum('registered','approved','rejected') NOT NULL,
+  `delivery_status` enum('pending','sending','sent','failed','skipped') NOT NULL DEFAULT 'pending',
+  `recipient_email` varchar(255) DEFAULT NULL,
+  `attempts` int(11) NOT NULL DEFAULT 0,
+  `last_error` varchar(500) DEFAULT NULL,
+  `next_attempt_at` timestamp NULL DEFAULT NULL,
+  `claimed_at` timestamp NULL DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `sent_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_registration_email` (`user_id`, `event_type`),
+  KEY `registration_email_due` (`delivery_status`, `next_attempt_at`),
+  CONSTRAINT `fk_registration_email_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Table structure for table `request_attachments`
+--
+-- Resident image attached to a document request (migration 011). The file is
+-- stored in backend/uploads/request_attachments/ under `stored_filename`;
+-- this row keeps its metadata. One attachment per request.
+
+CREATE TABLE `request_attachments` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `request_id` int(11) NOT NULL,
+  `original_filename` varchar(255) NOT NULL,
+  `stored_filename` varchar(64) NOT NULL,
+  `content_type` varchar(50) NOT NULL,
+  `file_size` int(10) UNSIGNED NOT NULL,
+  `uploaded_by` int(11) DEFAULT NULL,
+  `uploaded_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_request_attachment_request` (`request_id`),
+  UNIQUE KEY `uq_request_attachment_stored` (`stored_filename`),
+  KEY `fk_request_attachment_user` (`uploaded_by`),
+  CONSTRAINT `fk_request_attachment_request` FOREIGN KEY (`request_id`) REFERENCES `requests` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  CONSTRAINT `fk_request_attachment_user` FOREIGN KEY (`uploaded_by`) REFERENCES `users` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;

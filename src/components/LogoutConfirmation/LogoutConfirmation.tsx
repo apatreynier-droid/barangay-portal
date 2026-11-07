@@ -1,4 +1,5 @@
 import { createPortal } from "react-dom";
+import { LogOut } from "lucide-react";
 import "../../Styles/Shared/Components/LogoutConfirmation.css";
 
 type LogoutConfirmationProps = {
@@ -25,7 +26,7 @@ const LogoutConfirmation = ({
         aria-labelledby="logout-confirmation-title"
       >
         <div className="logout-confirmation-icon" aria-hidden="true">
-          ?
+          <LogOut size={22} strokeWidth={2} />
         </div>
         <h2 id="logout-confirmation-title">Log out?</h2>
         <p>Are you sure you want to log out of your account?</p>

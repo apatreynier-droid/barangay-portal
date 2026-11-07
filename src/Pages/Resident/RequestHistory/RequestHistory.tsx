@@ -6,9 +6,12 @@ import type { AuthUser } from "../../../Utils/Shared/api";
 import { getStatusClass } from "../../../Utils/Resident/DashboardLogic";
 import { formatDate } from "../../../Utils/Resident/RequestHistory";
 import { RESIDENT_ROLE_LABEL } from "../../../Utils/Resident/ResidentDisplay";
-import { POTHOLE_DETECTION_PATH, RESIDENT_REQUEST_HISTORY_PATH } from "../../../Utils/Shared/routePaths";
+import {
+  POTHOLE_DETECTION_PATH,
+  RESIDENT_REQUEST_HISTORY_PATH,
+} from "../../../Utils/Shared/routePaths";
 import useResponsiveSidebar from "../../../Utils/Shared/useResponsiveSidebar";
-import MobileMenuButton from "../../../components/Shared/MobileMenuButton";
+import MobileLogoutButton from "../../../components/Shared/MobileLogoutButton";
 import "../../../Styles/Resident/Pages/Dashboard.css";
 import "../../../Styles/Resident/Pages/RequestHistory.css";
 
@@ -53,7 +56,7 @@ function RequestHistory({
   const [filter, setFilter] = useState<HistoryFilter>("All");
   const [searchTerm, setSearchTerm] = useState("");
 
-  const { isDrawerOpen, closeDrawer, toggleDrawer } = useResponsiveSidebar();
+  const { isDrawerOpen, closeDrawer } = useResponsiveSidebar();
 
   const filteredRequests = useMemo(() => {
     const search = searchTerm.trim().toLowerCase();
@@ -100,14 +103,14 @@ function RequestHistory({
       <main className="request-history-page">
         <header className="history-header">
           <div className="topbar-leading">
-            {toggleDrawer && <MobileMenuButton onOpen={toggleDrawer} />}
-
             <div>
               <p className="page-label">Resident Portal</p>
               <h1>Request History</h1>
               <p>Review every document request and its latest status.</p>
             </div>
           </div>
+
+          <MobileLogoutButton onLogout={onLogout} />
         </header>
 
         {dataError && (

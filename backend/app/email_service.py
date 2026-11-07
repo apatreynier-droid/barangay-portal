@@ -22,7 +22,12 @@ from email.message import EmailMessage
 from email.utils import formataddr
 
 from .config import settings
-from .email_templates import render_password_reset_email, render_request_status_email
+from .email_assets import inline_images_for
+from .email_templates import (
+    render_password_reset_email,
+    render_registration_email,
+    render_request_status_email,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -121,7 +126,12 @@ def build_message(
     text_body: str,
     html_body: str | None = None,
 ) -> EmailMessage:
-    """Create a ``multipart/alternative`` message (text + optional HTML)."""
+    """Create a ``multipart/alternative`` message (text + optional HTML).
+
+    When the HTML references Lucide icons (``cid:`` images, see
+    ``app/email_assets.py``), the HTML part becomes ``multipart/related`` with
+    those PNGs attached inline. HTML without icons is built exactly as before.
+    """
     message = EmailMessage()
     message["Subject"] = subject
     message["From"] = _sender_header()
@@ -129,6 +139,17 @@ def build_message(
     message.set_content(text_body)
     if html_body:
         message.add_alternative(html_body, subtype="html")
+        inline_images = inline_images_for(html_body)
+        if inline_images:
+            html_part = message.get_body(preferencelist=("html",))
+            for content_id, png in inline_images:
+                html_part.add_related(
+                    png,
+                    maintype="image",
+                    subtype="png",
+                    cid=f"<{content_id}>",
+                    disposition="inline",
+                )
     return message
 
 
@@ -189,6 +210,8 @@ def send_document_status_email(
     status: str,
     pickup_date: object | None = None,
     admin_remarks: str | None = None,
+    event_time: object | None = None,
+    portal_url: str = "",
 ) -> None:
     """Email a resident that one of *their* document requests changed status.
 
@@ -208,6 +231,39 @@ def send_document_status_email(
         status=status,
         pickup_date=pickup_date,
         admin_remarks=admin_remarks,
+        event_time=event_time,
+        portal_url=portal_url,
+    )
+    send_email(
+        to_email=to_email,
+        subject=subject,
+        text_body=text_body,
+        html_body=html_body,
+    )
+
+
+def send_registration_email(
+    *,
+    to_email: str,
+    event: str,
+    login_url: str,
+    rejection_reason: object | None = None,
+    resident_name: str = "",
+    event_time: object | None = None,
+) -> None:
+    """Send one resident registration email.
+
+    ``app/registration_emails.py`` decides when this runs and resolves
+    ``to_email`` (and the resident's name) from the resident's own account.
+    Raises :class:`EmailDeliveryError` when the message could not be delivered.
+    """
+    subject, text_body, html_body = render_registration_email(
+        event=event,
+        login_url=login_url,
+        rejection_reason=str(rejection_reason or ""),
+        resident_name=resident_name,
+        recipient_email=to_email,
+        event_time=event_time,
     )
     send_email(
         to_email=to_email,

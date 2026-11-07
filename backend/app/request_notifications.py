@@ -30,6 +30,7 @@ from typing import Any
 import mysql.connector
 from mysql.connector import MySQLConnection
 
+from .config import settings
 from .email_service import (
     EmailDeliveryError,
     is_email_configured,
@@ -38,6 +39,10 @@ from .email_service import (
 )
 
 logger = logging.getLogger(__name__)
+
+#: Resident "My Requests" page (src/Utils/Shared/routePaths.ts), linked from
+#: the status emails. Signed-out residents are sent to the login page first.
+FRONTEND_MY_REQUESTS_PATH = "/myRequests"
 
 #: Statuses that trigger an automatic email to the resident.
 NOTIFIABLE_STATUSES: tuple[str, ...] = (
@@ -80,7 +85,7 @@ def load_request_owner(
             """
             SELECT requests.id, requests.user_id, requests.request_number,
                    requests.status, requests.pickup_date,
-                   requests.admin_remarks,
+                   requests.admin_remarks, requests.last_updated,
                    document_types.document_name,
                    users.email,
                    CONCAT_WS(' ', NULLIF(resident_profiles.first_name, ''),
@@ -288,6 +293,9 @@ def send_request_status_email(
             status=new_status,
             pickup_date=owner.get("pickup_date"),
             admin_remarks=owner.get("admin_remarks"),
+            # When the status actually changed (UTC), shown in Philippine time.
+            event_time=owner.get("last_updated"),
+            portal_url=f"{settings.frontend_url}{FRONTEND_MY_REQUESTS_PATH}",
         )
     except EmailDeliveryError as error:
         # The status change stays committed; only the failure is logged.

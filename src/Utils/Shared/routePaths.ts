@@ -21,6 +21,7 @@ export const ADMIN_DOCUMENT_REQUESTS_PATH = "/AdminDocumentRequests";
 export const ADMIN_REQUEST_HISTORY_PATH = "/AdminRequestHistory";
 export const ADMIN_DOCUMENT_MANAGEMENT_PATH = "/AdminDocumentManagement";
 export const ADMIN_APPROVALS_PATH = "/AdminApprovals";
+export const ADMIN_POTHOLE_MANAGEMENT_PATH = "/AdminPotholeManagement";
 export const ADMIN_REPORTS_PATH = "/AdminReports";
 export const ADMIN_ACTIVITY_LOGS_PATH = "/AdminLogs";
 export const ADMIN_USER_MANAGEMENT_PATH = "/AdminUserManagement";

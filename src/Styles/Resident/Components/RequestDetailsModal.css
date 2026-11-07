@@ -9,19 +9,21 @@
 }
 
 .request-details-modal {
-  width: min(100%, 700px);
+  width: min(100%, 560px);
   max-height: calc(100vh - clamp(32px, 6vw, 56px));
   max-height: calc(100dvh - clamp(32px, 6vw, 56px));
   display: flex;
   flex-direction: column;
   overflow: hidden;
   border: 1px solid var(--db-line);
-  border-radius: 20px;
+  border-radius: 18px;
   background: var(--db-surface);
   color: var(--db-ink);
   font-family: "Public Sans", "Segoe UI", system-ui, sans-serif;
   box-shadow: 0 24px 60px rgba(0, 0, 0, 0.35);
 }
+
+/* ------------------------------ Header ------------------------------ */
 
 .request-details-header {
   flex-shrink: 0;
@@ -29,46 +31,43 @@
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  padding: 24px 28px 20px;
+  padding: 18px 22px;
   border-bottom: 1px solid var(--db-line);
-  background: var(--db-surface);
 }
 
 .request-details-label {
-  margin: 0 0 4px;
-  color: var(--db-brand);
+  margin: 0 0 2px;
+  color: var(--db-muted);
   font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
+  font-weight: 600;
 }
 
 .request-details-header h2 {
   margin: 0;
   color: var(--db-ink);
   font-family: ui-monospace, "Cascadia Mono", Consolas, monospace;
-  font-size: 22px;
+  font-size: 18px;
   font-weight: 600;
+  letter-spacing: 0;
 }
 
 .request-details-close {
-  width: 36px;
-  height: 36px;
+  width: 40px;
+  height: 40px;
   flex-shrink: 0;
   display: grid;
   place-items: center;
   padding: 0;
   border: 1px solid var(--db-line);
   border-radius: 10px;
-  background: var(--db-surface-2);
-  color: var(--db-ink);
-  font-size: 20px;
-  line-height: 1;
+  background: var(--db-surface);
+  color: var(--db-muted);
   cursor: pointer;
 }
 
 .request-details-close:hover {
   border-color: var(--db-brand);
+  color: var(--db-ink);
 }
 
 .request-details-close:focus-visible {
@@ -76,14 +75,33 @@
   outline-offset: 2px;
 }
 
+/* ------------------------- Loading and errors ------------------------- */
+
 .request-details-loading,
 .request-details-error {
   margin: 0;
-  padding: 28px 26px;
+  padding: 32px 22px;
   flex-shrink: 0;
   color: var(--db-muted);
   font-size: 14px;
   text-align: center;
+}
+
+.request-details-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+.request-details-spinner {
+  animation: request-details-spin 0.9s linear infinite;
+}
+
+@keyframes request-details-spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .request-details-error {
@@ -91,44 +109,25 @@
   font-weight: 600;
 }
 
+/* ------------------------------ Body ------------------------------ */
+
 .request-details-body {
-  padding: 24px clamp(20px, 4vw, 32px) 32px;
+  padding: 20px 22px 24px;
   overflow-y: auto;
   overscroll-behavior: contain;
-}
-
-.request-details-body::-webkit-scrollbar {
-  width: 8px;
-}
-
-.request-details-body::-webkit-scrollbar-thumb {
-  border-radius: 8px;
-  background: var(--db-line);
 }
 
 .request-details-summary {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 14px;
-  margin-bottom: 20px;
-  padding: 14px;
-  border: 1px solid var(--db-line);
-  border-radius: 14px;
-  background: var(--db-surface-2);
-}
-
-.request-details-document {
-  display: flex;
-  align-items: center;
   gap: 12px;
-  min-width: 0;
+  margin-bottom: 16px;
 }
 
-.request-details-document .document-icon {
+.request-details-doc-icon {
   display: grid;
-  width: 44px;
-  height: 44px;
+  width: 42px;
+  height: 42px;
   flex-shrink: 0;
   place-items: center;
   border-radius: 12px;
@@ -136,66 +135,65 @@
   color: var(--db-brand);
 }
 
-.request-details-document h3 {
-  margin: 0 0 2px;
-  color: var(--db-ink);
-  font-family: inherit;
-  font-size: 15px;
-  font-weight: 600;
-}
-
-.request-details-document span {
-  color: var(--db-muted);
-  font-size: 12.5px;
-}
-
-.request-details-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 14px;
-  margin: 0 0 20px;
-}
-
-.request-details-item {
-  padding: 12px 14px;
-  border: 1px solid var(--db-line);
-  border-radius: 12px;
-}
-
-.request-details-item dt {
-  margin-bottom: 5px;
-  color: var(--db-muted);
-  font-size: 11.5px;
-  font-weight: 600;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
-.request-details-item dd {
+.request-details-summary h3 {
+  flex: 1;
+  min-width: 0;
   margin: 0;
   color: var(--db-ink);
-  font-size: 14px;
+  font-family: inherit;
+  font-size: 16px;
   font-weight: 600;
   overflow-wrap: anywhere;
 }
 
-.request-details-purpose {
-  margin-bottom: 20px;
+/* Label / value rows, like a receipt */
+.request-details-facts {
+  margin: 0 0 22px;
+  border-top: 1px solid var(--db-line);
 }
 
-.request-details-purpose h4,
-.request-details-history h4 {
-  margin: 0 0 8px;
+.request-details-fact {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 11px 0;
+  border-bottom: 1px solid var(--db-line);
+}
+
+.request-details-fact dt {
+  flex-shrink: 0;
+  color: var(--db-muted);
+  font-size: 13.5px;
+}
+
+.request-details-fact dd {
+  margin: 0;
   color: var(--db-ink);
   font-size: 14px;
+  font-weight: 600;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
 }
 
-.request-details-purpose p {
+.request-details-fact dd.is-empty {
+  color: var(--db-muted);
+  font-weight: 500;
+}
+
+.request-details-section + .request-details-section {
+  margin-top: 22px;
+}
+
+.request-details-section h4 {
+  margin: 0 0 8px;
+  color: var(--db-ink);
+  font-size: 13.5px;
+  font-weight: 700;
+}
+
+.request-details-purpose {
   margin: 0;
-  padding: 12px 14px;
-  border: 1px solid var(--db-line);
-  border-radius: 12px;
-  background: var(--db-surface-2);
   color: var(--db-ink);
   font-size: 14px;
   line-height: 1.6;
@@ -203,10 +201,25 @@
   overflow-wrap: anywhere;
 }
 
+.request-details-remarks {
+  margin: 0;
+  padding: 10px 14px;
+  border-left: 3px solid var(--db-gold-bright, #e2b04a);
+  border-radius: 0 10px 10px 0;
+  background: var(--db-gold-soft);
+  color: var(--db-ink);
+  font-size: 14px;
+  line-height: 1.55;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+/* ------------------------------ History ------------------------------ */
+
 .request-details-history-empty {
   margin: 0;
   color: var(--db-muted);
-  font-size: 13px;
+  font-size: 13.5px;
 }
 
 .request-details-timeline {
@@ -228,7 +241,7 @@
 
 .request-details-timeline li {
   position: relative;
-  padding-bottom: 16px;
+  padding-bottom: 14px;
 }
 
 .request-details-timeline li:last-child {
@@ -255,6 +268,12 @@
   display: block;
   color: var(--db-ink);
   font-size: 14px;
+  font-weight: 600;
+}
+
+.request-details-timeline li:not(.latest) .timeline-content strong {
+  color: var(--db-muted);
+  font-weight: 500;
 }
 
 .timeline-content time {
@@ -262,45 +281,52 @@
   margin-top: 2px;
   color: var(--db-muted);
   font-size: 12.5px;
+  font-variant-numeric: tabular-nums;
 }
 
 .timeline-content p {
-  margin: 5px 0 0;
+  margin: 4px 0 0;
   color: var(--db-muted);
   font-size: 13px;
+  line-height: 1.5;
 }
 
-@media (max-width: 640px) {
-  .request-details-header {
-    padding: 18px 20px 14px;
-  }
-
-  .request-details-header h2 {
-    font-size: 19px;
-  }
-
-  .request-details-modal {
-    max-height: calc(100dvh - 24px);
-  }
-
-  .request-details-loading,
-  .request-details-error {
-    padding: 24px 20px;
-  }
-}
+/* ------------------------------ Mobile ------------------------------ */
 
 @media (max-width: 520px) {
-  .request-details-grid {
-    grid-template-columns: 1fr;
-    gap: 10px;
+  .request-details-backdrop {
+    align-items: end;
+    padding: 0;
   }
 
-  .request-details-summary {
-    align-items: flex-start;
-    flex-direction: column;
+  /* Bottom sheet on phones: easier to reach and dismiss with a thumb */
+  .request-details-modal {
+    width: 100%;
+    max-height: calc(100dvh - 24px);
+    border-radius: 18px 18px 0 0;
+    border-bottom: 0;
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  .request-details-header {
+    padding: 16px 18px;
   }
 
   .request-details-body {
-    padding: 16px 16px 20px;
+    padding: 16px 18px 20px;
+  }
+
+  .request-details-summary {
+    flex-wrap: wrap;
+  }
+
+  .request-details-summary .request-status {
+    margin-left: 54px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .request-details-spinner {
+    animation: none;
   }
 }

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Power } from "lucide-react";
 import LogoutConfirmation from "../LogoutConfirmation/LogoutConfirmation";
 import "../../Styles/Shared/Components/SidebarUserFooter.css";
 
@@ -47,7 +48,7 @@ const SidebarUserFooter = ({
           aria-label="Logout"
           title="Logout"
         >
-          ⏻
+          <Power size={18} strokeWidth={2} aria-hidden="true" />
         </button>
       </div>
 

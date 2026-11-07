@@ -5,6 +5,7 @@ import type {
   AdminResidentUpdatePayload,
 } from "../../../Types/Admin/AdminResidentsType";
 import { updateResident } from "../../../Utils/Shared/api";
+import { purokOptions } from "../../../Utils/Shared/puroks";
 import calendarIcon from "../../../assets/icons/calendar.png";
 import { openNativeDatePicker } from "../../Shared/openNativeDatePicker";
 import "../../../Styles/Shared/Components/DatePickerInput.css";
@@ -324,12 +325,17 @@ const EditResidentModal = ({
 
             <label className="residents-edit-field">
               <span>Purok</span>
-              <input
-                type="text"
+              <select
                 value={form.purok}
                 onChange={(event) => updateField("purok", event.target.value)}
-                maxLength={50}
-              />
+              >
+                <option value="">Not specified</option>
+                {purokOptions().map((option) => (
+                  <option key={option} value={option}>
+                    {option}
+                  </option>
+                ))}
+              </select>
             </label>
 
             <label className="residents-edit-field residents-edit-field-wide">

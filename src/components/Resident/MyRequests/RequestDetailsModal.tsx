@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
+import { FileText, Loader2, X } from "lucide-react";
 import {
   ApiError,
   fetchRequestDetail,
@@ -8,27 +9,57 @@ import {
 import { getStatusClass } from "../../../Utils/Resident/DashboardLogic";
 import type { Request } from "../../../Types/Resident/DashboardType";
 import "../../../Styles/Resident/Components/RequestDetailsModal.css";
-import filesIcon from "../../../assets/icons/files.png";
 
 type RequestDetailsModalProps = {
   request: Request;
   onClose: () => void;
 };
 
-const formatDateTime = (value: string): string => {
-  const date = new Date(value + "Z");
+// Same rule as the Notifications page: the backend sends UTC timestamps
+// without a zone marker, and residents read them in Philippine time.
+const PHILIPPINE_TIMEZONE = "Asia/Manila";
 
-  if (Number.isNaN(date.getTime())) {
-    return value;
+const parseUtcTimestamp = (value: string): Date => {
+  const trimmed = value.trim().replace(" ", "T");
+
+  if (/[zZ]$/.test(trimmed) || /[+-]\d{2}:?\d{2}$/.test(trimmed)) {
+    return new Date(trimmed);
   }
 
-  return date.toLocaleString("en-US", {
-    month: "long",
+  return new Date(`${trimmed}Z`);
+};
+
+const formatDateTime = (value: string): string => {
+  const date = parseUtcTimestamp(value);
+  if (Number.isNaN(date.getTime())) return value;
+
+  return new Intl.DateTimeFormat("en-US", {
+    timeZone: PHILIPPINE_TIMEZONE,
+    month: "short",
     day: "numeric",
     year: "numeric",
     hour: "numeric",
     minute: "2-digit",
-  });
+  }).format(date);
+};
+
+// Pickup dates are plain calendar dates ("2026-11-05"), so they are shown
+// as-is without shifting them through a timezone.
+const formatPickupDate = (value: string): string => {
+  const isDateOnly = /^\d{4}-\d{2}-\d{2}$/.test(value);
+  const date = isDateOnly
+    ? new Date(`${value}T00:00:00Z`)
+    : parseUtcTimestamp(value);
+
+  if (Number.isNaN(date.getTime())) return value;
+
+  return new Intl.DateTimeFormat("en-US", {
+    timeZone: isDateOnly ? "UTC" : PHILIPPINE_TIMEZONE,
+    weekday: "short",
+    month: "long",
+    day: "numeric",
+    year: "numeric",
+  }).format(date);
 };
 
 const RequestDetailsModal = ({
@@ -90,6 +121,8 @@ const RequestDetailsModal = ({
     };
   }, [onClose]);
 
+  const remarks = detail?.admin_remarks?.trim();
+
   return createPortal(
     <div
       className="request-details-backdrop"
@@ -105,7 +138,7 @@ const RequestDetailsModal = ({
       >
         <header className="request-details-header">
           <div>
-            <p className="request-details-label">Request details</p>
+            <p className="request-details-label">Request</p>
             <h2 id="request-details-title">{request.id}</h2>
           </div>
 
@@ -115,13 +148,19 @@ const RequestDetailsModal = ({
             onClick={onClose}
             aria-label="Close"
           >
-            ×
+            <X size={18} strokeWidth={2} aria-hidden="true" />
           </button>
         </header>
 
         {isLoading && (
-          <p className="request-details-loading">
-            Loading details from the database…
+          <p className="request-details-loading" role="status">
+            <Loader2
+              className="request-details-spinner"
+              size={18}
+              strokeWidth={2}
+              aria-hidden="true"
+            />
+            Loading details…
           </p>
         )}
 
@@ -134,74 +173,58 @@ const RequestDetailsModal = ({
         {detail && (
           <div className="request-details-body">
             <div className="request-details-summary">
-              <div className="request-details-document">
-                <div className="document-icon">
-                  <img src={filesIcon} alt="" />
-                </div>
-                <div>
-                  <h3>{detail.document}</h3>
-                  <span>Reference No. {detail.request_number}</span>
-                </div>
-              </div>
-
+              <span className="request-details-doc-icon" aria-hidden="true">
+                <FileText size={22} strokeWidth={1.9} />
+              </span>
+              <h3>{detail.document}</h3>
               <span
-                className={`request-status ${getStatusClass(detail.status as Request["status"])}`}
+                className={`request-status ${getStatusClass(
+                  detail.status as Request["status"],
+                )}`}
               >
                 {detail.status}
               </span>
             </div>
 
-            <dl className="request-details-grid">
-              <div className="request-details-item">
-                <dt>Request type</dt>
-                <dd>{detail.document}</dd>
-              </div>
-
-              <div className="request-details-item">
-                <dt>Status</dt>
-                <dd>{detail.status}</dd>
-              </div>
-
-              <div className="request-details-item">
+            <dl className="request-details-facts">
+              <div className="request-details-fact">
                 <dt>Submitted</dt>
                 <dd>{formatDateTime(detail.submitted_at)}</dd>
               </div>
 
-              <div className="request-details-item">
+              <div className="request-details-fact">
                 <dt>Last updated</dt>
                 <dd>{formatDateTime(detail.last_updated)}</dd>
               </div>
 
-              <div className="request-details-item">
-                <dt>Pickup date</dt>
-                <dd>
-                  {detail.pickup_date
-                    ? new Date(detail.pickup_date).toLocaleDateString("en-US", {
-                        month: "long",
-                        day: "numeric",
-                        year: "numeric",
-                      })
-                    : "To be scheduled"}
-                </dd>
-              </div>
-
-              <div className="request-details-item">
-                <dt>Admin remarks</dt>
-                <dd>{detail.admin_remarks ?? "None yet"}</dd>
+              <div className="request-details-fact">
+                <dt>Pickup</dt>
+                {detail.pickup_date ? (
+                  <dd>{formatPickupDate(detail.pickup_date)}</dd>
+                ) : (
+                  <dd className="is-empty">Not scheduled yet</dd>
+                )}
               </div>
             </dl>
 
-            <div className="request-details-purpose">
-              <h4>Purpose of request</h4>
-              <p>{detail.purpose}</p>
-            </div>
+            <section className="request-details-section">
+              <h4>Purpose</h4>
+              <p className="request-details-purpose">{detail.purpose}</p>
+            </section>
 
-            <div className="request-details-history">
-              <h4>Status history</h4>
+            {remarks && (
+              <section className="request-details-section">
+                <h4>Note from the barangay hall</h4>
+                <p className="request-details-remarks">{remarks}</p>
+              </section>
+            )}
+
+            <section className="request-details-section">
+              <h4>History</h4>
 
               {detail.history.length === 0 ? (
                 <p className="request-details-history-empty">
-                  No status updates recorded yet.
+                  No status changes yet.
                 </p>
               ) : (
                 <ol className="request-details-timeline">
@@ -216,17 +239,19 @@ const RequestDetailsModal = ({
                       <div className="timeline-content">
                         <strong>
                           {entry.old_status
-                            ? `${entry.old_status} → ${entry.new_status}`
+                            ? `${entry.old_status} - ${entry.new_status}`
                             : entry.new_status}
                         </strong>
-                        <time>{formatDateTime(entry.changed_at)}</time>
+                        <time dateTime={entry.changed_at}>
+                          {formatDateTime(entry.changed_at)}
+                        </time>
                         {entry.remarks && <p>{entry.remarks}</p>}
                       </div>
                     </li>
                   ))}
                 </ol>
               )}
-            </div>
+            </section>
           </div>
         )}
       </div>

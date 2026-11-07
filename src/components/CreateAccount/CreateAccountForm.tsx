@@ -11,8 +11,8 @@ import {
   submitRegistration,
   getCreateAccountError,
   getCreateAccountErrorField,
-  generateReferenceNumber,
 } from "../../Utils/Auth/CreateAccountLogic";
+import { purokOptions } from "../../Utils/Shared/puroks";
 
 import DatePickerInput from "../Shared/DatePickerInput";
 import "../../Styles/Shared/Components/DatePickerInput.css";
@@ -47,10 +47,7 @@ const CIVIL_STATUS_OPTIONS = [
   "Annulled",
 ];
 const VOTER_STATUS_OPTIONS = ["Registered Voter", "Not Yet Registered"];
-const PUROK_OPTIONS = [
-  "Purok - 3 Lagab",
-  "Purok - 3 Lagab Curvada",
-];
+const PUROK_OPTIONS = purokOptions();
 const RELATIONSHIP_OPTIONS = [
   "Spouse",
   "Parent",
@@ -208,9 +205,9 @@ const CreateAccountForm = ({
     setFormError("");
 
     try {
-      await submitRegistration(formData);
+      const registration = await submitRegistration(formData);
 
-      onSuccess(generateReferenceNumber());
+      onSuccess(registration.reference_number);
     } catch (error) {
       const message = getCreateAccountError(error);
       const field = getCreateAccountErrorField(error);

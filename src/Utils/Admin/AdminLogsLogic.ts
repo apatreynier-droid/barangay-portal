@@ -1,3 +1,14 @@
+import {
+  Activity,
+  CircleCheck,
+  CirclePlus,
+  CircleX,
+  LogIn,
+  RefreshCw,
+  SquarePen,
+  Trash2,
+  type LucideIcon,
+} from "lucide-react";
 import type { AdminActivityLog } from "../../Types/Admin/AdminLogsType";
 import { ADMIN_DISPLAY_NAME } from "./AdminDisplay";
 
@@ -23,18 +34,18 @@ export const ACTIVITY_LOG_TYPE_OPTIONS = [
 
 export type ActivityLogTypeMeta = {
   label: string;
-  icon: string;
+  icon: LucideIcon;
   className: string;
 };
 
 const ACTIVITY_LOG_TYPE_META: Record<string, ActivityLogTypeMeta> = {
-  Approve: { label: "Approve", icon: "✓", className: "type-approve" },
-  Reject: { label: "Reject", icon: "✗", className: "type-reject" },
-  Status: { label: "Status", icon: "⟳", className: "type-status" },
-  Update: { label: "Update", icon: "✎", className: "type-update" },
-  Create: { label: "Create", icon: "+", className: "type-create" },
-  Login: { label: "Login", icon: "🔑", className: "type-login" },
-  Delete: { label: "Delete", icon: "🗑", className: "type-reject" },
+  Approve: { label: "Approve", icon: CircleCheck, className: "type-approve" },
+  Reject: { label: "Reject", icon: CircleX, className: "type-reject" },
+  Status: { label: "Status", icon: RefreshCw, className: "type-status" },
+  Update: { label: "Update", icon: SquarePen, className: "type-update" },
+  Create: { label: "Create", icon: CirclePlus, className: "type-create" },
+  Login: { label: "Login", icon: LogIn, className: "type-login" },
+  Delete: { label: "Delete", icon: Trash2, className: "type-reject" },
 };
 
 export function getActivityLogTypeMeta(
@@ -43,7 +54,7 @@ export function getActivityLogTypeMeta(
   return (
     ACTIVITY_LOG_TYPE_META[actionType] ?? {
       label: actionType,
-      icon: "•",
+      icon: Activity,
       className: "type-update",
     }
   );

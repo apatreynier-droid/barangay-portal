@@ -174,6 +174,7 @@ const MyRequests = ({
         role={RESIDENT_ROLE_LABEL}
         isOpen={isDrawerOpen}
         onNavigate={closeDrawer}
+        unreadCount={unreadCount}
       />
 
       {isDrawerOpen && (
@@ -189,6 +190,7 @@ const MyRequests = ({
         <RequestsHeader
           firstName={user.first_name}
           onMenuToggle={toggleDrawer}
+          onLogout={onLogout}
           onNotifications={onNotifications}
           unreadCount={unreadCount}
         />

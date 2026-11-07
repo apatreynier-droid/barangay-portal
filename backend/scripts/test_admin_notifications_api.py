@@ -199,7 +199,7 @@ def run_flow(admin_token: str) -> None:
             "password": PROBE_PASSWORD,
             "phone": "09171234567",
             "address": "Purok Notification, Barangay Lagab",
-            "purok": "Purok Notification",
+            "purok": "Purok - 1",
         },
     )
     check(status == 201, f"resident registers a new account (got {status})")
@@ -207,11 +207,22 @@ def run_flow(admin_token: str) -> None:
         print(f"  body: {registered}")
         return
 
-    resident_token: str = registered["access_token"]
+    # A registration waits for an administrator before it can sign in.
+    status, _ = request_json(
+        f"/api/admin/registrations/{probe_profile_id()}/approve",
+        method="POST",
+        token=admin_token,
+    )
+    check(status == 200, f"administrator approves the registration (got {status})")
+    status, resident_auth = login(PROBE_EMAIL, PROBE_PASSWORD)
+    check(status == 200, f"approved resident can sign in (got {status})")
+    if status != 200:
+        return
+    resident_token: str = resident_auth["access_token"]
 
     created = admin_notifications(
         admin_token,
-        title_contains="New resident account",
+        title_contains="New resident registration",
         message_contains=PROBE_EMAIL,
     )
     check(
@@ -220,7 +231,7 @@ def run_flow(admin_token: str) -> None:
     )
     if created:
         check(
-            created[0]["notification_type"] == "system",
+            created[0]["notification_type"] == "registration",
             f"account notification uses the system type ({created[0]['notification_type']})",
         )
         check(
@@ -441,7 +452,7 @@ def run_flow(admin_token: str) -> None:
             "first_name": PROBE_FIRST_NAME,
             "last_name": PROBE_LAST_NAME,
             "email": PROBE_EMAIL,
-            "purok": "Purok Notification Updated",
+            "purok": "Purok - 2",
             "contact_number": "09171234567",
         },
         token=admin_token,

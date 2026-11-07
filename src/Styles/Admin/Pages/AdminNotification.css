@@ -14,8 +14,18 @@
   gap: 8px;
 }
 
+.admin-notifications-filter-label {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #64748b;
+}
+
 .admin-notification-filter-pill {
-  padding: 8px 18px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
   border: 1px solid #e2e8f0;
   border-radius: 999px;
   background: #ffffff;
@@ -41,8 +51,20 @@
   color: #ffffff;
 }
 
+.admin-notification-filter-pill svg,
+.admin-notifications-mark-all svg,
+.admin-notification-review svg,
+.admin-notification-action svg {
+  flex-shrink: 0;
+}
+
 .admin-notifications-mark-all {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
   border: 0;
+  border-radius: 8px;
   background: transparent;
   color: #2563eb;
   font: inherit;
@@ -50,10 +72,16 @@
   font-weight: 700;
   cursor: pointer;
   white-space: nowrap;
+  transition: background 0.18s ease;
 }
 
 .admin-notifications-mark-all:hover:not(:disabled) {
-  text-decoration: underline;
+  background: #eff6ff;
+}
+
+.admin-notifications-mark-all:focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: 2px;
 }
 
 .admin-notifications-mark-all:disabled {
@@ -110,27 +138,114 @@
   align-items: center;
   justify-content: center;
   border-radius: 9px;
-  font-size: 16px;
+  transition: transform 0.18s ease;
 }
 
+.admin-notification-item:hover .admin-notification-icon {
+  transform: scale(1.05);
+}
+
+/* Type colors: soft tile background + matching stroke color. */
 .admin-notification-icon.blue {
   background: #eff6ff;
+  color: #2563eb;
+}
+
+.admin-notification-icon.indigo {
+  background: #eef2ff;
+  color: #4f46e5;
+}
+
+.admin-notification-icon.emerald {
+  background: #d1fae5;
+  color: #059669;
 }
 
 .admin-notification-icon.green {
-  background: #d1fae5;
+  background: #dcfce7;
+  color: #16a34a;
+}
+
+.admin-notification-icon.teal {
+  background: #ccfbf1;
+  color: #0d9488;
 }
 
 .admin-notification-icon.red {
   background: #fee2e2;
+  color: #dc2626;
 }
 
 .admin-notification-icon.amber {
   background: #fef3c7;
+  color: #d97706;
+}
+
+.admin-notification-icon.orange {
+  background: #ffedd5;
+  color: #ea580c;
 }
 
 .admin-notification-icon.slate {
   background: #e2e8f0;
+  color: #475569;
+}
+
+/* Per-row "Mark as read" icon button. */
+.admin-notification-action {
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  align-self: center;
+  padding: 0;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #64748b;
+  cursor: pointer;
+  transition:
+    background 0.18s ease,
+    color 0.18s ease,
+    border-color 0.18s ease;
+}
+
+.admin-notification-action:hover:not(:disabled) {
+  border-color: #bfdbfe;
+  background: #eff6ff;
+  color: #2563eb;
+}
+
+.admin-notification-action:focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: 2px;
+}
+
+.admin-notification-action:disabled {
+  cursor: default;
+  opacity: 0.7;
+}
+
+.admin-notification-spin {
+  animation: admin-notification-spin 0.9s linear infinite;
+}
+
+@keyframes admin-notification-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .admin-notification-spin {
+    animation: none;
+  }
+
+  .admin-notification-item:hover .admin-notification-icon {
+    transform: none;
+  }
 }
 
 .admin-notification-body {
@@ -175,6 +290,34 @@
   font-size: 12px;
 }
 
+.admin-notification-review {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+  padding: 6px 12px;
+  border: 1px solid #bfdbfe;
+  border-radius: 8px;
+  background: #eff6ff;
+  color: #1d4ed8;
+  font-size: 12px;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.admin-notification-review:hover {
+  background: #dbeafe;
+}
+
+.admin-notification-review svg {
+  transition: transform 0.18s ease;
+}
+
+.admin-notification-review:hover svg {
+  transform: translateX(2px);
+}
+
 
 /* -------------------------------- Empty state -------------------------------- */
 
@@ -201,6 +344,19 @@
   font-size: 12px;
 }
 
+.admin-notifications-empty .admin-notifications-empty-icon {
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  align-self: center;
+  margin-bottom: 4px;
+  border-radius: 999px;
+  background: #f1f5f9;
+  color: #94a3b8;
+}
+
 /* ------------------------------- Responsive ------------------------------- */
 
 @media (max-width: 640px) {
@@ -209,14 +365,27 @@
     align-items: stretch;
   }
 
+  .admin-notifications-filters {
+    flex-wrap: wrap;
+  }
+
   .admin-notifications-mark-all {
     align-self: flex-end;
-    padding: 6px 0;
   }
 
   .admin-notification-item {
     padding: 16px;
     gap: 12px;
+  }
+
+  .admin-notification-icon {
+    width: 34px;
+    height: 34px;
+  }
+
+  .admin-notification-action {
+    width: 36px;
+    height: 36px;
   }
 }
 

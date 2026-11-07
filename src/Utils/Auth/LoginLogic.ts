@@ -37,7 +37,9 @@ export const authenticateUser = async (
   } catch (error) {
     if (error instanceof ApiError) {
       const field: keyof FormErrors =
-        error.field === "password" ? "password" : "email";
+        error.field === "password" || error.field === "account"
+          ? error.field
+          : "email";
       return { field, message: error.message };
     }
 

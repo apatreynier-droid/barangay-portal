@@ -62,6 +62,7 @@ const Dashboard = ({
         onLogout={onLogout}
         isOpen={isDrawerOpen}
         onNavigate={closeDrawer}
+        unreadCount={unreadCount}
       />
 
       {isDrawerOpen && (
@@ -78,6 +79,7 @@ const Dashboard = ({
           unreadCount={unreadCount}
           onNotifications={onNotifications}
           onMenuToggle={toggleDrawer}
+          onLogout={onLogout}
         />
 
         <WelcomeCard
