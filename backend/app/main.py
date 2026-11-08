@@ -159,7 +159,7 @@ app.include_router(pothole_router)
 
 logger = logging.getLogger(__name__)
 
-#: Frontend route the emailed reset link points at (see src/App.tsx).
+#: Frontend route the emailed reset link points at (see src/Utils/Shared/routePaths.ts).
 FRONTEND_RESET_PASSWORD_PATH = "/reset-password"
 
 #: MySQL error number for a duplicate value on a UNIQUE key.
@@ -200,20 +200,12 @@ def clean_optional(value: str | None) -> str | None:
 
 
 def user_display_name(user: dict[str, object]) -> str:
-    """Full name of the signed-in user (resolved by the auth dependencies).
-
-    Admin notifications name the person who performed the action, so every
-    call site can use this instead of re-reading the profile from the database.
-    """
+    """Full name of the signed-in user, used to name the actor in notifications."""
     return f"{user['first_name']} {user['last_name']}".strip()
 
 
 def actor_role_label(user: dict[str, object]) -> str:
-    """Short role label of the acting account for audit/notification messages.
-
-    Both Staff and Administrator accounts can move a document request through
-    the processing workflow, so the message names the role that really did it.
-    """
+    """Short role label of the acting account for audit/notification messages."""
     role = user.get("role")
     if role == "staff":
         return "Staff"
@@ -227,8 +219,7 @@ def actor_display_name(
 ) -> str:
     """Actor prefix for a notification message: ``"<label> <name>"``.
 
-    The label is dropped when the display name already is the label, so the
-    generic "Administrator" name never produces "Administrator Administrator".
+    The label is omitted when the name equals it (avoids "Administrator Administrator").
     """
     name = user_display_name(user)
     return name if name == label else f"{label} {name}"
@@ -325,12 +316,10 @@ def register(
     background_tasks: BackgroundTasks,
     connection: MySQLConnection = Depends(get_db),
 ) -> RegistrationResponse:
-    """Save a new resident as ``pending``. No session is issued here: signing
-    in stays impossible until an Administrator approves the registration.
+    """Save a new resident as ``pending``; no session is issued until approval.
 
-    A rejected resident may apply again with the same email. That reuses the
-    account, so the resident code stays the same. The previous decision stays
-    visible to the reviewer until the new decision replaces it.
+    A rejected resident may re-apply with the same email, reusing the account
+    (and resident code). The previous decision stays visible until replaced.
     """
     retry_after = registration_ip_limiter.hit(get_client_ip(request))
     if retry_after > 0:
@@ -477,9 +466,7 @@ def register(
     finally:
         cursor.close()
 
-    # The account exists and is committed, so the administrator notification is
-    # written now. Recording it is best-effort: a notification problem must
-    # never fail a registration that already succeeded.
+    # Best-effort: a notification failure must not fail a committed registration.
     registered_at = format_manila_datetime(datetime.now(timezone.utc))
     registered_verb = (
         "registered again after a rejection"
@@ -978,12 +965,11 @@ def create_request_with_attachment(
     connection: MySQLConnection = Depends(get_db),
     current_user: dict[str, object] = Depends(get_current_user),
 ) -> RequestResponse:
-    """Submit a document request together with its required image (multipart).
+    """Submit a document request with its required image (multipart).
 
-    The request row, its attachment row and the stored file are created
-    atomically: if anything fails, nothing is kept (see
-    ``create_document_request_record``). ``POST /api/requests`` (JSON, no
-    attachment) stays available unchanged for existing clients.
+    The request, attachment row and stored file are created atomically (see
+    ``create_document_request_record``). ``POST /api/requests`` remains for
+    JSON requests without an attachment.
     """
     if not purpose.strip():
         raise HTTPException(
@@ -1080,9 +1066,7 @@ def create_document_request_record(
                 request_id,
             ),
         )
-        # Same transaction as the request itself: when the insert above fails
-        # and the request is rolled back, the admin is not told about a request
-        # that does not exist.
+        # Same transaction as the request: a rollback also discards the notification.
         notify_admins(
             connection,
             title="New document request",
@@ -1196,9 +1180,7 @@ def update_request(
             """,
             (payload.purpose.strip(), request_id, current_user["id"]),
         )
-        # Written in the same transaction as the edit: a failed update (or a
-        # rollback) leaves no admin notification behind, and a retry of the
-        # same edit is suppressed by the dedupe key.
+        # Same transaction as the edit; retries are suppressed by the dedupe key.
         notify_admins(
             connection,
             title="Document request updated",
@@ -1296,9 +1278,7 @@ def delete_request(
             "DELETE FROM requests WHERE id = %s AND user_id = %s",
             (request_id, current_user["id"]),
         )
-        # The request row is gone, so the admin notification carries no
-        # related_request_id; it still records who deleted what, and the
-        # dedupe key keeps a retried delete from notifying twice.
+        # No related_request_id: the request row no longer exists.
         notify_admins(
             connection,
             title="Document request deleted",
@@ -1414,9 +1394,7 @@ def admin_dashboard(
         for row in cursor.fetchall()
     ]
 
-    # Meaningful activity titles: name the document type and the resident so
-    # the dashboard feed never repeats one generic string for every row.
-    # Response shape (title + created_at) is unchanged for the frontend.
+    # Activity titles include the document type and resident name.
     cursor.execute(
         """
         SELECT CONCAT(
@@ -1709,8 +1687,7 @@ def update_resident(
         ip_address=get_client_ip(request),
     )
 
-    # The profile change is committed; tell every administrator about the new
-    # information. Best-effort, so a notification problem cannot fail the save.
+    # Best-effort: a notification failure must not fail the committed save.
     record_admin_notification(
         connection,
         title="Resident profile updated",
@@ -1816,8 +1793,7 @@ def set_resident_status(
         ip_address=get_client_ip(request),
     )
 
-    # The account status change is committed; every administrator is told which
-    # resident was affected. Best-effort, so it can never fail the status change.
+    # Best-effort: a notification failure must not fail the committed change.
     deactivated = payload.account_status == "inactive"
     record_admin_notification(
         connection,
@@ -2232,10 +2208,8 @@ VALID_STATUS_TRANSITIONS: dict[str, set[str]] = {
     "Rejected": set(),
 }
 
-#: Statuses a Staff account may set through the document-request workflow
-#: (process approved work: start processing, ready for pickup, completed).
-#: Approving a pending request or rejecting one stays with the administrator
-#: roles, so a staff request for any other status is rejected with HTTP 403.
+#: Statuses a Staff account may set. Approving and rejecting are reserved for
+#: administrator roles; any other status from Staff is rejected with HTTP 403.
 STAFF_PERMITTED_REQUEST_STATUSES = ("Processing", "Ready for Pickup", "Completed")
 
 
@@ -2340,9 +2314,7 @@ def update_document_request(
             detail="Provide a status, remarks, or a pickup date.",
         )
 
-    # Staff accounts process approved work forward; approving a pending
-    # request or rejecting a request is an administrator action. Enforced here
-    # so calling the API directly cannot bypass the frontend guards.
+    # Server-side enforcement of the Staff status restriction (not just the UI).
     if (
         current_user.get("role") == "staff"
         and payload.status is not None
@@ -2451,9 +2423,7 @@ def update_document_request(
                 ),
             )
 
-            # Keep the portal feed in step with the resident notification: every
-            # administrator and staff account sees that this request moved to a
-            # new status, who moved it, and for which resident.
+            # Mirror the resident notification in the admin/staff feed.
             notify_admins(
                 connection,
                 title=f"Request status: {payload.status}",
@@ -2472,9 +2442,8 @@ def update_document_request(
 
         connection.commit()
 
-        # Send the status-change email to the resident who owns this request.
-        # This runs after the commit so a mail problem never rolls back the
-        # status change; failures are logged inside send_request_status_email.
+        # Sent after the commit so a mail failure never rolls back the status
+        # change; failures are logged inside send_request_status_email.
         if payload.status is not None and payload.status != row["status"]:
             send_request_status_email(
                 connection,
@@ -2528,8 +2497,7 @@ MANAGED_ACCOUNT_ROLES = ("staff", "admin", "super_admin")
 #: assign ``admin``/``super_admin`` (see assert_role_assignment_allowed).
 ADMIN_ASSIGNABLE_ROLES = ("staff",)
 
-#: Human-readable names of the stored roles, used in the UI-facing payloads,
-#: activity log targets and admin notifications.
+#: Display names of the stored roles.
 ROLE_LABELS = {
     "resident": "Resident",
     "staff": "Staff",
@@ -2660,12 +2628,9 @@ def list_staff_accounts(
     connection: MySQLConnection = Depends(get_db),
     current_user: dict[str, object] = Depends(get_current_admin_user),
 ) -> list[AdminStaffAccountResponse]:
-    """Accounts shown on the Admin "User Management" page.
+    """Staff, Administrator and Super Admin accounts, highest privilege first.
 
-    Real database rows only: Staff, Administrator and Super Admin accounts,
-    ordered from the highest to the lowest privilege. Residents are excluded on
-    purpose (they stay on the Residents page), and the administrator dependency
-    keeps staff/resident callers out of this endpoint entirely.
+    Residents are excluded (see the Residents page). Administrators only.
     """
     cursor = connection.cursor(dictionary=True)
     cursor.execute(
@@ -2763,8 +2728,7 @@ def create_staff_account(
     account = load_managed_account(connection, user_id)
     account_name = managed_account_response(account).name
 
-    # The account exists and is committed, so the audit entry and the admin
-    # notification are written now (both best-effort, see their docstrings).
+    # Audit entry and notification are best-effort after the commit.
     record_activity_log(
         connection,
         user_id=current_user["id"],
@@ -2996,12 +2960,10 @@ def send_staff_password_reset(
     connection: MySQLConnection = Depends(get_db),
     current_user: dict[str, object] = Depends(get_current_admin_user),
 ) -> MessageResponse:
-    """Email the existing password-reset link to the account's owner.
+    """Email a password-reset link to the account's owner.
 
-    This reuses the Forgot Password architecture end to end: a single-use token
-    is stored hashed in ``password_reset_tokens`` and only the emailed link
-    contains the plain token, so no password is ever shown to (or chosen by)
-    the administrator.
+    Reuses the Forgot Password flow: only the token hash is stored, and the
+    administrator never sees or chooses the password.
     """
     account = load_managed_account(connection, user_id)
     assert_role_assignment_allowed(current_user, str(account["role"]), str(account["role"]))

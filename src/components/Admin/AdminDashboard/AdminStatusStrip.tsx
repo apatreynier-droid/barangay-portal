@@ -27,12 +27,8 @@ const FILTER_ICONS: Record<AdminStatusFilter, string> = {
 };
 
 /**
- * Compact request-status summary shown at the top of the mobile dashboard.
- * Every chip is a real button wired to the Recent Requests list below it:
- * tapping (or keyboard-activating) a chip filters that list to the matching
- * status, and tapping the active chip again clears the filter. Counts are
- * derived from the actual recent-request rows the dashboard already loaded —
- * no decorative or fabricated numbers.
+ * Compact status summary for the mobile dashboard. Each chip filters the
+ * Recent Requests list (tap again to clear); counts come from the loaded rows.
  */
 const AdminStatusStrip = ({
   requests,

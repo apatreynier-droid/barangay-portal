@@ -1,14 +1,10 @@
 -- Migration 007: duplicate protection for the notifications table.
 --
--- Admin notifications are created automatically by the backend whenever a
--- resident submits, edits or deletes a document request (see
--- backend/app/notifications.py). To make sure the same action never notifies
--- the admin twice - for example when a form is submitted twice or the frontend
--- retries an API call - every notification row carries a deterministic
--- `dedupe_key`, claimed through a UNIQUE index.
+-- Admin notifications carry a deterministic `dedupe_key` claimed through a
+-- UNIQUE index, so a repeated action never notifies twice
+-- (see backend/app/notifications.py).
 --
--- The column is nullable on purpose: rows written before this migration (the
--- resident status notifications) keep NULL, and MySQL allows any number of
+-- Nullable on purpose: older rows keep NULL, and MySQL allows any number of
 -- NULLs in a UNIQUE index.
 --
 -- Idempotent apply (recommended):

@@ -1,35 +1,17 @@
-"""Automatic admin notifications for important portal actions.
+"""Writes admin-facing rows to the ``notifications`` table.
 
-The portal has exactly one notification system: the ``notifications`` table,
-read through ``GET /api/notifications`` and updated through
-``PATCH /api/notifications/{id}/read`` and ``POST /api/notifications/read-all``
-(rendered by the resident Notification page and the Admin Notification page).
-This module is the single place that *writes* the admin-facing rows of that
-existing system:
-
-    resident action -> endpoint in app/main.py
-                    -> row in ``notifications`` for every active admin
-                    -> Admin Notification page (GET /api/notifications)
-
-Nothing here is hardcoded: recipients are resolved from the Admin Portal
-roles in ``users.role`` (``staff``, ``admin``, ``super_admin``) and every
-message is built from the data the endpoint just read or wrote (resident name,
-document name, request number, status).
+Recipients are the active Admin Portal accounts (``staff``, ``admin``,
+``super_admin``); rows are read via ``GET /api/notifications``.
 
 Guarantees relied on by the endpoints:
 
-* :func:`create_notification` and :func:`notify_admins` do **not** commit, so a
-  notification can stay in the same transaction as the action it describes.
-  When the action fails and is rolled back, no misleading notification is left
-  behind.
-* :func:`record_admin_notification` is the best-effort variant for actions that
-  are already committed. A notification problem is logged and swallowed, so it
-  can never break or roll back the action that produced it.
-* Repeating the same action (accidental double submit, frontend retry) does not
-  create a second notification. Every row carries a deterministic
-  ``dedupe_key`` that is claimed through a UNIQUE index (migration 007). When
-  that column has not been migrated yet the row is still written, so the
-  feature keeps working on an older database.
+* :func:`create_notification` and :func:`notify_admins` do not commit, so the
+  notification rolls back together with a failed action.
+* :func:`record_admin_notification` is best-effort for already committed
+  actions: errors are logged and swallowed, never rolling back the action.
+* Repeated actions (double submit, retries) are deduplicated through a UNIQUE
+  ``dedupe_key`` (migration 007). Without that column, rows are still written
+  without duplicate protection.
 """
 
 from __future__ import annotations
@@ -58,9 +40,7 @@ MISSING_TABLE_ERROR = 1146
 #: Longest value the ``dedupe_key`` column accepts (see migration 007).
 DEDUPE_KEY_MAX_LENGTH = 191
 
-#: Actions repeated within this window count as one action. This is what stops
-#: an accidental double submit or a retried API call from notifying the admin
-#: twice, while a genuinely later action still produces a new notification.
+#: Repeats of the same action within this window produce only one notification.
 DUPLICATE_ACTION_WINDOW_SECONDS = 120
 
 
@@ -274,10 +254,8 @@ def _load_admin_ids(
 ) -> list[int]:
     """Return the ids of every active Admin Portal account.
 
-    Staff accounts are included by default: they process the same document
-    requests, so they need the same operational notifications as the
-    administrators. Only administrators can review registrations, so those
-    notifications pass ``administrators_only``.
+    Staff are included unless ``administrators_only`` is set (e.g. for
+    registration reviews, which only administrators can perform).
     """
     roles = (
         ("admin", "super_admin")

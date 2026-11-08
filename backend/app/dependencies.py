@@ -12,15 +12,11 @@ from .security import hash_access_token
 
 bearer_scheme = HTTPBearer(auto_error=False)
 
-#: Roles that may sign in to the Admin Portal. A ``staff`` account is an
-#: administrative/operational user (document processing), while ``resident``
-#: accounts only ever reach the Resident Portal.
+#: Roles that may sign in to the Admin Portal (residents use the Resident Portal).
 ADMIN_PORTAL_ROLES = ("staff", "admin", "super_admin")
 
-#: Roles with full administrator privileges. Only these may manage accounts
-#: (User Management), read the audit trail (Activity Logs) or run Reports.
-#: Staff accounts get the operational endpoints only, enforced server-side by
-#: the dependency split below - never by the frontend alone.
+#: Roles with full administrator privileges (User Management, Activity Logs,
+#: Reports). Staff are limited to operational endpoints, enforced server-side.
 ADMINISTRATOR_ROLES = ("admin", "super_admin")
 
 
@@ -64,11 +60,10 @@ def get_current_user(
 def get_current_admin_portal_user(
     current_user: dict[str, object] = Depends(get_current_user),
 ) -> dict[str, object]:
-    """Allow every Admin Portal role: ``staff``, ``admin`` and ``super_admin``.
+    """Allow every Admin Portal role (``staff``, ``admin``, ``super_admin``).
 
-    Used by the operational endpoints Staff needs: the dashboard, the resident
-    list/detail, the document-request workflow and the request history. A
-    ``resident`` account receives HTTP 403 here.
+    Used by operational endpoints (dashboard, residents, document requests,
+    request history). Residents receive HTTP 403.
     """
     if current_user.get("role") not in ADMIN_PORTAL_ROLES:
         raise HTTPException(
@@ -84,10 +79,8 @@ def get_current_admin_user(
 ) -> dict[str, object]:
     """Allow administrators (``admin`` and ``super_admin``) only.
 
-    Everything an administrator can do is decided in the endpoint itself, so
-    the administrator-only endpoints (User Management, Reports, Activity Logs,
-    resident editing) reuse this dependency: a ``staff`` or ``resident``
-    account can never call them, regardless of what the frontend shows.
+    Guards User Management, Reports, Activity Logs and resident editing;
+    ``staff`` and ``resident`` accounts receive HTTP 403.
     """
     if current_user.get("role") not in ADMINISTRATOR_ROLES:
         raise HTTPException(

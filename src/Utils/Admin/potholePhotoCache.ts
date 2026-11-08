@@ -2,14 +2,10 @@ import { useEffect, useState } from "react";
 import { fetchAdminPotholePhoto } from "../Shared/api";
 
 /**
- * Display cache for the residents' pothole photos on the Admin page.
- *
- * The photos are stored permanently on the server and only served through an
- * authenticated endpoint, so the browser downloads each one as a Blob and
- * shows it through an object URL. A report's photo never changes, so one
- * object URL per report is shared by the table thumbnail, the map popup, the
- * details panel and the download button. The page calls
- * releasePotholePhotos() when it closes to free that memory.
+ * Object-URL cache for pothole photos on the Admin page. Photos come from an
+ * authenticated endpoint as Blobs and never change, so one URL per report is
+ * shared by the table, map popup, details panel and download button.
+ * Call releasePotholePhotos() when the page closes.
  */
 const photoUrls = new Map<number, Promise<string>>();
 

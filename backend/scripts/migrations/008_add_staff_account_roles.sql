@@ -1,16 +1,12 @@
 -- Migration 008: staff account roles used by the Admin "User Management" page.
 --
--- The portal ships two account roles: 'resident' (document requests) and
--- 'admin' (Admin Portal). User Management also manages non-resident staff
--- accounts, so the existing users.role enum is extended with:
---
+-- Extends users.role with:
 --   'staff'       - barangay staff account created from User Management
---   'super_admin' - full administrator; the only role allowed to hand out
+--   'super_admin' - full administrator; the only role allowed to assign
 --                   administrator roles or manage administrator accounts
 --
--- The new values are appended, so every existing account (residents and the
--- existing administrator) keeps its current role. The statement is a single
--- MODIFY COLUMN, which makes re-running this migration harmless.
+-- Values are appended, so existing accounts keep their role. Re-running this
+-- single MODIFY COLUMN is harmless.
 --
 -- Idempotent apply (recommended):
 --   cd backend

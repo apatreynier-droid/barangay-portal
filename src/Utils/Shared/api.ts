@@ -42,15 +42,12 @@ import type {
 const API_PORT = 8000;
 
 /**
- * Base URL of the FastAPI backend, used by every request in this file
- * (including ``authedFetch``).
+ * Base URL of the FastAPI backend.
  *
- * 1. ``VITE_API_BASE_URL`` (e.g. in ``.env.local``) wins when it is set.
- * 2. Otherwise the backend is assumed to run on the same computer that served
- *    this page, on port 8000. Opening the portal at ``http://localhost:5173``
- *    calls ``http://localhost:8000``; opening it from a phone at
- *    ``http://100.100.109.59:5173`` calls ``http://100.100.109.59:8000``.
- *    A hardcoded ``127.0.0.1`` would point a phone at *itself*.
+ * 1. `VITE_API_BASE_URL` (e.g. in `.env.local`) wins when set.
+ * 2. Otherwise uses the host that served this page on port 8000, so the
+ *    portal also works from other devices on the network (a hardcoded
+ *    `127.0.0.1` would point a phone at itself).
  */
 const resolveApiBaseUrl = (): string => {
   const configured = (import.meta.env.VITE_API_BASE_URL ?? "").trim();
@@ -389,8 +386,7 @@ export const requestPasswordResetEmail = async (
   if (!response.ok) {
     const body: unknown = await response.json().catch(() => null);
 
-    // The backend keeps its messages non-technical (wrong address, rate
-    // limited, mail server unavailable), so they can be shown as-is.
+    // Backend messages are user-friendly, so they are shown as-is.
     throw new ApiError(
       response.status,
       parseErrorMessage(
@@ -649,9 +645,8 @@ export const updateStaffAccountStatus = async (
 };
 
 /**
- * Asks the backend to email the account's existing password-reset link.
- * Nothing is returned but the confirmation message: passwords are never sent
- * to (or chosen by) the administrator.
+ * Emails a password-reset link to the account owner and returns the
+ * confirmation message. The administrator never sees or sets the password.
  */
 export const resetStaffPassword = async (staffId: number): Promise<string> => {
   const response = await authedFetch(
@@ -857,9 +852,8 @@ export const createDocumentRequest = async (
 };
 
 /**
- * Submits a document request together with its required image attachment
- * (multipart). The backend creates the request and stores the image in one
- * transaction, so a failed upload never leaves a request behind.
+ * Submits a document request with its required image (multipart). The backend
+ * stores both atomically, so a failed upload never leaves a request behind.
  */
 export const createDocumentRequestWithAttachment = async (
   documentTypeId: number,
@@ -889,10 +883,8 @@ export const createDocumentRequestWithAttachment = async (
 };
 
 /**
- * Downloads the resident's image for an admin document request. The file is
- * served only through this authenticated endpoint (Bearer token), so it is
- * fetched as a Blob; callers display it with a short-lived object URL that
- * they revoke when done (the image itself stays stored on the server).
+ * Downloads a request's image as a Blob (authenticated endpoint only).
+ * Callers display it via an object URL and revoke it when done.
  */
 export const fetchAdminRequestAttachment = async (
   requestId: number,
@@ -927,9 +919,8 @@ const readJson = async <T>(response: Response, fallback: string): Promise<T> => 
 };
 
 /**
- * Sends a resident's pothole report (multipart): the original photo, the
- * typed location, and the coordinates only when they were really captured,
- * labelled with their source (device GPS or a manual map pin).
+ * Sends a resident's pothole report (multipart): photo, typed location and,
+ * when captured, coordinates with their source (GPS or manual pin).
  */
 export const submitPotholeReport = async (
   report: NewPotholeReport,
@@ -992,9 +983,8 @@ export const fetchAdminPotholeReport = async (
 };
 
 /**
- * The resident's original photo. Served only through this authenticated
- * endpoint, so it is fetched as a Blob and shown with an object URL that is
- * revoked when the page closes (the photo itself stays stored on the server).
+ * Downloads a report's original photo as a Blob (authenticated endpoint only).
+ * Callers display it via an object URL and revoke it when done.
  */
 export const fetchAdminPotholePhoto = async (recordId: number): Promise<Blob> => {
   const response = await authedFetch(

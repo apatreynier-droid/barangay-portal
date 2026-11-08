@@ -1,13 +1,8 @@
 r"""Idempotently create the ``request_status_emails`` table.
 
-This table backs the automatic email notifications sent to residents when an
-administrator changes a document request's status. It gives two guarantees:
-
-* At-most-once delivery: each ``(request_id, status)`` pair can only be
-  recorded once, so a duplicated status update will not send a second email.
-* Reliable troubleshooting: when an email fails to send, the failure is stored
-  here (alongside the masked recipient address) so operators can audit it
-  without having to parse the application logs.
+Backs the resident status-change emails: each ``(request_id, status)`` pair
+is recorded once (at-most-once delivery), and failures are stored with the
+masked recipient for auditing.
 
 Checks ``information_schema`` first, so it is safe to run multiple times:
 

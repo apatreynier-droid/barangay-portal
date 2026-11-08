@@ -1,25 +1,15 @@
-"""Automatic email notifications for document-request status changes.
+"""Emails the request owner when a document request changes status.
 
-When an administrator moves a document request to a new status, the resident
-who *owns that request* must be told about it by email. This module is the
-single place that turns a status change into an email:
+The recipient is always resolved from the database
+(``requests.user_id -> users.email``), never shared between residents.
 
-    request #101 -> requests.user_id -> users.email -> that one inbox
+Guarantees relied on by ``PATCH /api/admin/document-requests/{id}``:
 
-Nothing here is hardcoded: the recipient address is read from the database
-through the ``requests.user_id -> users.id`` foreign key every time, so two
-residents with two requests always receive their own notification only.
-
-Guarantees relied on by the admin endpoint (``PATCH /api/admin/document-requests/{id}``):
-
-* :func:`send_request_status_email` never raises. A mail server problem is
-  logged (and recorded in ``request_status_emails``) but can never roll back
-  the status change that was already committed, and never leaks SMTP
-  credentials or technical details to the resident.
-* Every ``(request_id, status)`` pair is emailed at most once: the row in
-  ``request_status_emails`` is claimed with an ``INSERT`` guarded by a UNIQUE
-  key before the message is built, so an accidentally repeated update cannot
-  send a duplicate.
+* :func:`send_request_status_email` never raises: failures are logged and
+  recorded in ``request_status_emails``, never roll back the committed status
+  change, and never expose SMTP details to the resident.
+* Each ``(request_id, status)`` pair is emailed at most once, claimed via a
+  UNIQUE-guarded ``INSERT`` before sending.
 """
 
 from __future__ import annotations
@@ -72,11 +62,8 @@ _MAX_STORED_ERROR_LENGTH = 500
 def load_request_owner(
     connection: MySQLConnection, request_id: int
 ) -> dict[str, Any] | None:
-    """Return the resident who owns ``request_id`` plus the request details.
+    """Return the request details and its owner's registered email.
 
-    The row is loaded through the existing relationships
-    (``requests.user_id -> users.id -> resident_profiles.user_id``), so the
-    ``email`` value is always the registered address of *that* resident.
     Returns ``None`` when the request no longer exists.
     """
     cursor = connection.cursor(dictionary=True)
@@ -112,10 +99,9 @@ def _claim_notification(
 ) -> bool:
     """Reserve the single send slot for ``(request, status)``.
 
-    Returns ``True`` when this call owns the slot, ``False`` when a previous
-    update already recorded it (duplicate update -> no second email). When the
-    migration that creates ``request_status_emails`` has not been applied the
-    email is still sent and a warning is logged, so the feature keeps working.
+    Returns ``True`` when this call owns the slot, ``False`` for a duplicate.
+    If ``request_status_emails`` does not exist yet, the email is still sent
+    and a warning is logged.
     """
     cursor = connection.cursor()
     try:
@@ -209,14 +195,8 @@ def send_request_status_email(
 ) -> str:
     """Email the resident who owns ``request_id`` about ``new_status``.
 
-    Call this *after* the status change has been committed. The recipient is
-    resolved from the database for this one request (``requests.user_id`` ->
-    ``users.email``), so the notification always goes to the registered address
-    of the resident who submitted it.
-
-    Returns one of the ``DELIVERY_*`` constants for the caller to log, and
-    never raises and never modifies the request row: a mail problem must not
-    undo a successful status update or leak details to the resident.
+    Call this after the status change is committed. Returns a ``DELIVERY_*``
+    constant for logging; never raises and never modifies the request row.
     """
     if new_status not in NOTIFIABLE_STATUSES:
         return DELIVERY_SKIPPED

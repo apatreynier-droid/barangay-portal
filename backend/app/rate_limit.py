@@ -1,20 +1,13 @@
 """In-memory rate limiting for authentication endpoints.
 
-Design notes:
-- All state lives in this process's memory (plain dicts guarded by a lock);
-  no Redis or other external storage is required. This is intentional for
-  the current single-backend / single-server deployment.
-- ``LoginRateLimiter`` tracks CONSECUTIVE failed login attempts per client
-  (IP + normalized account email) using a sliding window: failures older
-  than ``failure_window_seconds`` are forgotten. Reaching
-  ``max_failed_attempts`` within the window starts a block that lasts
-  ``block_duration_seconds``. A successful login clears the counter.
-- ``IPRateLimiter`` is a coarser guard that caps the raw number of requests
-  allowed per key (client IP, or a reset target address) in a sliding window,
-  protecting endpoints against brute-force flooding and mail spam.
-- Every limit is configured in ``app.config.settings`` and can be changed
-  through environment variables (see ``.env.example``) without touching
-  this module.
+- State is kept in process memory (lock-guarded dicts), which is intentional
+  for the single-server deployment; no Redis is required.
+- ``LoginRateLimiter`` counts consecutive failed logins per IP + account in a
+  sliding window. Reaching ``max_failed_attempts`` blocks the key for
+  ``block_duration_seconds``; a successful login clears the counter.
+- ``IPRateLimiter`` caps requests per key (client IP or email address) in a
+  sliding window, against flooding and mail spam.
+- All limits come from ``app.config.settings`` (see ``.env.example``).
 """
 
 from __future__ import annotations
@@ -175,12 +168,10 @@ class IPRateLimiter(_InMemoryLimiter):
 
 
 def get_client_ip(request: Request) -> str:
-    """Best-effort client IP for the current deployment.
+    """Best-effort client IP.
 
-    The backend is normally reached directly (uvicorn), so the socket
-    address is used. When a reverse proxy is placed in front of the API it
-    should set ``X-Forwarded-For`` (or ``X-Real-IP``); those headers are
-    honoured here so the limiter keeps working behind such a setup.
+    Honours ``X-Forwarded-For`` / ``X-Real-IP`` (set by a reverse proxy) and
+    falls back to the socket address.
     """
     forwarded_for = request.headers.get("x-forwarded-for")
     if forwarded_for:
@@ -200,8 +191,9 @@ _rate_limit_config = RateLimitConfig()
 login_attempt_limiter = LoginRateLimiter(_rate_limit_config)
 login_ip_limiter = IPRateLimiter(_rate_limit_config)
 
-# Password-reset limiters: the same in-memory implementation with their own
-# budgets, so reset traffic can never consume the login quota (or vice versa).
+# Registration and password-reset limiters have their own budgets, so this
+# traffic never consumes the login quota (or vice versa).
+# - ``registration_ip_limiter``       -> registrations per client IP
 # - ``password_reset_ip_limiter``     -> reset emails per client IP
 # - ``password_reset_email_limiter``  -> reset emails per target address
 # - ``password_reset_submit_limiter`` -> reset submissions per client IP

@@ -51,11 +51,8 @@
   white-space: nowrap;
 }
 
-/* Date fields use the shared DatePickerInput component (the same dropdown
-   calendar shown by AdminActions' Pickup Date): the component root supplies
-   the field, calendar icon and popup panel. This wrapper only keeps the
-   toolbar layout (fixed compact width, no shrinking); the inner
-   `.date-picker` root fills the wrapper via its shared `width: 100%`. */
+/* Date fields use the shared DatePickerInput; this wrapper only sets the
+   toolbar layout (fixed compact width, no shrinking). */
 .reqhist-date {
   flex-shrink: 0;
   width: 150px;

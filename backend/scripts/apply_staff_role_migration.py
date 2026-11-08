@@ -1,15 +1,8 @@
 r"""Idempotently extend ``users.role`` with the User Management roles.
 
-The Admin "User Management" page manages non-resident accounts, so the
-existing ``users.role`` enum gains two values:
-
-* ``staff``       - barangay staff account (created from User Management)
-* ``super_admin`` - full administrator, the only role that may hand out
-                    administrator roles or manage administrator accounts
-
-Existing rows are untouched: the enum values are appended and no account's
-role is rewritten. The script checks ``information_schema`` first, so it is
-safe to run multiple times:
+Appends ``staff`` and ``super_admin`` (the only role that may assign
+administrator roles) to the ``users.role`` enum; existing rows are untouched.
+Checks ``information_schema`` first, so it is safe to run multiple times:
 
     cd backend
     .\.venv\Scripts\Activate.ps1

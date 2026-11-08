@@ -1,4 +1,3 @@
-// Types/DashboardType.ts
 export type RequestStatus =
   | "Pending"
   | "Approved"

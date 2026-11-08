@@ -1,14 +1,11 @@
 -- Migration 006: activity_logs audit table.
 --
--- Every notable action performed in the portal (logins, document request
--- submissions, admin status changes, resident profile updates) is recorded
--- here once and surfaced on the Admin "Activity Logs" page. Log entries are
--- append-only: nothing in the application edits or deletes them.
+-- Backs the Admin "Activity Logs" page. Entries are append-only.
 --
 -- Idempotent apply (recommended):
 --   cd backend
 --   .\.venv\Scripts\Activate.ps1
---   python -c "import mysql.connector, pathlib; c=mysql.connector.connect(host='127.0.0.1',user='root',password='');cur=c.cursor();cur.execute(pathlib.Path('scripts/migrations/006_add_activity_logs.sql').read_text());c.commit()"
+--   python scripts\apply_activity_logs_migration.py
 --
 -- One-off apply:
 --   mysql -u root -p < backend/scripts/migrations/006_add_activity_logs.sql

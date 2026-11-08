@@ -220,14 +220,11 @@ const DatePickerInput = ({
       document.removeEventListener("pointerdown", handlePointerDown, true);
   }, [isOpen, closeCalendar]);
 
-  // Keep the dropdown inside the viewport: open below the field whenever it
-  // fits, flip above only when it fits there (or when above is simply the
-  // roomier side), and cap the panel to the free room on the chosen side so
-  // it is never clipped by the viewport or by `body` - which, with
-  // `height: 100%` + `overflow-x: hidden`, is a scroll container whose box
-  // matches the viewport exactly. scrollHeight (not offsetHeight) is used so
-  // the panel's natural height is still measured after a cap was applied and
-  // the panel can grow back when more room becomes available.
+  // Keep the panel inside the viewport: open below when it fits, otherwise
+  // above when that fits or has more room, and cap its height to the free
+  // space (`body` is a viewport-sized scroll container, so overflow would be
+  // clipped). scrollHeight is used so the natural height is still measured
+  // after a cap, letting the panel grow back when room becomes available.
   const updatePanelPosition = useCallback(() => {
     const root = rootRef.current;
     const panel = panelRef.current;
@@ -235,9 +232,8 @@ const DatePickerInput = ({
 
     const rect = root.getBoundingClientRect();
     const panelWidth = panel.offsetWidth;
-    // max-height applies to the border box (box-sizing: border-box), while
-    // scrollHeight excludes the borders - add them back so an uncapped panel
-    // keeps its exact natural height and never grows a stray scrollbar.
+    // max-height uses the border box but scrollHeight excludes borders; add
+    // them back to avoid a stray scrollbar on an uncapped panel.
     const borderWidth =
       parseFloat(window.getComputedStyle(panel).borderTopWidth) +
       parseFloat(window.getComputedStyle(panel).borderBottomWidth);
@@ -577,9 +573,8 @@ const DatePickerInput = ({
           onChange={handleInputChange}
           onKeyDown={handleInputKeyDown}
           onClick={() => {
-            // Clicking the field itself opens the calendar as well (the icon
-            // and ArrowDown already do). Clicking while open keeps it open so
-            // caret placement and typing stay natural.
+            // Clicking the field opens the calendar; clicking while open keeps
+            // it open so caret placement and typing stay natural.
             if (!isOpen) {
               openCalendar();
             }
@@ -594,8 +589,7 @@ const DatePickerInput = ({
           disabled={disabled}
           onClick={toggleCalendar}
         >
-          {/* The original `calendar` asset keeps its own colours (no CSS
-              filters) and sits inside the field, right of the date text. */}
+          {/* Calendar icon inside the field, right of the date text. */}
           <img
             src={calendarIcon}
             alt=""

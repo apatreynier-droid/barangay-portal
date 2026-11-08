@@ -1,19 +1,16 @@
 /**
- * Display helpers for the analytics the backend computes with Pandas
- * (backend/app/analytics.py). Only formatting lives here: every number shown
- * comes from the API, nothing is recalculated or estimated in the browser.
+ * Formatting helpers for the backend analytics (backend/app/analytics.py).
+ * All numbers come from the API; nothing is recalculated in the browser.
  */
 
 /** Philippine time, used for every report date and timestamp. */
 export const MANILA_TIME_ZONE = "Asia/Manila";
 
 /**
- * Fixed color per request status, in workflow order. Color follows the
- * status (never its rank), so a status keeps its color in every chart.
- * Lightness alternates between neighbours so adjacent segments stay
- * distinguishable for color-blind readers; validated with the dataviz
- * palette checker (worst adjacent CVD ΔE 11). Every segment is also listed
- * with its name, count and share, so identity never relies on color alone.
+ * Fixed color per request status (workflow order), consistent across charts.
+ * Lightness alternates between neighbours for color-blind readability
+ * (worst adjacent CVD ΔE 11); segments are also labelled, so color is
+ * never the only cue.
  */
 export const REQUEST_STATUS_COLORS: Record<string, string> = {
   Pending: "#d97706",

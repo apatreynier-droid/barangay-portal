@@ -1,13 +1,9 @@
 """Outbox for the three resident registration emails.
 
-A registration, approval or rejection commits one ``registration_emails`` row
-in the same transaction as the account change. Sending happens afterwards, so
-a mail problem can never undo the account change, and the row stays behind as
-the record of what still has to be delivered:
-
-    status change + outbox row -> COMMIT -> send now -> sent / failed
-                                                          |
-                     background worker or admin retry <---+
+Each registration, approval or rejection commits a ``registration_emails``
+row with the account change. Sending happens after the commit, so a mail
+failure never undoes the change; failed rows are retried by the background
+worker or an administrator.
 
 Guarantees relied on by the endpoints in ``app/main.py``:
 

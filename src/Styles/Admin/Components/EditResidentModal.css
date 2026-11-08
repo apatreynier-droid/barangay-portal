@@ -114,10 +114,7 @@
   border-color: #2563eb;
 }
 
-/* The Birthday field adopts the shared calendar-in-input design from
-   components/Shared/DatePickerInput.css: the custom `calendar` image sits
-   inside the input (12px from the right edge) and the browser's native
-   indicator is hidden there, so these native-indicator rules are gone. */
+/* The Birthday field's calendar icon comes from the shared DatePickerInput.css. */
 
 .residents-edit-error {
   flex-shrink: 0;

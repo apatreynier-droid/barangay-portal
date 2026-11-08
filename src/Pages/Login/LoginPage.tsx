@@ -158,9 +158,8 @@ const CloseIcon = () => (
 );
 
 /**
- * Breakpoint (px) below which the landing page switches to the mobile layout
- * (centered hero + Sign In / Sign Up buttons + login modal). Must match the
- * `@media (max-width: 920px)` rules in LoginPage.css.
+ * Mobile layout breakpoint (hero + Sign In/Sign Up buttons + login modal).
+ * Must match the `@media (max-width: 920px)` rules in LoginPage.css.
  */
 const MOBILE_BREAKPOINT = "(max-width: 920px)";
 
@@ -171,12 +170,8 @@ const MOBILE_BREAKPOINT = "(max-width: 920px)";
 const BRAND_PANEL_BACKGROUND = `url(${lagab}), linear-gradient(168deg, #21336f 0%, #182a63 45%, #121f52 100%)`;
 
 /**
- * Tracks whether the viewport is in the mobile landing-page layout.
- *
- * Uses `window.matchMedia` (same approach as useResponsiveSidebar) so the JS
- * and CSS breakpoints can never drift apart: when the viewport crosses the
- * breakpoint the value updates and callers can reset any mobile-only state
- * (e.g. close the login modal when the viewport grows back to desktop).
+ * Tracks whether the viewport is in the mobile landing-page layout, via
+ * `window.matchMedia` so it stays in sync with the CSS breakpoint.
  */
 const useIsMobile = (): boolean => {
   const [isMobile, setIsMobile] = useState<boolean>(() => {
@@ -240,10 +235,8 @@ const LoginPage = ({
     setIsLoginModalOpen(false);
   }, []);
 
-  // The modal only exists in the mobile layout. If the viewport grows past
-  // the breakpoint (rotate a tablet, resize a window) while it is open, drop
-  // the state so it cannot get stuck "open" against a desktop layout that
-  // renders the form as a normal panel.
+  // Reset the modal state when the viewport leaves the mobile layout, so it
+  // cannot stay "open" on desktop.
   useEffect(() => {
     if (!isMobile && isLoginModalOpen) {
       setIsLoginModalOpen(false);
@@ -251,9 +244,8 @@ const LoginPage = ({
   }, [isMobile, isLoginModalOpen]);
 
   /**
-   * On mobile the landing page is the hero; the login form lives in a modal.
-   * Closing it (button, backdrop, Escape) returns focus to the Sign In button
-   * so keyboard users do not lose their place on the page.
+   * Mobile login modal: Escape closes it, Tab is trapped inside, and focus
+   * returns to the Sign In button on close.
    */
   useEffect(() => {
     if (!isLoginModalOpen) {
@@ -315,8 +307,7 @@ const LoginPage = ({
 
     window.addEventListener("keydown", handleKeyDown);
 
-    // Lock background scrolling while the modal is open (same pattern as
-    // useResponsiveSidebar) so the page behind never scrolls with the modal.
+    // Lock background scrolling while the modal is open.
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
 
@@ -387,18 +378,14 @@ const LoginPage = ({
     setShowPassword((prev) => !prev);
   };
 
-  /**
-   * Clicking the dimmed area around the modal card (i.e. the panel itself,
-   * not any of its children) closes the modal, matching the Escape behaviour.
-   */
+  /** Clicking the backdrop (not the card) closes the modal. */
   const handleModalBackdropClick = (event: ReactMouseEvent<HTMLElement>) => {
     if (event.target === event.currentTarget) {
       closeLoginModal();
     }
   };
 
-  // A modal is only a modal on mobile; on desktop the form is a normal panel,
-  // so the dialog semantics must never leak into the desktop layout.
+  // Dialog semantics apply only on mobile; on desktop the form is a normal panel.
   const modalProps =
     isMobile && isLoginModalOpen
       ? ({
@@ -457,8 +444,7 @@ const LoginPage = ({
             ))}
           </ul>
 
-          {/* Mobile-only call to action: replaces the five feature chips with
-              two large, easy-to-tap buttons stacked vertically. */}
+          {/* Mobile-only call to action (replaces the feature chips). */}
           <div className="brand-cta">
             <button
               type="button"

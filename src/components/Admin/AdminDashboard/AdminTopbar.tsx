@@ -12,7 +12,7 @@ type AdminTopbarProps = {
   onMenuToggle?: () => void;
   /** Unread count for the bell badge; omit to hide the bell (no handler). */
   unreadNotifications?: number;
-  /** Opens the existing Notifications page. */
+  /** Opens the Notifications page. */
   onNotifications?: () => void;
 };
 

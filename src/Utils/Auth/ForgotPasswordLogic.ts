@@ -15,10 +15,9 @@ export const validateForm = (formData: FormData): FormErrors => {
   return errors;
 };
 
-// Asks the backend to email a single-use reset link. The backend always
-// answers with the same generic message, so this page can never reveal
-// whether an account exists for the submitted address; only delivery
-// problems (rate limit, mail server unavailable) surface as an error here.
+// Requests a single-use reset link. The backend replies generically, so it
+// never reveals whether the account exists; only delivery problems (rate
+// limit, mail server unavailable) surface as errors.
 export const requestPasswordReset = async (email: string): Promise<void> => {
   await requestPasswordResetEmail(email);
 };

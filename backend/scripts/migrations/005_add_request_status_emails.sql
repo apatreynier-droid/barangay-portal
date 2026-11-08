@@ -1,8 +1,7 @@
 -- Migration 005: request_status_emails log table.
 --
--- Tracks the delivery outcome of every automatic status-change email so that
--- each (request_id, status) pair is emailed at most once and so operators can
--- see when a notification failed to send without having to dig through app logs.
+-- Records each status-change email's delivery outcome: each (request_id,
+-- status) pair is emailed at most once, and failures are visible here.
 --
 -- Idempotent apply (recommended):
 --   cd backend

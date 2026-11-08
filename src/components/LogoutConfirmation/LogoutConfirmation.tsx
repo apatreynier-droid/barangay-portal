@@ -8,8 +8,8 @@ type LogoutConfirmationProps = {
   onConfirm: () => void;
 };
 
-// The logout dialog is shared by Admin and Resident sidebars and is
-// placed at the top page level so it always appears above other elements.
+// Shared by the Admin and Resident sidebars; portaled to <body> so it always
+// appears above other elements.
 const LogoutConfirmation = ({
   isOpen,
   onCancel,

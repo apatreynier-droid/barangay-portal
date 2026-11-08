@@ -13,23 +13,17 @@ type AdminRecentRequestsProps = {
   requests: AdminRecentRequest[];
   /** Active status filter from the dashboard's status strip. */
   statusFilter: AdminStatusFilter;
-  /** Opens the full Document Requests page (the existing "view all" target). */
+  /** Opens the full Document Requests page. */
   onViewAll: () => void;
-  /**
-   * Opens the existing request-details screen for one request (deep-linked
-   * through the Document Requests page).
-   */
+  /** Opens one request's details (deep-linked via the Document Requests page). */
   onOpenRequest: (requestNumber: string) => void;
   /** Clears the status strip filter (used by the filtered empty state). */
   onClearFilter: () => void;
 };
 
 /**
- * Latest document requests. On phones each request renders as a compact,
- * fully readable card (request number on one line, resident, document +
- * date, status badge on the right); on wider screens the classic table is
- * kept, now including the submitted date and a request-number button that
- * opens the same details screen as the mobile cards.
+ * Latest document requests: compact cards on phones, a table on wider
+ * screens. Both open the request's details screen.
  */
 const AdminRecentRequests = ({
   requests,
@@ -107,7 +101,7 @@ const AdminRecentRequests = ({
             ))}
           </ul>
 
-          {/* Tablet/desktop: the existing table, with the submitted date. */}
+          {/* Tablet/desktop: table view. */}
           <div className="admin-table-wrapper">
             <table className="admin-table">
               <thead>

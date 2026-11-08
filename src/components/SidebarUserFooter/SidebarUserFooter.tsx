@@ -11,12 +11,8 @@ type SidebarUserFooterProps = {
 };
 
 /**
- * Shared sidebar footer shown at the bottom of the sidebar: the user's
- * avatar (initials), name, role, and a power-icon logout button that opens
- * the shared logout confirmation dialog.
- *
- * Used by both the Admin Sidebar and the Resident Sidebar so the logout
- * section looks and behaves identically across portals.
+ * Sidebar footer shared by the Admin and Resident sidebars: avatar initials,
+ * name, role, and a logout button that opens the confirmation dialog.
  */
 const SidebarUserFooter = ({
   firstName,

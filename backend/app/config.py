@@ -141,7 +141,7 @@ class Settings:
 
     @property
     def database_url(self) -> str:
-        # Safely converts special characters like '#' and '$' into URL-encoded format
+        # URL-encode special characters (e.g. '#', '$') in the password.
         encoded_password = quote_plus(self.mysql_password)
         return (
             f"mysql+mysqlconnector://{self.mysql_user}:{encoded_password}"

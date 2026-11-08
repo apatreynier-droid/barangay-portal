@@ -1,8 +1,6 @@
 r"""Idempotently create the ``activity_logs`` audit table.
 
-This table backs the admin "Activity Logs" page. Every notable action in the
-portal (logins, document request submissions, admin status changes, resident
-profile updates, ...) is appended here once and never edited or deleted.
+Backs the admin "Activity Logs" page; entries are append-only.
 
 Checks ``information_schema`` first, so it is safe to run multiple times:
 

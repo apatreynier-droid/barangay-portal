@@ -198,6 +198,4 @@
   font-weight: 700;
 }
 
-/* Sidebar footer styles moved to the shared SidebarUserFooter component
-   (src/components/SidebarUserFooter/SidebarUserFooter.css) so the Admin and
-   Resident sidebars render the exact same footer. */
+/* Footer styles live in the shared SidebarUserFooter.css. */

@@ -1,6 +1,6 @@
 -- Migration 010: resident registration approval workflow.
 --
--- Every new resident now waits for an Administrator's review, so:
+-- New residents wait for an Administrator's review:
 --
 --   users.account_status  gains 'pending' and 'rejected'. The values are
 --                         appended, so every existing account keeps its status.

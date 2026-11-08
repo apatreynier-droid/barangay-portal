@@ -9,10 +9,10 @@ import SidebarUserFooter from "../../SidebarUserFooter/SidebarUserFooter";
 type SidebarProps = {
   onBackToDashboard: () => void;
   onMyRequests: () => void;
-  /** Kept for backwards compatibility with pages that still pass it. */
+  /** @deprecated Unused; kept for existing callers. */
   onRequestHistory?: () => void;
   onNotifications: () => void;
-  /** Kept for backwards compatibility with pages that still pass it. */
+  /** @deprecated Unused; kept for existing callers. */
   onRequestDocument?: () => void;
   onLogout: () => void;
   firstName: string;
@@ -41,9 +41,8 @@ const Sidebar = ({
   isOpen = false,
   onNavigate,
 }: SidebarProps) => {
-  // Request history lives inside My Requests now, so both highlight the
-  // same item. "request-document" is reached from the Dashboard banner and
-  // Quick Actions, so no sidebar item is marked active for it.
+  // Request history is part of My Requests, so both highlight the same item.
+  // "request-document" has no sidebar item, so nothing is marked active for it.
   const isMyRequestsActive =
     activePage === "my-requests" || activePage === "request-history";
 

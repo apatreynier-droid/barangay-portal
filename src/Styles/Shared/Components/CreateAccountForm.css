@@ -118,10 +118,8 @@
   border-color: #dc2626;
 }
 
-/* Date of Birth renders the shared DatePickerInput (the AdminActions-style
-   dropdown calendar). Match the sibling fields' 42px height so the grid row
-   stays aligned; the popup panel itself comes from the shared
-   DatePickerInput.css. */
+/* Date of Birth uses the shared DatePickerInput; match the sibling fields'
+   42px height so the grid row stays aligned. */
 .form-field .date-picker .date-picker-input {
   height: 42px;
 }
@@ -224,8 +222,8 @@
   padding: 16px 24px;
   background: #f7f8fb;
   border-top: 1px solid #edf0f5;
-  /* Matches the card's rounded bottom corners now that the card no longer
-     clips its children (overflow was removed for the calendar popup). */
+  /* Carries the card's bottom corner radius (the card cannot clip overflow,
+     see .registration-card). */
   border-radius: 0 0 12px 12px;
 }
 

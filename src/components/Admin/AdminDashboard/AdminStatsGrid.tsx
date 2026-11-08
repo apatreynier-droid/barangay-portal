@@ -9,7 +9,7 @@ import type { AdminStats } from "../../../Types/Admin/AdminDashboardType";
 type StatCard = {
   key: string;
   icon: string;
-  /** Live value straight from the dashboard payload; never invented. */
+  /** Value from the dashboard payload. */
   value: (stats: AdminStats) => number;
   label: string;
   /** Supporting text; a function when it derives from another live value. */
@@ -21,11 +21,9 @@ type StatCard = {
 };
 
 /**
- * Which half of the six statistics a grid instance renders. The dashboard
- * splits them so the mobile section order can surface Pending/Approved next
- * to the request summary while the remaining four cards flow after the
- * Recent Requests panel; on desktop CSS merges both halves back into the
- * single three-per-row grid (see .admin-dashboard-layout in AdminDashboard.css).
+ * Which half of the six statistics a grid renders. Split so mobile can show
+ * Pending/Approved first; on desktop CSS merges both halves into one grid
+ * (see .admin-dashboard-layout in AdminDashboard.css).
  */
 export type AdminStatsGroup = "highlights" | "remaining";
 

@@ -23,11 +23,7 @@ export const getAdminStatusClass = (status: string): string => {
   }
 };
 
-/**
- * Display label of a stored request status. Since migration 003 "Approved"
- * is a real status of its own (Pending -> Approved -> Processing -> Ready for
- * Pickup), so "Ready for Pickup" is no longer shown as "Approved".
- */
+/** Display label of a stored request status. */
 export const getAdminStatusLabel = (status: string): string => {
   if (status === "all") {
     return "All";
@@ -118,8 +114,7 @@ export const formatRelativeTime = (value: string): string => {
 
 /**
  * MySQL timestamps arrive without a timezone marker; treat them as UTC.
- * Shared by the Admin Notifications page and the dashboard's notification
- * card so both render the exact same relative times.
+ * Shared by the Admin Notifications page and the dashboard notification card.
  */
 export const toUtcTimestamp = (value: string): string => {
   const trimmed = value.trim();

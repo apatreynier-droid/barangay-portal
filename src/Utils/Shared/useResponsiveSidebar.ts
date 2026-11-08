@@ -16,13 +16,9 @@ type ResponsiveSidebar = {
 };
 
 /**
- * Shared drawer state for the Resident and Admin sidebars.
- *
- * - Tracks the `max-width: 768px` media query so state resets cleanly when
- *   the viewport crosses the breakpoint (e.g. rotating a tablet, resizing).
- * - Closes the drawer on Escape for keyboard users.
- * - Locks body scrolling while the drawer is open so the page behind the
- *   backdrop never scrolls.
+ * Shared drawer state for the Resident and Admin sidebars: resets when the
+ * viewport crosses the breakpoint, closes on Escape, and locks body scrolling
+ * while open.
  */
 const useResponsiveSidebar = (): ResponsiveSidebar => {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);

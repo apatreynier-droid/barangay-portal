@@ -9,14 +9,10 @@ type DocumentTypeDonutProps = {
 const SIZE = 180;
 const RADIUS = 70;
 const STROKE_WIDTH = 30;
-// Muted shades derived from the Barangay Portal palette so the donut stays
-// cohesive with the rest of the UI while keeping categories distinguishable.
+// Muted shades from the portal palette, distinct per category.
 const COLORS = ["#3d6ea8", "#7b6bb5", "#3a8266", "#9a6b2a", "#b25f57"];
 
-// Entrance animation settings (Recharts-equivalent):
-// isAnimationActive={true}
-// animationDuration={1500}
-// animationEasing="ease-out"
+// Entrance animation (duration in ms, ease-out).
 const ANIMATION_DURATION = 1500;
 const ANIMATION_EASING = "ease-out";
 
@@ -45,12 +41,9 @@ const DocumentTypeDonut = ({ data }: DocumentTypeDonutProps) => {
 
   let cumulativeOffset = 0;
 
-  // Entrance animation: the pie sweeps/arcs into view from its starting
-  // angle (top) once the real chart data has loaded. The parent only mounts
-  // this component after the dashboard fetch resolves, so mounting here
-  // means the data is ready. Each slice's dash length animates from 0 to
-  // its final arc, with a delay proportional to its cumulative offset, so
-  // the slices draw one after another like a single sweeping pie.
+  // Entrance animation: each slice's dash grows from 0 with a delay based on
+  // its offset, so slices draw in sequence like one sweep from the top. The
+  // parent mounts this only after data loads.
   useEffect(() => {
     const svg = svgRef.current;
     if (!svg || data.length === 0) {
@@ -234,9 +227,8 @@ const DocumentTypeDonut = ({ data }: DocumentTypeDonutProps) => {
                   aria-hidden="true"
                 />
                 <span className="admin-legend-name">{item.document_name}</span>
-                {/* Ranked mini-bar: length = share of the largest category.
-                    Decorative only (hidden on wide screens); the exact count
-                    stays next to it. */}
+                {/* Decorative mini-bar relative to the largest category
+                    (hidden on wide screens). */}
                 <span className="admin-legend-bar" aria-hidden="true">
                   <span
                     style={{

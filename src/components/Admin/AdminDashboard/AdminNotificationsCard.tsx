@@ -14,7 +14,7 @@ type AdminNotificationsCardProps = {
   notifications: ApiNotification[];
   /** Fallback activity rows from the dashboard payload. */
   activities: AdminActivityEntry[];
-  /** Opens the existing Notifications page (list + mark-as-read actions). */
+  /** Opens the Notifications page. */
   onOpen: () => void;
 };
 
@@ -22,11 +22,8 @@ type AdminNotificationsCardProps = {
 const MAX_NOTIFICATIONS = 4;
 
 /**
- * Dashboard notification card. Shows the real notification rows the app
- * already polls (name/document/request context comes from the backend
- * message, read state from is_read) with an action that opens the existing
- * Notifications page. Falls back to the dashboard's recent-activity feed
- * when the notification list is empty.
+ * Dashboard notification card: the latest polled notifications, falling back
+ * to the recent-activity feed when there are none.
  */
 const AdminNotificationsCard = ({
   notifications,

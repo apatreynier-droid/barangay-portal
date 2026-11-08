@@ -1,27 +1,20 @@
 """Transactional email templates for the Barangay Portal.
 
-Templates are kept apart from the SMTP transport (``app/email_service.py``)
-so the wording/branding can be edited without touching any mail code.
+Kept separate from the SMTP transport (``app/email_service.py``). Every
+renderer returns ``(subject, text_body, html_body)``; the plain-text part is
+always produced for clients that do not display HTML.
 
-Every renderer returns a ``(subject, text_body, html_body)`` tuple: the plain
-text part is always produced (some clients display only that), and the HTML
-part is used when the recipient allows HTML mail.
+Design notes (Gmail / mobile compatibility):
 
-Design notes (Gmail / mobile compatibility)
--------------------------------------------
-* One shared layout (``_render_layout``) gives every email the same header,
-  content card and footer: navy (#152a63) branding with a gold accent, white
-  card, light-gray detail panels and green / amber / red / blue status tones.
-* Layout uses nested ``<table>`` elements and inline styles only. The small
-  ``<style>`` block merely tightens padding on phones; clients that drop it
-  still get a fluid card (``width:100%; max-width:600px``).
-* No images, web fonts, flexbox/grid, positioning or animation. Status icons
-  are plain text glyphs (check, cross, arrow, "i") inside colored circles, so
-  nothing is blocked as a remote image and nothing becomes a color emoji.
-* Every value that comes from the database or an administrator is
-  HTML-escaped before it is interpolated into the markup.
-* Times are shown in Philippine time (Asia/Manila, UTC+8, no DST). The
-  database stores UTC; naive datetimes are therefore treated as UTC.
+* One shared layout (``_render_layout``) provides the header, content card and
+  footer for every email.
+* Nested ``<table>`` elements and inline styles only; the ``<style>`` block
+  only tightens padding on phones.
+* No remote images, web fonts, flexbox/grid or animation. Status icons are
+  text glyphs, except the Completed email, which embeds Lucide PNG icons
+  inline via ``cid:`` (see ``app/email_assets.py``).
+* Every database or administrator value is HTML-escaped before interpolation.
+* Times are shown in Philippine time; naive datetimes are treated as UTC.
 """
 
 from __future__ import annotations
@@ -40,8 +33,7 @@ _PORTAL_NAME = "Barangay Document Request & Management Portal"
 _SIGNATURE = "Barangay Administration"
 _OFFICE = "Barangay Lagab office"
 
-#: Asia/Manila has no daylight saving, so a fixed offset is always correct
-#: (and avoids depending on the tz database, which Windows may not ship).
+#: Fixed UTC+8 offset (Manila has no DST); avoids needing the tz database on Windows.
 MANILA_TIMEZONE = timezone(timedelta(hours=8), "PHT")
 
 _MONTH_NAMES = (
@@ -350,10 +342,8 @@ def _render_layout(
 ) -> str:
     """Shared email layout.
 
-    ``hero_icon_html`` (an icon ``<img>``) replaces the text glyph in the hero
-    circle and ``signature_icon_html`` adds an icon beside the signature; both
-    default to the standard layout, so templates that do not pass them are
-    rendered unchanged.
+    Optional ``hero_icon_html`` (an icon ``<img>``) replaces the hero text
+    glyph, and ``signature_icon_html`` adds an icon beside the signature.
     """
     palette = TONES[tone]
     if hero_icon_html is not None:
@@ -709,10 +699,9 @@ def render_password_reset_email(
 # ---------------------------------------------------------------------------
 # Document-request status notifications
 # ---------------------------------------------------------------------------
-# One entry per status that has an email to the resident who owns the request.
-# Which statuses actually send email is decided by NOTIFIABLE_STATUSES in
-# app/request_notifications.py (unchanged); "Pending" (request received) is a
-# ready-to-use design that is only sent if a trigger is added for it.
+# One entry per status with a resident email. Which statuses actually send is
+# decided by NOTIFIABLE_STATUSES in app/request_notifications.py; "Pending" is
+# defined here but only sent if a trigger is added for it.
 STATUS_EMAIL_CONTENT: dict[str, dict[str, object]] = {
     "Pending": {
         "subject": "We Received Your Barangay Document Request",
@@ -904,10 +893,9 @@ def _render_completed_email(
     remarks_title: str,
     completed_text: str,
 ) -> tuple[str, str, str]:
-    """"Your Document Request Is Completed": Lucide icons, no action button.
+    """"Your Document Request Is Completed" email, with Lucide icons.
 
-    The request is closed, so the email only confirms the completion; the
-    "View My Requests" button and link are intentionally not included.
+    The request is closed, so the "View My Requests" button is intentionally omitted.
     """
     green = TONES["success"]
     help_title = "Did not receive your document?"
@@ -1043,18 +1031,11 @@ def render_request_status_email(
 ) -> tuple[str, str, str]:
     """Build the "your document request changed status" email.
 
-    Returns ``(subject, text_body, html_body)``. ``resident_name``,
-    ``document_name``, ``request_number``, ``admin_remarks`` and the email
-    address come from the database and are treated as untrusted input, so they
-    are HTML-escaped wherever they are interpolated into the markup.
-
-    ``event_time`` is when the status changed (``requests.last_updated``,
-    UTC); ``None`` means now. ``portal_url`` adds a "View My Requests" button.
-
-    The recipient's registered address is only used for the "sent to" line at
-    the bottom of the message - the actual ``To`` header is set by
-    ``app/email_service.send_email`` from the address the caller resolved for
-    the resident who owns the request.
+    Returns ``(subject, text_body, html_body)``. All database values are
+    treated as untrusted and HTML-escaped. ``event_time`` is the UTC status
+    change time (``None`` means now); ``portal_url`` adds a "View My Requests"
+    button. ``recipient_email`` only fills the "sent to" footer line; the
+    ``To`` header is set by ``app/email_service.send_email``.
     """
     content = STATUS_EMAIL_CONTENT.get(status) or _FALLBACK_STATUS_CONTENT
     tone = str(content["tone"])
@@ -1207,12 +1188,9 @@ def render_registration_email(
 ) -> tuple[str, str, str]:
     """Build one registration email as ``(subject, text_body, html_body)``.
 
-    ``resident_name`` / ``recipient_email`` come from the resident's account and
-    ``rejection_reason`` is written by an administrator; all of them are
-    HTML-escaped before they reach the markup. ``event_time`` is when the
-    registration was submitted (``registered``) or reviewed (``approved`` /
-    ``rejected``), in UTC; ``None`` means now. Raises ``KeyError`` for an
-    unknown event.
+    All user/administrator-supplied values are HTML-escaped. ``event_time`` is
+    the UTC submission or review time (``None`` means now). Raises
+    ``KeyError`` for an unknown event.
     """
     subject = _REGISTRATION_SUBJECTS[event]
     name = resident_name.strip()

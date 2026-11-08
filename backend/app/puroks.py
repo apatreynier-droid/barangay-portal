@@ -1,9 +1,8 @@
 from __future__ import annotations
 
-#: Single source of truth for the seven standardized Purok names used across
-#: the Barangay Portal System. Every layer (registration, admin resident
-#: management, dashboard statistics, reports, exports) must use exactly these
-#: values. Do not maintain a separate Purok list in another file.
+#: Single source of truth for the seven standardized Purok names (backend).
+#: Do not maintain a separate list elsewhere; the frontend mirror is
+#: src/Utils/Shared/puroks.ts.
 STANDARDIZED_PUROKS: tuple[str, ...] = (
     "Purok - 1",
     "Purok - 2",
@@ -17,11 +16,8 @@ STANDARDIZED_PUROKS: tuple[str, ...] = (
 #: Lookup set used for O(1) membership validation.
 PUROK_SET: frozenset[str] = frozenset(STANDARDIZED_PUROKS)
 
-#: Documented mapping of legacy Purok labels to their standardized replacements.
-#: Both legacy names referred to the Purok 3 area (confirmed against resident
-#: address fields containing "Purok 3"), so both map to "Purok - 3". This map is
-#: used by the data-migration script and is intentionally not applied silently by
-#: the running application.
+#: Legacy labels -> standardized names (both referred to the Purok 3 area).
+#: Documents migration 009_standardize_puroks.sql; never applied at runtime.
 LEGACY_PUROK_MAPPING: dict[str, str] = {
     "Purok - 3 Lagab": "Purok - 3",
     "Purok - 3 Lagab Curvada": "Purok - 3",

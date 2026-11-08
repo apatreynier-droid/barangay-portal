@@ -99,9 +99,8 @@ const AVAILABLE_ACTIONS: Record<PotholeStatus, PotholeAction[]> = {
 };
 
 /**
- * Actions a Staff account may take (repair progress). Verifying or rejecting a
- * resident's report is an administrator decision; the backend enforces the
- * same rule, this only hides buttons that would be refused.
+ * Actions a Staff account may take (repair progress). The backend enforces
+ * this; the UI only hides buttons that would be refused.
  */
 const STAFF_ACTIONS: PotholeAction[] = ["start_maintenance", "resolve"];
 

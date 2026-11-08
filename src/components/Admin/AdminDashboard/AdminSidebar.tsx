@@ -37,11 +37,7 @@ type AdminNavSection = {
   items: AdminNavItem[];
 };
 
-/**
- * Nav items that stay administrator-only. A Staff account uses the same Admin
- * Portal layout but never sees (and never gets access to) User Management,
- * Reports, Activity Logs or the Approvals review queue.
- */
+/** Nav items hidden from Staff accounts (access is also enforced by the backend). */
 const ADMINISTRATOR_ONLY_NAV_KEYS = [
   "approvals",
   "reports",
@@ -96,8 +92,7 @@ const AdminSidebar = ({
 }: AdminSidebarProps) => {
   const navigate = useNavigate();
   const isAdministratorAccount = isAdministrator(user);
-  // Grouped into related sections with subtle labels; items, routes, badges
-  // and handlers are unchanged.
+  // Nav items grouped into labelled sections.
   const navSections: AdminNavSection[] = [
     {
       label: "Main",
@@ -180,8 +175,7 @@ const AdminSidebar = ({
     },
   ];
 
-  // Staff accounts use the same portal shell but only see the operational
-  // items their role is allowed to open (the backend re-checks every call).
+  // Staff see only operational items (the backend re-checks every call).
   const visibleSections = isAdministratorAccount
     ? navSections
     : navSections

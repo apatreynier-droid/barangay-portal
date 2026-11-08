@@ -8,7 +8,7 @@ from pydantic import BaseModel, Field, field_validator
 
 from .puroks import validate_purok
 
-#: A registration now sends mail, so the address must at least look deliverable.
+#: Basic deliverability check; registration emails are sent to this address.
 _EMAIL_PATTERN = re.compile(r"^[^\s@]+@[^\s@]+\.[^\s@]+$")
 
 
@@ -81,8 +81,7 @@ class MessageResponse(BaseModel):
 
 
 class RegistrationResponse(BaseModel):
-    """Result of a registration. It never carries a token: the account waits
-    for an Administrator's review before it can sign in."""
+    """Registration result. No token is issued until an Administrator approves."""
 
     message: str
     email: str

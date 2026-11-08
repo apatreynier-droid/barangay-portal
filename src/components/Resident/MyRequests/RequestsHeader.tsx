@@ -6,8 +6,7 @@ import ThemeToggle from "../../Shared/ThemeToggle";
 
 type RequestsHeaderProps = {
   firstName: string;
-  /** No longer used: the hamburger was replaced by the mobile logout button.
-   *  Kept so pages that still pass it compile unchanged. */
+  /** @deprecated Unused (replaced by the mobile logout button); kept for existing callers. */
   onMenuToggle?: () => void;
   /** Shows the logout button on phones. */
   onLogout?: () => void;

@@ -1,8 +1,6 @@
 .admin-topbar {
-  /* Sticky: stays in flow until the page scrolls, then pins to the top of
-     the viewport. Opaque page background so content scrolls underneath
-     without showing through; z-index sits above page content but below
-     modals/backdrops (z-index 20+). */
+  /* Sticky with an opaque background so content scrolls underneath; z-index
+     is above page content but below modals/backdrops (20+). */
   position: sticky;
   top: 0;
   z-index: 10;
@@ -12,8 +10,7 @@
   justify-content: space-between;
   gap: 12px;
   margin-bottom: 18px;
-  /* Light divider (the old dark #595a5b line looked harsh under the header);
-     it only reads as a hairline and keeps the pinned bar separated. */
+  /* Light hairline divider that keeps the pinned bar separated. */
   border-bottom: 1px solid #e2e8f0;
 }
 
@@ -118,10 +115,8 @@
   color: #64748b;
 }
 
-/* The dashboard greeting swaps to a single short line on phones so the app
-   bar never eats three rows; other admin pages pass their own `subtitle`,
-   which renders in both modes. Only one variant is ever displayed, so the
-   hidden one stays out of the accessibility tree (display: none). */
+/* The dashboard greeting uses a short single line on phones. The hidden
+   variant uses display: none, so it stays out of the accessibility tree. */
 .admin-welcome--short {
   display: none;
 }

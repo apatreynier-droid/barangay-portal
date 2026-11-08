@@ -78,11 +78,9 @@ const AdminDocumentRequests = ({
   });
 
   /**
-   * Deep link from the Admin Dashboard's Recent Requests list: the dashboard
-   * navigates here with { state: { requestNumber } }, and once the list is
-   * loaded the matching request opens directly in the details view. The
-   * state is cleared immediately afterwards so a browser back/forward or a
-   * remount never reopens a stale request.
+   * Deep link from the dashboard ({ state: { requestNumber } }): the matching
+   * request opens once the list loads, then the state is cleared so
+   * back/forward or a remount never reopens it.
    */
   const location = useLocation();
   const navigate = useNavigate();
@@ -148,10 +146,8 @@ const AdminDocumentRequests = ({
   }, []);
 
   /**
-   * The details view replaces the list in place (no route change), so the
-   * filters above survive in this component's state. The list's scroll
-   * position is remembered here so "Back to Request" returns the
-   * administrator to the same spot instead of the top of the page.
+   * The details view replaces the list in place, so filters survive. The
+   * scroll position is saved so "Back to Request" returns to the same spot.
    */
   const listScrollY = useRef<number | null>(null);
 

@@ -1,18 +1,15 @@
 """Resident image attachments for document requests.
 
-Storage design
---------------
-* The image bytes live on disk in ``settings.upload_dir / request_attachments``
-  (persistent, survives backend restarts). The folder is never mounted as
-  static files: every download goes through an authenticated endpoint.
-* The ``request_attachments`` table stores the metadata plus the generated
-  ``stored_filename`` and links it to ``requests.id`` (one image per request).
-* Images are not stored as MySQL BLOBs: multi-megabyte rows bloat the
-  database, its backups and every query touching the table, while a file
-  reference keeps the database small and the files easy to back up.
+Storage:
 
-Security
---------
+* Files live in ``settings.upload_dir / request_attachments``, never served
+  statically; downloads go through authenticated endpoints.
+* ``request_attachments`` holds the metadata and generated ``stored_filename``
+  (one image per request). Files are kept on disk rather than as BLOBs to keep
+  the database and its backups small.
+
+Security:
+
 * The file type is detected from its magic bytes (JPEG, PNG, WebP only); the
   client's ``Content-Type`` header and filename are never trusted.
 * The size is enforced while reading (``settings.request_attachment_max_bytes``).

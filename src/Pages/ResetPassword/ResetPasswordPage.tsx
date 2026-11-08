@@ -22,7 +22,7 @@ const BrandBadge = () => (
   </div>
 );
 
-/** Generic padlock icon — intentionally not tied to any mail provider. */
+/** Generic padlock icon. */
 const LockIcon = () => (
   <svg
     width="28"

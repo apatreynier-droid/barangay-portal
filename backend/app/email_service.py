@@ -1,17 +1,11 @@
-"""Reusable SMTP email delivery for the Barangay Portal backend.
+"""SMTP email delivery for the Barangay Portal backend.
 
-Single place where outgoing mail is sent, so no endpoint has to know how to
-talk to the mail server:
+``send_email`` is the low-level transport; the ``send_*_email`` helpers build
+on it with the templates from ``app/email_templates.py``.
 
-* ``send_email`` — low-level transport (connect, STARTTLS/SSL, authenticate,
-  send). Accepts plain text and/or HTML bodies.
-* ``send_password_reset_email`` — the Forgot Password use case, built on top
-  of ``send_email`` with the templates from ``app/email_templates.py``.
-
-Configuration is read from the existing ``app.config.settings`` (i.e.
-``backend/.env``); nothing here hardcodes credentials and the password is
-never logged. Delivery failures raise :class:`EmailDeliveryError` so callers
-can return a friendly, non-technical message to the client.
+Settings come from ``app.config.settings`` (``backend/.env``); the SMTP
+password is never logged. Failures raise :class:`EmailDeliveryError` so
+callers can show a friendly message.
 """
 
 from __future__ import annotations
@@ -130,7 +124,7 @@ def build_message(
 
     When the HTML references Lucide icons (``cid:`` images, see
     ``app/email_assets.py``), the HTML part becomes ``multipart/related`` with
-    those PNGs attached inline. HTML without icons is built exactly as before.
+    those PNGs attached inline.
     """
     message = EmailMessage()
     message["Subject"] = subject
@@ -213,15 +207,11 @@ def send_document_status_email(
     event_time: object | None = None,
     portal_url: str = "",
 ) -> None:
-    """Email a resident that one of *their* document requests changed status.
+    """Email a resident that one of their document requests changed status.
 
-    ``to_email`` must be the address registered to the resident who owns the
-    request - the caller (``app/request_notifications.py``) resolves it from
-    the database, nothing here is hardcoded or shared between residents.
-
-    Raises :class:`EmailDeliveryError` when the SMTP server rejects the
-    message; callers decide how to log it (a failed email must never undo a
-    saved status change).
+    ``to_email`` is the request owner's address, resolved by
+    ``app/request_notifications.py``. Raises :class:`EmailDeliveryError` on
+    failure; a failed email must never undo a saved status change.
     """
     subject, text_body, html_body = render_request_status_email(
         resident_name=resident_name,
@@ -296,9 +286,8 @@ def send_password_reset_email(
 def verify_connection() -> None:
     """Connect and authenticate without sending anything.
 
-    Used by ``scripts/test_smtp.py`` (and handy for deployment checks) to
-    confirm that the SMTP settings in ``backend/.env`` actually work. Raises
-    :class:`EmailDeliveryError` when they do not.
+    Used by ``scripts/test_smtp.py`` to verify the SMTP settings. Raises
+    :class:`EmailDeliveryError` when they do not work.
     """
     client = _connect()
     try:

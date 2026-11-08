@@ -444,11 +444,8 @@ body {
   height: auto;
 }
 
-/* Wider SVG text compensates for viewBox down-scaling on narrow screens.
-   Scoped to the Reports charts (.reports-chart): they render at a fixed
-   viewBox size and shrink with the viewport, so their labels need the bump.
-   The Admin Dashboard bar chart sizes its viewBox to the container (1:1 px)
-   and keeps its literal 11-12px — see AdminDashboard.css. */
+/* Larger SVG text offsets viewBox down-scaling of the fixed-size Reports
+   charts (.reports-chart) on narrow screens. */
 @media (max-width: 1024px) {
   .reports-chart .admin-chart-axis-label,
   .reports-purok-label {

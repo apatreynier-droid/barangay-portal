@@ -16,7 +16,7 @@ from app.security import hash_password  # noqa: E402
 ADMIN_EMAIL = "admin@barangaylagab.com"
 ADMIN_PASSWORD = "Admin@123"
 # Shown as the generic "Administrator" across the portal (see
-# src/Utils/AdminDisplay.ts), so the profile keeps an empty last name.
+# src/Utils/Admin/AdminDisplay.ts), so the profile keeps an empty last name.
 ADMIN_FIRST_NAME = "Administrator"
 ADMIN_LAST_NAME = ""
 

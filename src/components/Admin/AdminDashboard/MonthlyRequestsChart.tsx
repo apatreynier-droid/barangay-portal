@@ -22,15 +22,11 @@ const COMPACT_WIDTH = 520;
 /** How many recent months the compact (phone) chart shows. */
 const COMPACT_MONTHS = 6;
 
-// Whole-number Y-axis intervals: the axis picks the smallest "nice" step
-// (1, 2, 5, 10, 15, 20, …) that keeps every gridline label an integer, e.g.
-// 0, 5, 10, 15, 20 for a peak of 12. Decimal labels are never produced.
+// Y-axis uses the smallest "nice" integer step that fits the data
+// (e.g. 0, 5, 10, 15, 20 for a peak of 12), so labels are never decimals.
 const NICE_STEPS = [1, 2, 5, 10, 15, 20, 25, 50, 100, 150, 200, 250, 500, 1000];
 
-// Entrance animation settings (Recharts-equivalent):
-// isAnimationActive={true}
-// animationDuration={1500}
-// animationEasing="ease-out"
+// Entrance animation (duration in ms, ease-out).
 const ANIMATION_DURATION = 1500;
 const ANIMATION_EASING = "ease-out";
 
@@ -55,9 +51,8 @@ const MonthlyRequestsChart = ({ data }: MonthlyRequestsChartProps) => {
   const [tooltipPosition, setTooltipPosition] =
     useState<TooltipPosition | null>(null);
   /**
-   * The chart renders 1:1 with its container (viewBox width = measured CSS
-   * pixels), so axis and month labels stay at a readable 11–12px on phones
-   * instead of being shrunk by viewBox scaling. Re-measured on resize.
+   * viewBox width matches the measured container width, so labels keep a
+   * readable size on phones instead of being scaled down. Re-measured on resize.
    */
   const [chartWidth, setChartWidth] = useState(DEFAULT_WIDTH);
 
@@ -127,8 +122,7 @@ const MonthlyRequestsChart = ({ data }: MonthlyRequestsChartProps) => {
 
   const baselineY = PADDING_TOP + plotHeight;
 
-  // Recharts-style hover: track the cursor across the plot area, resolve the
-  // active month group + nearest bar, and follow the cursor with a tooltip.
+  // Resolve the hovered month group and nearest bar; the tooltip follows the cursor.
   const handleMouseMove = (event: MouseEvent<SVGSVGElement>) => {
     const svg = svgRef.current;
     const wrapper = wrapperRef.current;
@@ -183,11 +177,8 @@ const MonthlyRequestsChart = ({ data }: MonthlyRequestsChartProps) => {
     setTooltipPosition(null);
   };
 
-  // Entrance animation: bars grow upward from the baseline once the real
-  // chart data has loaded. The parent only mounts this component after the
-  // dashboard fetch resolves, so mounting here means the data is ready.
-  // Plays once per data payload: container resizes re-render the bars but
-  // must not replay the entrance (the guard skips those runs).
+  // Bars grow upward once per data payload (the parent mounts this only after
+  // data loads). The guard prevents resizes from replaying the animation.
   const animatedDataRef = useRef<AdminMonthlyDataPoint[] | null>(null);
 
   useEffect(() => {
@@ -246,7 +237,7 @@ const MonthlyRequestsChart = ({ data }: MonthlyRequestsChartProps) => {
     <section className="admin-panel admin-chart-panel">
       <h3 className="admin-panel-title">Monthly Requests Overview</h3>
 
-      {/* Meaningful legend: explains what each bar color represents. */}
+      {/* Legend: what each bar color represents. */}
       <ul className="admin-chart-legend">
         {SERIES.map((series) => (
           <li key={series.key}>

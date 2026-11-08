@@ -18,7 +18,7 @@ const BrandBadge = () => (
   </div>
 );
 
-/** Generic email/envelope icon — intentionally not tied to any mail provider. */
+/** Generic envelope icon, not tied to any mail provider. */
 const MailIcon = () => (
   <svg
     width="28"

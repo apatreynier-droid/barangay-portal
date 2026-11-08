@@ -98,10 +98,8 @@ const NOTIFICATION_KIND_META: Record<
 };
 
 /**
- * Maps a stored notification (title + notification_type from the
- * notifications table) to its display icon/color. Titles come from the
- * backend (e.g. "New resident registration", "New document request",
- * "Request status: Ready for Pickup", "Registration rejected").
+ * Maps a notification's title and notification_type to its display icon/color
+ * (titles come from the backend, e.g. "Request status: Ready for Pickup").
  */
 const resolveKind = (notification: ApiNotification): NotificationKind => {
   const title = notification.title.toLowerCase();
@@ -156,8 +154,6 @@ const resolveKind = (notification: ApiNotification): NotificationKind => {
 
   return "update";
 };
-
-/** MySQL timestamps are handled by the shared toUtcTimestamp helper. */
 
 function AdminNotification({
   user,

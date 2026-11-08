@@ -321,10 +321,8 @@ const CreateAccountForm = ({
                 required
                 error={errors.dateOfBirth}
               >
-                {/* Shared dropdown calendar (same design as AdminActions'
-                    Pickup Date). `id` keeps the label's htmlFor association,
-                    and the handler mirrors handleChange: update the value,
-                    clear the banner and this field's validation error. */}
+                {/* Shared date picker; the handler mirrors handleChange
+                    (update value, clear banner and field error). */}
                 <DatePickerInput
                   id="dateOfBirth"
                   value={formData.dateOfBirth}

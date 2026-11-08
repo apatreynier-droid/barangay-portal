@@ -1,36 +1,19 @@
 """Pothole reports: resident submissions and their administration.
 
-Flow
-----
-Resident "Pothole Detection" page
-    -> ``POST /api/pothole-reports`` (multipart: photo + location fields)
-    -> row in ``pothole_reports`` + original photo file on disk
-    -> Admin "Pothole Management" page (``GET /api/admin/pothole-reports``)
+Residents submit via ``POST /api/pothole-reports`` (multipart photo +
+location); admins review via ``GET /api/admin/pothole-reports``. Reports are
+stored as submitted: no image processing or automatic detection.
 
-Scope: reports are stored and displayed exactly as submitted. There is no
-image processing, no automatic detection and no machine learning; the photo
-bytes are written to disk unchanged.
+Location: coordinates are optional. ``location_source`` is ``gps`` (with
+accuracy in metres) or ``manual`` (a map pin, no accuracy). Reports without
+coordinates are listed but not mapped.
 
-Location
---------
-Coordinates are optional and never invented. ``location_source`` records
-where they came from: ``gps`` (the device's Geolocation API, with its accuracy
-in metres) or ``manual`` (a pin the resident placed on the map, which has no
-GPS accuracy). Reports without coordinates are listed but never mapped.
+Storage: photos reuse ``app.attachments`` (magic-byte validation, random
+names, authenticated streaming) under ``uploads/pothole_reports``.
 
-Storage
--------
-Photos reuse the document-request attachment storage in ``app.attachments``
-(magic-byte validation, random file names, authenticated streaming) under the
-``uploads/pothole_reports`` sub-folder. The folder is never served statically.
-
-Access
-------
-* Residents submit reports and list only their own (``user_id`` filter).
-* Admin Portal roles (staff, admin, super_admin) list and view every report,
-  add remarks, and update statuses. Verifying and rejecting a report are
-  administrator decisions, while Staff may record repair progress (under
-  maintenance, resolved) - the same split as the document-request workflow.
+Access: residents see only their own reports. Admin Portal roles see all
+reports; verifying/rejecting is reserved for administrators, while Staff may
+record repair progress (under maintenance, resolved).
 """
 
 from __future__ import annotations
@@ -498,8 +481,7 @@ def create_pothole_report(
                 ),
                 dedupe_key=build_dedupe_key("pothole-received", report_id),
             )
-            # Same transaction as the report: a rolled-back report never
-            # leaves a notification about a report that does not exist.
+            # Same transaction as the report: a rollback also discards the notification.
             notify_admins(
                 connection,
                 title="New pothole report",

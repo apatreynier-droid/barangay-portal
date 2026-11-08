@@ -49,11 +49,9 @@ const DocumentTypePieChart = ({ data }: DocumentTypePieChartProps) => {
     ].join(" ");
   };
 
-  // Resolve the hovered slice from the pointer position instead of the slice's
-  // own mouse events. A hovered slice translates outward, so the shape slides
-  // out from under the cursor and the browser kept firing enter/leave events
-  // back and forth (visible flicker). Hit-testing the static pie geometry keeps
-  // the hover state steady while the slice animates.
+  // Hit-test the static pie geometry instead of using slice mouse events: a
+  // hovered slice moves outward from under the cursor, which caused
+  // enter/leave flicker.
   const resolveSliceIndex = (x: number, y: number): number | null => {
     const offsetX = x - center;
     const offsetY = y - center;
@@ -165,9 +163,7 @@ const DocumentTypePieChart = ({ data }: DocumentTypePieChartProps) => {
                   cumulativeAngle = endAngle;
 
                   const midAngle = (startAngle + endAngle) / 2;
-                  // The active slice expands outward; the movement is eased by
-                  // CSS (.reports-pie-slice) so it glides out and back instead
-                  // of jumping, and only this slice's transform changes.
+                  // The hovered slice expands outward (eased by .reports-pie-slice).
                   const isHovered = hoveredIndex === index;
                   const dx = isHovered
                     ? Math.sin(midAngle) * SLICE_EXPAND

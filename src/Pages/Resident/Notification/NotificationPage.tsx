@@ -67,21 +67,16 @@ const resolveKind = (notification: ApiNotification): NotificationKind => {
   return "update";
 };
 
-//: Timezone used for all resident-facing timestamp displays (Philippine Standard Time).
+/** Timezone for all resident-facing timestamps (Philippine Standard Time). */
 const PHILIPPINE_TIMEZONE = "Asia/Manila";
 
-//: How often (ms) the relative-time labels are refreshed so "Just now" stays accurate.
+/** How often (ms) relative-time labels such as "Just now" are refreshed. */
 const RELATIVE_TIME_REFRESH_MS = 60_000;
 
 /**
- * Parse a backend timestamp as UTC and return a Date.
- *
- * The backend stores all timestamps in UTC (session time_zone = '+00:00').
- * MySQL returns TIMESTAMP columns as naive datetime strings (e.g.
- * "2026-11-02 15:35:00"); FastAPI serializes them as ISO strings without a
- * timezone marker (e.g. "2026-11-02T15:35:00"). We treat these as UTC by
- * appending "Z" so the browser interprets the instant correctly, then convert
- * to Asia/Manila only at display time.
+ * Parse a backend timestamp as UTC. The API sends UTC timestamps without a
+ * zone marker (e.g. "2026-11-02T15:35:00"), so "Z" is appended before parsing;
+ * conversion to Asia/Manila happens only at display time.
  */
 function parseUtcTimestamp(value: string): Date {
   const trimmed = value.trim();
@@ -168,8 +163,7 @@ function NotificationPage({
   const [isMarkingAll, setIsMarkingAll] = useState(false);
   const [actionError, setActionError] = useState("");
   const [filter, setFilter] = useState<NotificationFilter>("all");
-  //: Ticks every minute so relative labels ("Just now", "5 minutes ago") stay
-  //: accurate as time passes without the resident needing to refresh.
+  // Ticks every minute so relative labels stay accurate without a refresh.
   const [now, setNow] = useState(() => Date.now());
 
   useEffect(() => {

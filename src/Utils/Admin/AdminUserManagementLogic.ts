@@ -1,10 +1,9 @@
 /**
  * Display helpers and permission rules for the Admin "User Management" page.
  *
- * The permission helpers mirror the guards enforced by the backend
- * (``assert_role_assignment_allowed`` / ``assert_not_own_role_change`` in
- * backend/app/main.py). They only drive which buttons are usable; the server
- * re-checks every request, so hiding a button is never the protection itself.
+ * Permission helpers mirror the backend guards (`assert_role_assignment_allowed`
+ * / `assert_not_own_role_change` in backend/app/main.py). They only control
+ * button state; the server re-checks every request.
  */
 import type {
   AdminStaffAccount,
@@ -124,11 +123,8 @@ export function formatStaffCreatedAt(value: string): string {
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 /**
- * Validates the Add/Edit Staff form.
- *
- * ``requiresPassword`` is true for a new account (the password is hashed by the
- * backend) and false when editing, where the password is handled through the
- * existing "Reset PW" email flow instead.
+ * Validates the Add/Edit Staff form. `requiresPassword` is true for new
+ * accounts; existing accounts change passwords via the "Reset PW" email flow.
  */
 export function validateStaffForm(
   values: AdminStaffFormValues,

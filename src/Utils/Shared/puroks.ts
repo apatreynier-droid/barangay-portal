@@ -1,14 +1,9 @@
 /**
- * Single source of truth for the seven standardized Purok names used across
- * the Barangay Portal System.
+ * Single source of truth for the seven standardized Purok names (frontend).
+ * Mirrors STANDARDIZED_PUROKS in backend/app/puroks.py.
  *
- * Every layer that renders or accepts a Purok (resident registration,
- * admin resident tables/filters/details, reports, exports) must use this list
- * so the values stay consistent from the frontend to the database.
- *
- * Legacy labels "Purok - 3 Lagab" and "Purok - 3 Lagab Curvada" are
- * intentionally NOT included. They were standardized to "Purok - 3"
- * (see backend migration 009_standardize_puroks.sql).
+ * Legacy labels ("Purok - 3 Lagab", "Purok - 3 Lagab Curvada") are
+ * intentionally excluded; they were merged into "Purok - 3" by migration 009.
  */
 export const STANDARDIZED_PUROKS: readonly string[] = [
   "Purok - 1",
@@ -27,7 +22,7 @@ export function isStandardizedPurok(value: string): value is Purok {
   return STANDARDIZED_PUROKS.includes(value as Purok);
 }
 
-/** Builds <option> elements for a Purok dropdown, including a blank prompt. */
+/** The Purok values for a dropdown (callers add any blank prompt option). */
 export function purokOptions(): readonly string[] {
   return STANDARDIZED_PUROKS;
 }

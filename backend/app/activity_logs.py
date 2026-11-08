@@ -1,11 +1,7 @@
-"""Activity (audit) logging helpers.
+"""Activity (audit) logging for the Admin "Activity Logs" page.
 
-Every notable action performed in the portal is stored once in the
-``activity_logs`` table (see scripts/migrations/006_add_activity_logs.sql)
-and surfaced on the Admin "Activity Logs" page.
-
-Recording is deliberately best-effort: a logging problem must never break or
-roll back the action that produced the entry.
+Entries go to ``activity_logs`` (migration 006). Recording is best-effort: a
+logging failure never breaks or rolls back the logged action.
 """
 
 from __future__ import annotations
@@ -28,11 +24,10 @@ def record_activity_log(
     target_type: str = "System",
     ip_address: str | None = None,
 ) -> None:
-    """Persist one audit entry for the action that just succeeded.
+    """Persist one audit entry for an action that just succeeded.
 
-    The actor's display name and role are resolved from ``user_id`` so every
-    endpoint only has to describe *what* happened. Failures are logged and
-    swallowed on purpose.
+    The actor's name and role are resolved from ``user_id``. Failures are
+    logged and swallowed.
     """
     try:
         actor_name, actor_role = _resolve_actor(connection, user_id)

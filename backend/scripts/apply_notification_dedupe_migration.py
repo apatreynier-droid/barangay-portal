@@ -1,14 +1,7 @@
 r"""Idempotently add the ``notifications.dedupe_key`` duplicate guard.
 
-Admin notifications are written automatically by the backend (see
-``app/notifications.py``) whenever an important action happens - a resident
-submitting, editing or deleting a document request, a request status change, a
-new resident account, or a resident profile/account update.
-
-Each of those rows carries a deterministic ``dedupe_key`` so the same action
-can never notify the admin twice, even when a form is submitted twice or the
-frontend retries an API call. The value is claimed through a UNIQUE index, so
-the database - not the application - is what prevents duplicates.
+The UNIQUE index on ``dedupe_key`` lets the database reject duplicate admin
+notifications for a repeated action (see ``app/notifications.py``).
 
 Checks ``information_schema`` first, so it is safe to run multiple times:
 

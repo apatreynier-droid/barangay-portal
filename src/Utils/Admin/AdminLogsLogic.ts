@@ -86,12 +86,8 @@ export function formatLogActorRole(role: string): string {
 }
 
 /**
- * Display name shown in the Activity Logs "Actor" column.
- *
- * Display-only mapping: administrator accounts (admin and super_admin) are
- * presented as "Administrator", mirroring getPortalProfileName in AdminDisplay;
- * staff and resident actors keep their stored name. The underlying log rows,
- * profile, credentials, role, and permissions are not modified.
+ * Display name for the Activity Logs "Actor" column. Administrator accounts
+ * show as "Administrator" (like getPortalProfileName); others keep their name.
  */
 export function formatLogActorName(
   actorName: string,

@@ -71,10 +71,8 @@ const AdminPotholeManagement = lazy(
 );
 
 /**
- * How often the notification list is re-read from GET /api/notifications while
- * a user is signed in. Residents and administrators are usually signed in in
- * different windows, so polling is what makes a notification created by one
- * person show up for the other without a page reload.
+ * Notification polling interval (GET /api/notifications) while signed in, so
+ * new notifications appear without a page reload.
  */
 const NOTIFICATION_REFRESH_MS = 30000;
 

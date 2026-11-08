@@ -11,7 +11,7 @@
   position: fixed;
   left: 0;
   top: 0;
-  width: 250px; /* unchanged so your page layout offset still matches */
+  width: 250px; /* must match the page layout's sidebar offset */
   height: 100vh;
   background: var(--sb-bg);
   border-right: 1px solid rgba(255, 255, 255, 0.08);

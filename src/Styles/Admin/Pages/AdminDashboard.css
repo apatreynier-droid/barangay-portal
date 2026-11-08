@@ -5,12 +5,9 @@
   color: #1f2937;
 }
 
-/* The project has no global box-sizing reset, so `.admin-main` (a fixed
-   width of calc(100% - sidebar) plus horizontal padding) used to be dozens
-   of pixels wider than the viewport — masked by html/body overflow-x: hidden
-   as clipped right edges. Scope the standard border-box rule to every admin
-   page (all of them root themselves in .admin-dashboard) so widths include
-   their own padding and nothing can push past the viewport. */
+/* No global box-sizing reset exists, so apply border-box to every admin page
+   (all rooted in .admin-dashboard); otherwise `.admin-main`'s
+   calc(100% - sidebar) width plus padding overflows the viewport. */
 .admin-dashboard,
 .admin-dashboard * {
   box-sizing: border-box;
@@ -501,15 +498,13 @@
 }
 
 .admin-chart-axis-label {
-  /* #64748b clears 4.5:1 on the white panel (the old #94a3b8 did not). */
+  /* #64748b meets 4.5:1 contrast on the white panel. */
   fill: #64748b;
   font-size: 11px;
 }
 
-/* The bar chart maps its viewBox 1:1 to the measured container width, so no
-   viewBox down-scaling happens and the labels render at their literal px
-   size: 11px on phones, 12px once there is room. (The shared compensation
-   bumps for this class were removed from Styles/responsive.css.) */
+/* The bar chart's viewBox matches the container width 1:1, so labels render
+   at their literal size: 11px on phones, 12px when there is room. */
 @media (min-width: 769px) {
   .admin-chart-axis-label {
     font-size: 12px;
@@ -629,7 +624,7 @@
 .admin-table th {
   padding: 8px 10px;
   border-bottom: 1px solid #e2e8f0;
-  /* Was #94a3b8 (2.5:1 on white) — too light for 11px text. */
+  /* #64748b keeps 11px text at 4.5:1 contrast on white. */
   color: #64748b;
   font-size: 11px;
   font-weight: 600;
@@ -810,9 +805,7 @@
   margin: 0;
 }
 
-/* Phones/tablets up to 768px: the table cannot expose its columns there, so
-   the readable card list replaces it entirely (nothing is merely hidden —
-   every field the table shows also appears on the cards). */
+/* Up to 768px the card list replaces the table (cards show every table field). */
 @media (max-width: 768px) {
   .admin-table-wrapper {
     display: none;
@@ -853,8 +846,7 @@
   font-weight: 700;
 }
 
-/* Resident avatars: muted palette shades derived from the portal colors so
-   the initial circles no longer clash with the rest of the UI. */
+/* Resident avatars: muted shades derived from the portal colors. */
 .admin-avatar.admin-avatar-1 {
   background: #3d6ea8;
 }
@@ -942,10 +934,9 @@
 
 /* ------------------------- Dashboard notification items --------------------- */
 
-/* Real notification rows (title + message + time + unread state); each row is
-   one button that opens the existing Notifications page. Class names are
-   dashboard-card specific so they never collide with the row styles the
-   Admin Notifications page owns for its own .admin-notification-item list. */
+/* Notification rows; each row is a button that opens the Notifications page.
+   Class names are card-specific to avoid clashing with the Admin
+   Notifications page's .admin-notification-item styles. */
 .admin-notif-feed-list li {
   display: block;
   padding: 0;

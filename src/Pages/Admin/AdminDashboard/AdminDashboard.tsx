@@ -39,10 +39,7 @@ type AdminDashboardProps = {
   onActivityLogs: () => void;
   onUserManagement: () => void;
   onLogout: () => void;
-  /**
-   * Opens the existing Document Requests details screen for one request
-   * (the dashboard passes the request number through router state).
-   */
+  /** Opens a request's details screen (request number passed via router state). */
   onOpenRequest: (requestNumber: string) => void;
 };
 

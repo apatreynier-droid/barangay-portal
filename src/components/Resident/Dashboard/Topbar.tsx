@@ -17,13 +17,11 @@ import {
 type TopbarProps = {
   unreadCount?: number;
   onNotifications?: () => void;
-  /** No longer used: the hamburger was replaced by the mobile logout button.
-   *  Kept so pages that still pass it compile unchanged. */
+  /** @deprecated Unused (replaced by the mobile logout button); kept for existing callers. */
   onMenuToggle?: () => void;
   /** Shows the logout button on phones. */
   onLogout?: () => void;
-  /** Optional title override. When omitted, the title is derived from the
-   *  current resident route so it always matches the active page. */
+  /** Optional title override; defaults to the current route's page title. */
   title?: string;
   /** Optional one-line description shown under the title. */
   description?: string;

@@ -1,29 +1,17 @@
-"""Pandas analytics for the Admin Dashboard and the Admin Reports page.
+"""Pandas analytics for the Admin Dashboard and Admin Reports page.
 
-This module is the analytics *service*: it reads only the columns it needs
-from MySQL (through the request's existing connection from ``get_db``) and
-uses Pandas to group, reindex, compare and summarize them. The route handlers
-in ``main.py`` stay thin: they validate the query parameters, call
-:func:`build_dashboard_analytics` / :func:`build_reports_analytics` and wrap
-the plain dictionaries returned here in the response schemas.
+Route handlers in ``main.py`` call :func:`build_dashboard_analytics` /
+:func:`build_reports_analytics` and wrap the returned dicts in schemas.
 
-Division of work
-----------------
-* **SQL** does straightforward counts (``GROUP BY status``/``purok``) and the
-  date filtering, so only the rows of the selected period ever leave MySQL.
-* **Pandas** does everything that needs reshaping: filling missing periods and
-  Puroks with zero, Manila-time bucketing (daily/weekly/monthly/yearly),
-  percentages, period-over-period comparison, and processing-time statistics.
+* SQL handles simple counts and date filtering, so only rows of the selected
+  period are loaded.
+* Pandas handles reshaping: zero-filling missing periods/Puroks, Manila-time
+  bucketing, percentages, period comparisons and processing-time statistics.
 
-Time zone rules
----------------
-Every timestamp is stored in UTC (see ``database.create_connection``). Report
-dates are *Philippine calendar days* (Asia/Manila, UTC+8, no daylight saving
-since 1978 - so a fixed offset is exact for every stored record). A Manila day
-is converted to a UTC half-open interval ``[start, end)`` for SQL filtering,
-and row timestamps are converted to Manila wall-clock time before Pandas puts
-them into periods. Missing timestamps stay ``NaT`` and are never counted as an
-event date.
+Time zones: timestamps are stored in UTC; report dates are Manila calendar
+days (UTC+8, no DST). A Manila day maps to a UTC ``[start, end)`` interval for
+SQL, and rows are converted to Manila time before bucketing. Missing
+timestamps stay ``NaT`` and are never counted.
 """
 
 from __future__ import annotations
@@ -98,8 +86,7 @@ GRANULARITY_FREQUENCIES: dict[str, str] = {
     "yearly": "Y",
 }
 
-#: Upper bound on the number of points one trend may return, so an "all time"
-#: daily report can never produce an unreadable (or huge) payload.
+#: Maximum points per trend, so long ranges never produce an oversized payload.
 MAX_TREND_POINTS: dict[str, int] = {
     "daily": 400,
     "weekly": 260,
@@ -121,8 +108,7 @@ TOP_ROADS = 10
 #: MySQL error raised when a table is missing (pothole migration not applied).
 TABLE_MISSING_ERROR = 1146
 
-#: Only requests made by resident accounts are analysed (the same scope the
-#: dashboard request counters have always used).
+#: Only requests made by resident accounts are analysed.
 RESIDENT_REQUESTS_FROM = """
     FROM requests
     JOIN users ON users.id = requests.user_id
@@ -490,8 +476,7 @@ def request_trend(
     granularity: str,
     show_year: bool | None = None,
 ) -> list[dict[str, object]]:
-    """Requests submitted per period, with how many of them ended Completed /
-    Rejected (the same cohort definition the reports have always used)."""
+    """Requests submitted per period, with how many of them ended Completed / Rejected."""
     index = _period_index(report_range, granularity)
     table = _category_table(
         requests["submitted_local"], requests["status"], index, REQUEST_STATUSES

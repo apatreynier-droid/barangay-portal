@@ -1,9 +1,6 @@
 .registration-header {
-  /* Sticky: stays in flow until the page scrolls, then pins to the top of
-     the viewport. Opaque navy background so form content scrolls underneath
-     without showing through; z-index matches the app's sticky top bars (10) —
-     above page content but below modal backdrops (20-30), the mobile drawer
-     (40), dialogs (50) and the date-picker panel (100). */
+  /* Sticky with an opaque background; z-index 10 matches the other sticky top
+     bars (below backdrops 20-30, drawer 40, dialogs 50, date picker 100). */
   position: sticky;
   top: 0;
   z-index: 10;
