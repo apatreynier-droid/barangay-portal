@@ -30,16 +30,27 @@ import sys
 from pathlib import Path
 
 import uvicorn
-from dotenv import load_dotenv
+from dotenv import dotenv_values
 
 BACKEND_DIR = Path(__file__).resolve().parent
 PROJECT_DIR = BACKEND_DIR.parent
 
-load_dotenv(BACKEND_DIR / ".env")
+# Read .env without copying it into os.environ: the uvicorn worker (and every
+# --reload restart) then loads the current .env itself, so changed database
+# credentials take effect on the next reload instead of being frozen here.
+ENV = dotenv_values(BACKEND_DIR / ".env")
+
+
+def _setting(name: str, default: str = "") -> str:
+    """Process environment first, then backend/.env, then the default."""
+    value = os.environ.get(name)
+    if value is None:
+        value = ENV.get(name)
+    return (value if value is not None else default).strip()
 
 
 def _path_setting(name: str, default: Path) -> Path:
-    value = os.getenv(name, "").strip()
+    value = _setting(name)
     if not value:
         return default
     path = Path(value)
@@ -50,8 +61,8 @@ def _path_setting(name: str, default: Path) -> Path:
 def main() -> int:
     certfile = _path_setting("DEV_SSL_CERTFILE", PROJECT_DIR / "certs" / "localhost.pem")
     keyfile = _path_setting("DEV_SSL_KEYFILE", PROJECT_DIR / "certs" / "localhost-key.pem")
-    host = os.getenv("API_HOST", "0.0.0.0").strip() or "0.0.0.0"
-    port = int(os.getenv("API_PORT", "8000"))
+    host = _setting("API_HOST", "0.0.0.0") or "0.0.0.0"
+    port = int(_setting("API_PORT", "8000") or "8000")
 
     missing = [str(p) for p in (certfile, keyfile) if not p.is_file()]
     if missing:
