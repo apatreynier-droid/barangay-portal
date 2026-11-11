@@ -268,7 +268,9 @@ The IP you open on the phone must be one of the names in the certificate.
 Today that is `100.100.109.84`. When the computer gets a different IP, do the
 following. The phone keeps the CA; only the server certificate changes.
 
-1. **WINDOWS POWERSHELL**: regenerate the certificate with the new IP (section 1.3).
+1. **FRONTEND TERMINAL** (in `barangay_portal_system`): run `npm run cert`. It
+   detects this computer's current Wi-Fi/hotspot IPs, regenerates the
+   certificate for them and prints the address to open on the phone.
 2. Add `https://<new-IP>:5173` to `CORS_ORIGINS` in `backend/.env`.
    `CORS_ORIGIN_REGEX` already allows any private IP over https.
 3. Restart both servers.
