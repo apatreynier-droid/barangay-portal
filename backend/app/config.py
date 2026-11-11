@@ -15,7 +15,8 @@ class Settings:
     mysql_host: str = os.getenv("MYSQL_HOST", "127.0.0.1")
     mysql_port: int = int(os.getenv("MYSQL_PORT", "3306"))
     mysql_user: str = os.getenv("MYSQL_USER", "barangay_app")
-    mysql_password: str = os.getenv("MYSQL_PASSWORD", "***REMOVED***")
+    # No fallback: the password lives only in backend/.env (never in code).
+    mysql_password: str = os.getenv("MYSQL_PASSWORD", "")
     mysql_database: str = os.getenv("MYSQL_DATABASE", "barangay_portal")
     access_token_days: int = int(os.getenv("ACCESS_TOKEN_DAYS", "7"))
     # -- Login rate limiting (in-memory, see app/rate_limit.py) ------------
