@@ -4,6 +4,7 @@ import type {
   AdminDocumentRequestDetail,
 } from "../../../Types/Admin/AdminDocumentRequestsType";
 import { updateAdminDocumentRequest } from "../../../Utils/Shared/api";
+import { toTimeInputValue } from "../../../Utils/Shared/pickupTime";
 import DatePickerInput from "../../Shared/DatePickerInput";
 
 type AdminActionsPanelProps = {
@@ -33,6 +34,9 @@ const AdminActionsPanel = ({
   const [remarks, setRemarks] = useState(request.admin_remarks ?? "");
   const [pickupDate, setPickupDate] = useState(
     request.pickup_date?.slice(0, 10) ?? "",
+  );
+  const [pickupTime, setPickupTime] = useState(
+    toTimeInputValue(request.pickup_time),
   );
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState("");
@@ -74,19 +78,43 @@ const AdminActionsPanel = ({
     );
   };
 
-  const savePickupDate = () => {
+  const savePickupSchedule = () => {
     void applyAction(
-      { pickup_date: pickupDate || undefined },
-      "Pickup date saved.",
+      {
+        pickup_date: pickupDate || undefined,
+        pickup_time: pickupTime || undefined,
+      },
+      "Pickup schedule saved. The resident was notified by email and in the portal.",
     );
+  };
+
+  // Sends the schedule with the status change, so the resident's single
+  // "Ready for Pickup" email already contains the pickup date and time.
+  const markReadyForPickup = () => {
+    if (pickupTime && !pickupDate) {
+      setNotice("");
+      setError("Choose a pickup date for this time, or clear the time.");
+      return;
+    }
+    void applyAction({
+      status: "Ready for Pickup",
+      pickup_date: pickupDate || undefined,
+      pickup_time: pickupTime || undefined,
+    });
   };
 
   const currentIndex = STATUS_FLOW.indexOf(request.status);
   const status = request.status;
   const remarksChanged =
     remarks.trim() !== (request.admin_remarks ?? "").trim();
-  const pickupDateChanged =
-    pickupDate !== (request.pickup_date ?? "").slice(0, 10);
+  const savedPickupTime = toTimeInputValue(request.pickup_time);
+  const pickupChanged =
+    pickupDate !== (request.pickup_date ?? "").slice(0, 10) ||
+    pickupTime !== savedPickupTime;
+  // A schedule needs a date, and a saved time can be changed but not erased
+  // (the API keeps the stored value when a field is left out).
+  const canSavePickup =
+    pickupChanged && pickupDate !== "" && !(pickupTime === "" && savedPickupTime);
 
   return (
     <section className="residents-info-card docreq-actions-card">
@@ -139,25 +167,54 @@ const AdminActionsPanel = ({
         </label>
       )}
 
-      {status === "Ready for Pickup" && (
+      {(status === "Processing" || status === "Ready for Pickup") && (
         <div className="docreq-actions-field docreq-pickup-date">
-          <span>Pickup Date</span>
-          <DatePickerInput
-            value={pickupDate}
-            onChange={setPickupDate}
-            disabled={isSaving}
-            ariaLabel="Pickup date"
-          />
-          <div className="docreq-actions-buttons">
-            <button
-              type="button"
-              className="docreq-save-button"
-              onClick={savePickupDate}
-              disabled={isSaving || !pickupDateChanged}
-            >
-              {isSaving ? "Saving…" : "Save"}
-            </button>
+          <span>
+            Pickup Schedule
+            {status === "Processing" && (
+              <span className="docreq-pickup-optional"> (optional)</span>
+            )}
+          </span>
+          <div className="docreq-pickup-schedule">
+            <div className="docreq-pickup-part docreq-pickup-part--date">
+              <span className="docreq-pickup-sublabel">Date</span>
+              <DatePickerInput
+                value={pickupDate}
+                onChange={setPickupDate}
+                disabled={isSaving}
+                ariaLabel="Pickup date"
+              />
+            </div>
+            <label className="docreq-pickup-part docreq-pickup-part--time">
+              <span className="docreq-pickup-sublabel">Time</span>
+              <input
+                type="time"
+                value={pickupTime}
+                onChange={(event) => setPickupTime(event.target.value)}
+                disabled={isSaving}
+                aria-label="Pickup time"
+              />
+            </label>
           </div>
+          <p className="docreq-pickup-hint">
+            {status === "Processing"
+              ? "Set it now and the resident's “Ready for Pickup” email will include the date and time."
+              : pickupDate
+                ? "Saving emails the resident the Ready for Pickup notice with this date and time."
+                : "Choose the date (and time) the resident can collect the document."}
+          </p>
+          {status === "Ready for Pickup" && (
+            <div className="docreq-actions-buttons">
+              <button
+                type="button"
+                className="docreq-save-button"
+                onClick={savePickupSchedule}
+                disabled={isSaving || !canSavePickup}
+              >
+                {isSaving ? "Saving…" : "Save Schedule"}
+              </button>
+            </div>
+          )}
         </div>
       )}
 
@@ -208,7 +265,7 @@ const AdminActionsPanel = ({
           <button
             type="button"
             className="docreq-approve-button"
-            onClick={() => applyStatus("Ready for Pickup")}
+            onClick={markReadyForPickup}
             disabled={isSaving}
           >
             Mark as Ready for Pickup

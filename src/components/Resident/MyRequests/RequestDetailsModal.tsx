@@ -7,59 +7,17 @@ import {
   type RequestDetail,
 } from "../../../Utils/Shared/api";
 import { getStatusClass } from "../../../Utils/Resident/DashboardLogic";
+import { withPickupTime } from "../../../Utils/Shared/pickupTime";
+import {
+  formatManilaDateTime as formatDateTime,
+  formatPickupDate,
+} from "../../../Utils/Shared/manilaTime";
 import type { Request } from "../../../Types/Resident/DashboardType";
 import "../../../Styles/Resident/Components/RequestDetailsModal.css";
 
 type RequestDetailsModalProps = {
   request: Request;
   onClose: () => void;
-};
-
-// Same rule as the Notifications page: the backend sends UTC timestamps
-// without a zone marker, and residents read them in Philippine time.
-const PHILIPPINE_TIMEZONE = "Asia/Manila";
-
-const parseUtcTimestamp = (value: string): Date => {
-  const trimmed = value.trim().replace(" ", "T");
-
-  if (/[zZ]$/.test(trimmed) || /[+-]\d{2}:?\d{2}$/.test(trimmed)) {
-    return new Date(trimmed);
-  }
-
-  return new Date(`${trimmed}Z`);
-};
-
-const formatDateTime = (value: string): string => {
-  const date = parseUtcTimestamp(value);
-  if (Number.isNaN(date.getTime())) return value;
-
-  return new Intl.DateTimeFormat("en-US", {
-    timeZone: PHILIPPINE_TIMEZONE,
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-  }).format(date);
-};
-
-// Pickup dates are plain calendar dates ("2026-11-05"), so they are shown
-// as-is without shifting them through a timezone.
-const formatPickupDate = (value: string): string => {
-  const isDateOnly = /^\d{4}-\d{2}-\d{2}$/.test(value);
-  const date = isDateOnly
-    ? new Date(`${value}T00:00:00Z`)
-    : parseUtcTimestamp(value);
-
-  if (Number.isNaN(date.getTime())) return value;
-
-  return new Intl.DateTimeFormat("en-US", {
-    timeZone: isDateOnly ? "UTC" : PHILIPPINE_TIMEZONE,
-    weekday: "short",
-    month: "long",
-    day: "numeric",
-    year: "numeric",
-  }).format(date);
 };
 
 const RequestDetailsModal = ({
@@ -200,7 +158,12 @@ const RequestDetailsModal = ({
               <div className="request-details-fact">
                 <dt>Pickup</dt>
                 {detail.pickup_date ? (
-                  <dd>{formatPickupDate(detail.pickup_date)}</dd>
+                  <dd>
+                    {withPickupTime(
+                      formatPickupDate(detail.pickup_date),
+                      detail.pickup_time,
+                    )}
+                  </dd>
                 ) : (
                   <dd className="is-empty">Not scheduled yet</dd>
                 )}

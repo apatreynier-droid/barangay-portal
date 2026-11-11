@@ -217,3 +217,9 @@ password_reset_submit_limiter = IPRateLimiter(
     max_requests=settings.password_reset_submit_max_requests,
     window_seconds=settings.password_reset_submit_window_seconds,
 )
+# Each pothole report runs the detection model, so cap them per resident.
+pothole_report_limiter = IPRateLimiter(
+    _rate_limit_config,
+    max_requests=settings.pothole_report_max_per_hour,
+    window_seconds=3600,
+)

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { ArrowLeft } from "lucide-react";
 import type {
   AdminResidentAccountStatus,
   AdminResidentDetail,
@@ -88,7 +89,8 @@ const ResidentDetailsView = ({
   return (
     <div className="residents-details-view">
       <button type="button" className="residents-back-link" onClick={onBack}>
-        ← Back to Residents
+        <ArrowLeft size={16} strokeWidth={2} aria-hidden="true" />
+        <span>Back to Residents</span>
       </button>
 
       {error && (

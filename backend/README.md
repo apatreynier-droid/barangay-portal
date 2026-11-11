@@ -91,9 +91,36 @@ once (idempotent), then run the end-to-end check with the backend running:
 .\.venv\Scripts\python.exe scripts\test_pothole_reports.py
 ```
 
+AI pothole detection needs migration `013` (it adds columns and the
+`pothole_detections` table; existing reports are kept) and the packages in
+`requirements-ml.txt`. Without those packages or the model the API still runs,
+and reports are saved with no count (`detection_status` = `not_run`).
+How to train, measure, install and replace the model:
+[ml_training/README.md](ml_training/README.md).
+
+```powershell
+.\.venv\Scripts\python.exe scripts\apply_pothole_detection_migration.py
+.\.venv\Scripts\python.exe scripts\test_pothole_detection.py
+```
+
+The pickup time on "Ready for Pickup" requests (Admin Document Requests →
+Admin Actions → Pickup Schedule) needs migration `014`: one nullable
+`requests.pickup_time` column; existing pickup dates are kept. Apply it once
+(idempotent), then run the end-to-end check with the backend running:
+
+```powershell
+.\.venv\Scripts\python.exe scripts\apply_request_pickup_time_migration.py
+.\.venv\Scripts\python.exe scripts\test_pickup_schedule.py
+```
+
+AI counts are unverified and per photo. Only an administrator confirms unique
+defects (`verified_defect_count`) and marks another photo of the same defect as a
+duplicate (`duplicate_of_report_id`), which keeps the two totals separate.
+
 Device GPS only works on a secure page: mobile browsers block the Geolocation
-API on plain `http://` addresses (only `localhost` is exempt). Serve both the
-portal and this API over HTTPS in production; otherwise residents can still
+API on plain `http://` addresses (only `localhost` is exempt). Development
+already serves both over HTTPS (`../HTTPS_SETUP.md`); keep HTTPS in production;
+otherwise residents can still
 send reports, pinning the location on the map by hand (stored as a manual pin,
 never as GPS).
 
@@ -108,30 +135,56 @@ $env:PYTHONPATH = "."
 python scripts\initialize_database.py
 ```
 
-## 5. Run the API
+## 5. Run the API (HTTPS)
+
+The API runs over **HTTPS** with a locally trusted mkcert certificate that it
+shares with the Vite dev server. One-time certificate setup:
+[`../HTTPS_SETUP.md`](../HTTPS_SETUP.md).
 
 ```powershell
-uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+python run_https.py
+```
+
+That is the same as:
+
+```powershell
+uvicorn app.main:app --reload --host 0.0.0.0 --port 8000 --ssl-certfile ..\certs\localhost.pem --ssl-keyfile ..\certs\localhost-key.pem
 ```
 
 `--host 0.0.0.0` lets phones and other computers on the same network reach the
 API (without it, uvicorn only listens on `127.0.0.1`). Open
-`http://127.0.0.1:8000/docs` (or `http://<this-computer's-IP>:8000/docs`) for
+`https://localhost:8000/docs` (or `https://<this-computer's-IP>:8000/docs`) for
 the generated API documentation. Port `5173` is the React app, so
-`:5173/docs` shows the portal, not the API docs.
+`:5173/docs` shows the portal, not the API docs. Plain `http://` is not served.
 
 **Using the portal from a phone.** Start the frontend with `npm run dev` (Vite
 listens on the network, see `vite.config.ts`) and open
-`http://<this-computer's-IP>:5173` on the phone. The frontend calls the API on
-the same host at port 8000 automatically (`src/Utils/Shared/api.ts`; override
-with `VITE_API_BASE_URL`). Add that origin to `CORS_ORIGINS` in `backend/.env`,
-for example:
+`https://<this-computer's-IP>:5173` on the phone. The phone must trust the
+mkcert root CA and the IP must be inside the certificate; see
+[`../HTTPS_SETUP.md`](../HTTPS_SETUP.md) section 6. The frontend calls the API on
+the same protocol and host at port 8000 automatically
+(`src/Utils/Shared/api.ts`; override with `VITE_API_BASE_URL`). Add that origin
+to `CORS_ORIGINS` in `backend/.env`, for example:
 
 ```
-CORS_ORIGINS=http://localhost:5173,http://127.0.0.1:5173,http://100.100.109.59:5173
+CORS_ORIGINS=https://localhost:5173,https://127.0.0.1:5173,https://192.168.1.25:5173
 ```
 
-If the computer's IP address changes, update that line and restart the API.
+If the computer's IP address changes, update that line (and regenerate the
+certificate) and restart the API. `CORS_ORIGIN_REGEX` accepts any
+private-network address on port 5173 over `https://` (see `.env.example`).
+Leave it unset in production.
+
+If the phone still cannot connect, allow the ports through Windows Firewall on
+**Private** networks only (run as Administrator), and only on a Wi-Fi network
+you trust:
+
+```powershell
+New-NetFirewallRule -DisplayName "Barangay dev HTTPS (5173, 8000)" -Direction Inbound -Protocol TCP -LocalPort 5173,8000 -Action Allow -Profile Private
+```
+
+Some public/school Wi-Fi networks block devices from reaching each other; on
+those, connect the computer and phone through the phone's hotspot instead.
 
 ## API routes
 
@@ -193,8 +246,8 @@ Definitions used by the numbers:
   treated as an event date.
 - Requests per Purok use the requesting resident's Purok. Records without a
   Purok are shown as "Not specified" instead of being dropped.
-- Pothole analytics are statistics of submitted reports only (no detection
-  or classification). *Resolution rate* = resolved ÷ (resolved + unresolved).
+- Pothole analytics are statistics of submitted reports only; they do not use
+  the AI detection counts. *Resolution rate* = resolved ÷ (resolved + unresolved).
   Rejected reports count as neither.
 
 To add a metric, write a function in `app/analytics.py` that takes DataFrames
@@ -309,7 +362,7 @@ credential is ever sent to the frontend.
 | `SMTP_USE_TLS`            | STARTTLS for ports other than 465           | true |
 | `SMTP_FROM_NAME`          | display name on outgoing mail               | Barangay Lagab Document Portal |
 | `SMTP_TIMEOUT_SECONDS`    | give up on an unreachable server after N s  | 15 |
-| `FRONTEND_URL`            | base URL used to build the reset link       | http://localhost:5173 |
+| `FRONTEND_URL`            | base URL used to build the reset link       | https://localhost:5173 |
 | `PASSWORD_RESET_TOKEN_EXPIRATION_MINUTES` | reset link lifetime          | 15 |
 
 `SMTP_PASSWORD` and `SMTP_USERNAME` are read once by `app/config.py`; nothing
@@ -394,9 +447,9 @@ login limiter.
 ## Testing the complete Forgot Password flow
 
 1. `python scripts\\test_smtp.py --check-only` - SMTP reachable and login works.
-2. Start the API (`uvicorn app.main:app --reload --port 8000`) and the frontend
+2. Start the API (`python run_https.py`) and the frontend
    (`npm run dev` in `barangay_portal_system`).
-3. Open `http://localhost:5173/forgot-password`, submit a registered address and
+3. Open `https://localhost:5173/forgot-password`, submit a registered address and
    confirm the email arrives.
 4. Open the reset link - it must land on `/reset-password?token=...`, also when
    nobody is signed in.
@@ -455,7 +508,7 @@ Every notable action in the portal is written once to the append-only
   logged and swallowed so it can never break the action that produced it),
   `app/main.py` (the call sites and the endpoint), `app/schemas.py`
   (`AdminActivityLogResponse`), `src/Pages/AdminLogs/` (page, toolbar, table).
-* **Verify:** start the API (`uvicorn app.main:app --port 8000`) and run
+* **Verify:** start the API (`python run_https.py`) and run
   `.\.venv\Scripts\python.exe scripts\test_activity_logs_api.py`. It signs in,
   checks the response shape, ordering, both server-side filters and the 401/403
   paths, then submits and processes a document request to prove every call site

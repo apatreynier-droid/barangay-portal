@@ -7,6 +7,8 @@ import {
   displayPurok,
   formatPotholeAccuracy,
   formatPotholeDateTime,
+  formatPotholeDetection,
+  getOutsideBarangayWarning,
   hasPotholeCoordinates,
 } from "../../../Utils/Admin/AdminPotholeManagementLogic";
 import { loadPotholePhotoUrl } from "../../../Utils/Admin/potholePhotoCache";
@@ -92,14 +94,28 @@ const buildPopupContent = (
     [report.road, displayPurok(report.purok)].filter(Boolean).join(", "),
   );
   append("p", "pothole-popup-line", `Reported by ${report.residentName}`);
+  append(
+    "p",
+    "pothole-popup-line",
+    `AI detection: ${formatPotholeDetection(report)}`,
+  );
   append("p", "pothole-popup-muted", formatPotholeDateTime(report.reportedAt));
   append(
     "p",
     "pothole-popup-muted",
     report.locationSource === "manual"
       ? "Location: manual map pin (not GPS)"
-      : `GPS accuracy: ${formatPotholeAccuracy(report)}`,
+      : report.locationSource === "photo"
+        ? "Location: GPS data stored in the photo"
+        : `GPS accuracy: ${formatPotholeAccuracy(report)}`,
   );
+  if (report.outsideBarangay && report.distanceFromBarangayM !== null) {
+    append(
+      "p",
+      "pothole-popup-outside",
+      "Outside barangay: check the location before verifying.",
+    ).title = getOutsideBarangayWarning(report) ?? "";
+  }
 
   if (onViewDetails) {
     const button = append(

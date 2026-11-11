@@ -12,6 +12,57 @@ import {
 const PHONE_PATTERN = /^[0-9+\-\s]{10,15}$/;
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
+/**
+ * Registration password rule: at least 8 characters, one uppercase letter
+ * (A–Z) and one number (0–9). Must match `PASSWORD_PATTERN` in the backend's
+ * `RegisterInput` (backend/app/schemas.py).
+ */
+export const PASSWORD_PATTERN = /^(?=.*[A-Z])(?=.*\d).{8,}$/;
+
+export type PasswordRequirement = {
+  id: "length" | "uppercase" | "number";
+  /** Shown in the checklist under the password field. */
+  label: string;
+  /** Completes "Password must …" in the validation message. */
+  phrase: string;
+  test: (password: string) => boolean;
+};
+
+export const PASSWORD_REQUIREMENTS: PasswordRequirement[] = [
+  {
+    id: "length",
+    label: "At least 8 characters",
+    phrase: "be at least 8 characters",
+    test: (password) => password.length >= 8,
+  },
+  {
+    id: "uppercase",
+    label: "One uppercase letter (A–Z)",
+    phrase: "include an uppercase letter",
+    test: (password) => /[A-Z]/.test(password),
+  },
+  {
+    id: "number",
+    label: "One number (0–9)",
+    phrase: "include a number",
+    test: (password) => /\d/.test(password),
+  },
+];
+
+/** "Password must be at least 8 characters and include a number", etc. */
+const passwordRequirementError = (password: string): string => {
+  const missing = PASSWORD_REQUIREMENTS.filter(
+    (requirement) => !requirement.test(password),
+  ).map((requirement) => requirement.phrase);
+
+  const joined =
+    missing.length > 1
+      ? `${missing.slice(0, -1).join(", ")} and ${missing[missing.length - 1]}`
+      : missing[0];
+
+  return `Password must ${joined}`;
+};
+
 export const validateStep = (
   step: number,
   formData: CreateAccountFormData,
@@ -93,8 +144,8 @@ export const validateStep = (
 
     if (!formData.password) {
       errors.password = "Password is required";
-    } else if (formData.password.length < 6) {
-      errors.password = "Password must be at least 6 characters";
+    } else if (!PASSWORD_PATTERN.test(formData.password)) {
+      errors.password = passwordRequirementError(formData.password);
     }
 
     if (!formData.confirmPassword) {

@@ -1,6 +1,6 @@
 r"""End-to-end checks for document request image attachments.
 
-Runs against the backend on http://127.0.0.1:8000 (start it first) and the
+Runs against the backend on https://localhost:8000 (start it first with run_https.py) and the
 configured MySQL database:
 
     cd backend
@@ -47,7 +47,8 @@ from app.attachments import (  # noqa: E402
 from app.config import settings  # noqa: E402
 from app.database import create_connection  # noqa: E402
 
-BASE_URL = "http://127.0.0.1:8000"
+# The dev server runs over HTTPS (run_https.py). Override with API_BASE_URL.
+BASE_URL = os.getenv("API_BASE_URL", "https://localhost:8000").rstrip("/")
 FRESH_PROCESS_PORT = 8011
 
 ADMIN_EMAIL = "admin@barangaylagab.com"

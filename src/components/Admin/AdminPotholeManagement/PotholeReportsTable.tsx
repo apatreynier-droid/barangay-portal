@@ -8,6 +8,8 @@ import {
   formatPotholeAccuracy,
   formatPotholeCoordinate,
   formatPotholeDateTime,
+  formatPotholeDetection,
+  getOutsideBarangayWarning,
   getPageNumbers,
   hasPotholeCoordinates,
   isLowPotholeAccuracy,
@@ -23,6 +25,7 @@ const COLUMNS: { label: string; sortKey?: PotholeSortKey }[] = [
   { label: "Report ID", sortKey: "id" },
   { label: "Resident Name", sortKey: "residentName" },
   { label: "Pothole Photo" },
+  { label: "AI Detection", sortKey: "detectionCount" },
   { label: "Purok", sortKey: "purok" },
   { label: "Road/Street Name", sortKey: "road" },
   { label: "Latitude" },
@@ -182,6 +185,26 @@ const PotholeReportsTable = ({
                         <PotholeThumbnail report={report} />
                       </button>
                     </td>
+                    <td data-label="AI Detection" className="pothole-table-nowrap">
+                      <span
+                        className={
+                          report.detection.status === "completed"
+                            ? "pothole-detection-cell"
+                            : "pothole-detection-cell is-missing"
+                        }
+                        title="Unverified AI result for this photo"
+                      >
+                        {formatPotholeDetection(report)}
+                      </span>
+                      {report.duplicateOf && (
+                        <span
+                          className="pothole-duplicate-tag"
+                          title={`Marked as a duplicate of ${report.duplicateOf.id}`}
+                        >
+                          Duplicate
+                        </span>
+                      )}
+                    </td>
                     <td data-label="Purok" className="pothole-table-nowrap">
                       {displayPurok(report.purok)}
                     </td>
@@ -216,7 +239,17 @@ const PotholeReportsTable = ({
                         {formatPotholeAccuracy(report)}
                       </span>
                     </td>
-                    <td data-label="Location">{report.location}</td>
+                    <td data-label="Location">
+                      {report.location}
+                      {report.outsideBarangay && (
+                        <span
+                          className="pothole-outside-tag"
+                          title={getOutsideBarangayWarning(report) ?? undefined}
+                        >
+                          Outside barangay
+                        </span>
+                      )}
+                    </td>
                     <td
                       data-label="Date & Time Reported"
                       className="pothole-table-nowrap"

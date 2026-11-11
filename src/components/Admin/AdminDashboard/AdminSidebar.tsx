@@ -1,6 +1,7 @@
 import "../../../Styles/Admin/Components/AdminSidebar.css";
 
 import { useNavigate } from "react-router-dom";
+import barangayLogo from "../../../assets/logo-256.png";
 import SidebarUserFooter from "../../SidebarUserFooter/SidebarUserFooter";
 import type { AuthUser } from "../../../Utils/Shared/api";
 import {
@@ -196,7 +197,9 @@ const AdminSidebar = ({
     <>
       <aside className={`admin-sidebar${isOpen ? " is-open" : ""}`}>
         <div className="admin-sidebar-header">
-          <div className="admin-logo-circle">BL</div>
+          <div className="admin-logo-circle">
+            <img src={barangayLogo} alt="Barangay Lagab official seal" />
+          </div>
 
           <div className="admin-logo-text">
             <h2>Barangay Lagab</h2>

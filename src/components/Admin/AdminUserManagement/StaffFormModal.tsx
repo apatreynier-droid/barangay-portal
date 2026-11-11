@@ -1,5 +1,6 @@
 import { useState } from "react";
 import "../../../Styles/Admin/Components/StaffFormModal.css";
+import PasswordToggle from "../../Shared/PasswordToggle";
 import type {
   AdminStaffAccount,
   AdminStaffAccountStatus,
@@ -63,6 +64,9 @@ const StaffFormModal = ({
   const [errors, setErrors] = useState<AdminStaffFormErrors>({});
   const [error, setError] = useState("");
   const [isSaving, setIsSaving] = useState(false);
+  // Each password field has its own eye button (hidden by default).
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const updateField = (
     field: "first_name" | "last_name" | "email" | "password" | "confirmPassword",
@@ -251,15 +255,24 @@ const StaffFormModal = ({
 
                 <label className="staff-form-field">
                   <span>Password *</span>
-                  <input
-                    type="password"
-                    value={form.password}
-                    onChange={(event) =>
-                      updateField("password", event.target.value)
-                    }
-                    maxLength={128}
-                    autoComplete="new-password"
-                  />
+                  <div className="staff-password-wrap">
+                    <input
+                      type={showPassword ? "text" : "password"}
+                      value={form.password}
+                      onChange={(event) =>
+                        updateField("password", event.target.value)
+                      }
+                      maxLength={128}
+                      autoComplete="new-password"
+                    />
+                    <PasswordToggle
+                      className="staff-password-toggle"
+                      visible={showPassword}
+                      fieldName="password"
+                      disabled={isSaving}
+                      onToggle={() => setShowPassword((previous) => !previous)}
+                    />
+                  </div>
                   {errors.password && (
                     <em className="staff-form-hint">{errors.password}</em>
                   )}
@@ -267,15 +280,26 @@ const StaffFormModal = ({
 
                 <label className="staff-form-field">
                   <span>Confirm Password *</span>
-                  <input
-                    type="password"
-                    value={form.confirmPassword}
-                    onChange={(event) =>
-                      updateField("confirmPassword", event.target.value)
-                    }
-                    maxLength={128}
-                    autoComplete="new-password"
-                  />
+                  <div className="staff-password-wrap">
+                    <input
+                      type={showConfirmPassword ? "text" : "password"}
+                      value={form.confirmPassword}
+                      onChange={(event) =>
+                        updateField("confirmPassword", event.target.value)
+                      }
+                      maxLength={128}
+                      autoComplete="new-password"
+                    />
+                    <PasswordToggle
+                      className="staff-password-toggle"
+                      visible={showConfirmPassword}
+                      fieldName="confirm password"
+                      disabled={isSaving}
+                      onToggle={() =>
+                        setShowConfirmPassword((previous) => !previous)
+                      }
+                    />
+                  </div>
                   {errors.confirmPassword && (
                     <em className="staff-form-hint">
                       {errors.confirmPassword}

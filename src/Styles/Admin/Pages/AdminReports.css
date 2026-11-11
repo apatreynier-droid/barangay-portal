@@ -577,16 +577,420 @@
 
 /* ---------------------------- Printable report ------------------------------ */
 
-@media print {
-  body:has(.reports-stats-grid) .admin-sidebar,
-  body:has(.reports-stats-grid) .reports-generate-card,
-  body:has(.reports-stats-grid) .reports-filter-fields {
-    display: none;
+/* Letterhead, report details and signatories exist only on paper. */
+.reports-print-header,
+.reports-print-signatures {
+  display: none;
+}
+
+/*
+ * Formal printed report ("Print Report"): A4 portrait, letterhead, numbered
+ * sections in one column, ruled borders instead of cards, page numbers.
+ * Scoped to the Reports page through the named page and .reports-page, so
+ * other pages print exactly as before.
+ */
+@page barangay-report {
+  size: A4 portrait;
+  margin: 16mm 15mm 18mm;
+
+  @bottom-left {
+    content: "Barangay Lagab - Barangay Reports and Analytics";
+    color: #4b5563;
+    font: 8pt Arial, Helvetica, sans-serif;
   }
 
-  body:has(.reports-stats-grid) .admin-main {
-    width: 100%;
+  @bottom-right {
+    content: "Page " counter(page) " of " counter(pages);
+    color: #4b5563;
+    font: 8pt Arial, Helvetica, sans-serif;
+  }
+}
+
+@media print {
+  /* ------------------------------ Page frame ------------------------------ */
+
+  body:has(.reports-page) {
     margin: 0;
+    background: #ffffff;
+  }
+
+  body:has(.reports-page) .admin-dashboard {
+    display: block;
+    min-height: 0;
+    background: #ffffff;
+  }
+
+  body:has(.reports-page) .admin-topbar,
+  body:has(.reports-page) .sidebar-backdrop,
+  body:has(.reports-page) .admin-sidebar,
+  .reports-page .reports-filter-bar,
+  .reports-page .reports-generate-card,
+  .reports-page .admin-error-banner,
+  .reports-page .admin-chart-tooltip,
+  .reports-page .admin-chart-cursor,
+  .reports-page .reports-line-cursor {
+    display: none !important;
+  }
+
+  .reports-page {
+    page: barangay-report;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    color: #111827;
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 10pt;
+    line-height: 1.4;
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+
+  .reports-page .reports-content {
+    opacity: 1;
+    counter-reset: report-section;
+  }
+
+  /* ------------------------------ Letterhead ------------------------------ */
+
+  .reports-page .reports-print-header {
+    display: block;
+    margin: 0 0 14pt;
+  }
+
+  .reports-letterhead {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 14pt;
+    padding-bottom: 8pt;
+    border-bottom: 2pt solid #111827;
+  }
+
+  .reports-letterhead-logo {
+    width: 20mm;
+    height: 20mm;
+    object-fit: contain;
+  }
+
+  .reports-letterhead-text {
+    text-align: center;
+  }
+
+  .reports-letterhead-text p {
+    margin: 0;
+    font-size: 10pt;
+    line-height: 1.35;
+  }
+
+  .reports-letterhead-text .reports-letterhead-barangay {
+    margin-top: 2pt;
+    font-size: 13pt;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .reports-print-title {
+    margin: 12pt 0 8pt;
+    font-size: 15pt;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-align: center;
+    text-transform: uppercase;
+  }
+
+  .reports-print-meta {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 9pt;
+  }
+
+  .reports-print-meta th,
+  .reports-print-meta td {
+    padding: 4pt 6pt;
+    border: 0.75pt solid #9ca3af;
+    text-align: left;
+    vertical-align: top;
+  }
+
+  .reports-print-meta th {
+    width: 18%;
+    background: #f3f4f6;
+    font-weight: 700;
+    white-space: nowrap;
+  }
+
+  /* --------------------------- Sections / panels --------------------------- */
+
+  .reports-page .reports-charts-grid,
+  .reports-page .reports-pothole-grid {
+    display: block;
+    margin: 0;
+  }
+
+  .reports-page .admin-panel {
+    min-height: 0;
+    margin: 0 0 12pt;
+    padding: 0 0 4pt;
+    border: 0;
+    border-radius: 0;
+    background: none;
+    box-shadow: none;
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  /* Long tables may flow onto the next page instead of leaving a gap. */
+  .reports-page .reports-purok-comparison,
+  .reports-page .reports-pothole-panel {
+    break-inside: auto;
+    page-break-inside: auto;
+  }
+
+  .reports-page .admin-panel-title {
+    display: block;
+    margin: 0 0 8pt;
+    padding: 0 0 3pt;
+    border-bottom: 1pt solid #111827;
+    color: #111827;
+    font-size: 11pt;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    counter-increment: report-section;
+    break-after: avoid;
+    page-break-after: avoid;
+  }
+
+  .reports-page .admin-panel-title::before {
+    content: counter(report-section) ". ";
+  }
+
+  .reports-page .analytics-subtitle,
+  .reports-page h4 {
+    margin: 8pt 0 4pt;
+    color: #111827;
+    font-size: 10pt;
+    font-weight: 700;
+    break-after: avoid;
+    page-break-after: avoid;
+  }
+
+  .reports-page .analytics-panel-scope,
+  .reports-page .reports-footnote,
+  .reports-page .admin-empty-note,
+  .reports-page .reports-chart-empty {
+    margin: 4pt 0;
     padding: 0;
+    color: #4b5563;
+    font-size: 8.5pt;
+    font-style: italic;
+    text-align: left;
+  }
+
+  /* --------------------------- Summary figures ---------------------------- */
+
+  .reports-page .reports-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 0;
+    margin: 0 0 14pt;
+    border: 0.75pt solid #9ca3af;
+    break-inside: avoid;
+  }
+
+  .reports-page .reports-stat-card {
+    padding: 7pt 8pt;
+    border: 0;
+    border-right: 0.75pt solid #9ca3af;
+    border-radius: 0;
+    background: none;
+    box-shadow: none;
+  }
+
+  .reports-page .reports-stat-card:last-child {
+    border-right: 0;
+  }
+
+  .reports-page .reports-stat-value {
+    color: #111827;
+    font-size: 16pt;
+  }
+
+  .reports-page .reports-stat-label {
+    margin-top: 3pt;
+    font-size: 9pt;
+  }
+
+  .reports-page .reports-stat-note {
+    color: #4b5563;
+    font-size: 8pt;
+  }
+
+  .reports-page .analytics-resident-counters,
+  .reports-page .reports-duration-tiles {
+    gap: 0;
+    border: 0.75pt solid #9ca3af;
+  }
+
+  .reports-page .analytics-counter,
+  .reports-page .reports-duration-tiles div {
+    padding: 5pt 7pt;
+    border: 0;
+    border-right: 0.75pt solid #d1d5db;
+    border-radius: 0;
+    background: none;
+  }
+
+  .reports-page .analytics-counter:last-child,
+  .reports-page .reports-duration-tiles div:last-child {
+    border-right: 0;
+  }
+
+  .reports-page .analytics-counter dt,
+  .reports-page .reports-duration-tiles dt {
+    color: #4b5563;
+    font-size: 8pt;
+  }
+
+  .reports-page .analytics-counter dd,
+  .reports-page .reports-duration-tiles dd {
+    color: #111827;
+    font-size: 12pt;
+  }
+
+  /* -------------------------------- Charts -------------------------------- */
+
+  .reports-page .reports-chart {
+    break-inside: avoid;
+  }
+
+  /* Axis text at a fixed, readable print size. */
+  .reports-page .admin-chart-axis-label {
+    fill: #374151;
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 10px;
+  }
+
+  .reports-page .admin-chart-gridline {
+    stroke: #d1d5db;
+  }
+
+  /* Narrow (340-unit) Purok bar chart: keep it near its drawn size. */
+  .reports-page .admin-panel > .reports-chart {
+    max-width: 105mm;
+  }
+
+  .reports-page .reports-pie-wrapper {
+    display: flex;
+    justify-content: center;
+  }
+
+  .reports-page .reports-pie-chart {
+    width: 55mm;
+    max-width: 55mm;
+  }
+
+  .reports-page .reports-pie-slice {
+    transform: none !important;
+  }
+
+  .reports-page .reports-chart-legend,
+  .reports-page .admin-chart-legend,
+  .reports-page .admin-donut-legend li {
+    color: #111827;
+    font-size: 8.5pt;
+  }
+
+  .reports-page .reports-chart-legend {
+    margin-top: 6pt;
+  }
+
+  /* --------------------------- Lists and tables --------------------------- */
+
+  .reports-page .analytics-status-list li,
+  .reports-page .reports-stage-list li {
+    padding: 2pt 0;
+    border-bottom: 0.5pt solid #e5e7eb;
+    font-size: 9pt;
+  }
+
+  .reports-page .reports-table-scroll {
+    overflow: visible;
+  }
+
+  .reports-page .reports-mini-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 8.5pt;
+  }
+
+  .reports-page .reports-mini-table caption {
+    color: #4b5563;
+    font-size: 8.5pt;
+    text-align: left;
+  }
+
+  .reports-page .reports-mini-table th,
+  .reports-page .reports-mini-table td {
+    padding: 3pt 5pt;
+    border: 0.5pt solid #9ca3af;
+  }
+
+  .reports-page .reports-mini-table thead {
+    display: table-header-group;
+  }
+
+  .reports-page .reports-mini-table thead th {
+    background: #f3f4f6;
+    color: #111827;
+    font-weight: 700;
+  }
+
+  .reports-page .reports-mini-table tr {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  /* ------------------------------ Signatories ----------------------------- */
+
+  .reports-page .reports-print-signatures {
+    display: flex;
+    justify-content: space-between;
+    gap: 24mm;
+    margin-top: 22pt;
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  .reports-signature {
+    flex: 1;
+    max-width: 70mm;
+  }
+
+  .reports-signature p {
+    margin: 0;
+  }
+
+  .reports-signature-caption {
+    font-size: 9.5pt;
+  }
+
+  .reports-signature-line {
+    min-height: 13pt;
+    margin-top: 26pt !important;
+    padding-bottom: 2pt;
+    border-bottom: 0.75pt solid #111827;
+    font-size: 10pt;
+    font-weight: 700;
+    text-align: center;
+    text-transform: uppercase;
+  }
+
+  .reports-signature-role {
+    margin-top: 2pt !important;
+    color: #374151;
+    font-size: 9pt;
+    text-align: center;
   }
 }

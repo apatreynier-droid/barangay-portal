@@ -24,7 +24,17 @@
 
 /* --------------------------------- 1. Guard ------------------------------- */
 
-html,
+/* The horizontal guard goes on <body> only. With <html> left at
+   `overflow: visible`, the browser propagates body's overflow to the viewport,
+   so the window stays the page's single vertical scroller. Setting it on
+   <html> too stops that propagation and turns <body> into a second scroll
+   container (overflow-x: hidden forces overflow-y: auto), which, combined
+   with `html, body { height: 100% }` from LoginPage.css, showed two vertical
+   scrollbars side by side. */
+html {
+  max-width: 100%;
+}
+
 body {
   max-width: 100%;
   overflow-x: hidden;

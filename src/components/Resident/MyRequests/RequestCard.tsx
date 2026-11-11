@@ -118,7 +118,7 @@ const RequestCard = ({
 
           {request.pickupDate && (
             <div className="detail-item">
-              <span>Pickup Date</span>
+              <span>Pickup Schedule</span>
               <strong>{request.pickupDate}</strong>
             </div>
           )}

@@ -1,10 +1,10 @@
 """End-to-end checks for Staff role routing/authorization in the Admin Portal.
 
-Run from the backend folder with the API already listening on port 8000:
+Run from the backend folder with the API already listening on https://localhost:8000:
 
     cd backend
     .\\.venv\\Scripts\\Activate.ps1
-    uvicorn app.main:app --port 8000
+    python run_https.py
     # in a second terminal:
     python scripts\\test_staff_role_access.py
 
@@ -27,6 +27,7 @@ real data.
 from __future__ import annotations
 
 import json
+import os
 import sys
 import urllib.error
 import urllib.request
@@ -37,7 +38,8 @@ BACKEND_DIR = Path(__file__).resolve().parents[1]
 if str(BACKEND_DIR) not in sys.path:
     sys.path.insert(0, str(BACKEND_DIR))
 
-BASE_URL = "http://127.0.0.1:8000"
+# The dev server runs over HTTPS (run_https.py). Override with API_BASE_URL.
+BASE_URL = os.getenv("API_BASE_URL", "https://localhost:8000").rstrip("/")
 
 ADMIN_EMAIL = "admin@barangaylagab.com"
 ADMIN_PASSWORD = "Admin@123"

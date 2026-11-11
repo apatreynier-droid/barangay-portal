@@ -1,7 +1,7 @@
 import { useRef, useState } from "react";
 import type { MouseEvent } from "react";
 import type { AdminReportsMonthlyPoint } from "../../../Types/Admin/AdminReportsType";
-import { labelStride } from "../../../Utils/Admin/AdminAnalyticsDisplay";
+import { fittingLabelStride } from "../../../Utils/Admin/AdminAnalyticsDisplay";
 
 type CompletedRejectedBarChartProps = {
   /** One point per period; `month` holds the period label. */
@@ -59,7 +59,11 @@ const CompletedRejectedBarChart = ({
     Math.min(MAX_BAR_WIDTH, (slot * 0.75 - BAR_GAP) / SERIES.length),
   );
   const groupWidth = BAR_WIDTH * SERIES.length + BAR_GAP * (SERIES.length - 1);
-  const stride = labelStride(data.length, MAX_LABELS);
+  const stride = fittingLabelStride(
+    data.map((point) => point.month),
+    plotWidth,
+    MAX_LABELS,
+  );
 
   const valueToY = (value: number): number =>
     PADDING_TOP + plotHeight - (value / topValue) * plotHeight;

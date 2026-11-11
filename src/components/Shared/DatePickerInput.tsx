@@ -11,6 +11,7 @@ import type {
   ChangeEvent as ReactChangeEvent,
   FocusEvent as ReactFocusEvent,
   KeyboardEvent as ReactKeyboardEvent,
+  ReactNode,
 } from "react";
 import {
   DEFAULT_DATE_PLACEHOLDER,
@@ -65,6 +66,8 @@ export type DatePickerInputProps = {
   ariaLabel?: string;
   placeholder?: string;
   id?: string;
+  /** Optional icon for the calendar button; defaults to the calendar image. */
+  toggleIcon?: ReactNode;
 };
 
 const ChevronIcon = ({
@@ -99,6 +102,7 @@ const DatePickerInput = ({
   ariaLabel,
   placeholder = DEFAULT_DATE_PLACEHOLDER,
   id,
+  toggleIcon,
 }: DatePickerInputProps) => {
   const reactId = useId();
   const panelId = `${id ?? "date-picker"}-calendar-${reactId}`;
@@ -590,12 +594,14 @@ const DatePickerInput = ({
           onClick={toggleCalendar}
         >
           {/* Calendar icon inside the field, right of the date text. */}
-          <img
-            src={calendarIcon}
-            alt=""
-            className="date-picker-toggle-icon"
-            aria-hidden="true"
-          />
+          {toggleIcon ?? (
+            <img
+              src={calendarIcon}
+              alt=""
+              className="date-picker-toggle-icon"
+              aria-hidden="true"
+            />
+          )}
         </button>
       </div>
 

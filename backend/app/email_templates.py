@@ -19,7 +19,7 @@ Design notes (Gmail / mobile compatibility):
 
 from __future__ import annotations
 
-from datetime import date, datetime, timedelta, timezone
+from datetime import date, datetime, time, timedelta, timezone
 from html import escape
 
 from .email_assets import icon_img
@@ -93,6 +93,47 @@ def format_pickup_date(value: object) -> str:
     if not 1 <= int(month) <= 12:
         return ""
     return f"{_MONTH_NAMES[int(month) - 1]} {int(day)}, {int(year)}"
+
+
+def format_pickup_time(value: object) -> str:
+    """Format a pickup time as ``9:30 AM``.
+
+    Accepts a ``datetime.time``, the ``timedelta`` mysql-connector returns for
+    TIME columns, or ``"HH:MM[:SS]"`` text. Returns ``""`` when there is no
+    usable value, so callers simply leave the time out.
+    """
+    if value is None:
+        return ""
+
+    if isinstance(value, timedelta):
+        seconds = int(value.total_seconds())
+        if not 0 <= seconds < 24 * 3600:
+            return ""
+        hour, minute = seconds // 3600, seconds % 3600 // 60
+    elif isinstance(value, time):
+        hour, minute = value.hour, value.minute
+    else:
+        parts = str(value).strip().split(":")
+        if len(parts) < 2 or not (parts[0].isdigit() and parts[1][:2].isdigit()):
+            return ""
+        hour, minute = int(parts[0]), int(parts[1][:2])
+        if not (0 <= hour <= 23 and 0 <= minute <= 59):
+            return ""
+
+    suffix = "AM" if hour < 12 else "PM"
+    return f"{hour % 12 or 12}:{minute:02d} {suffix}"
+
+
+def format_pickup_schedule(pickup_date: object, pickup_time: object = None) -> str:
+    """``November 12, 2026 at 9:30 AM``; just the date when no time is set.
+
+    Returns ``""`` without a usable date (a time alone is not a schedule).
+    """
+    date_text = format_pickup_date(pickup_date)
+    if not date_text:
+        return ""
+    time_text = format_pickup_time(pickup_time)
+    return f"{date_text} at {time_text}" if time_text else date_text
 
 
 def format_manila_datetime(value: object | None = None) -> str:
@@ -286,7 +327,9 @@ def _link_fallback(url: str) -> str:
     )
 
 
-def _pickup_panel(document: str, pickup_text: str, request_number: str) -> str:
+def _pickup_panel(
+    document: str, pickup_text: str, request_number: str, label: str = "Pickup date"
+) -> str:
     """The prominent "what / when / where" box of the Ready for Pickup email."""
     palette = TONES["success"]
     when = (
@@ -318,7 +361,7 @@ def _pickup_panel(document: str, pickup_text: str, request_number: str) -> str:
           <td style="padding:20px 22px 6px;">
             <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
               {cell("Document", escape(document), "19px")}
-              {cell("Pickup date", when, "19px")}
+              {cell(escape(label), when, "19px")}
               {cell("Where", escape(_OFFICE), "15px")}
               {cell("Request ID", escape(request_number), "15px")}
             </table>
@@ -810,6 +853,14 @@ STATUS_EMAIL_CONTENT: dict[str, dict[str, object]] = {
     },
 }
 
+#: Where residents collect documents and what to bring. The same text as the
+#: Ready for Pickup email, also returned by GET /api/requests/{id} so the
+#: Resident Portal's pickup details never disagree with the email.
+PICKUP_LOCATION = _OFFICE
+PICKUP_INSTRUCTIONS: tuple[str, ...] = tuple(
+    str(step) for step in STATUS_EMAIL_CONTENT["Ready for Pickup"]["steps"]  # type: ignore[union-attr]
+)
+
 _FALLBACK_STATUS_CONTENT: dict[str, object] = {
     "subject": f"{BRAND_NAME} - Document request update",
     "eyebrow": "Request update",
@@ -1017,6 +1068,11 @@ def _render_completed_email(
     return subject, "\n".join(text_lines), html_body
 
 
+#: ``schedule_change`` values for :func:`render_request_status_email`.
+SCHEDULE_SET = "set"
+SCHEDULE_UPDATED = "updated"
+
+
 def render_request_status_email(
     *,
     resident_name: str,
@@ -1028,6 +1084,8 @@ def render_request_status_email(
     admin_remarks: str | None = None,
     event_time: object | None = None,
     portal_url: str = "",
+    pickup_time: object | None = None,
+    schedule_change: str | None = None,
 ) -> tuple[str, str, str]:
     """Build the "your document request changed status" email.
 
@@ -1036,6 +1094,10 @@ def render_request_status_email(
     change time (``None`` means now); ``portal_url`` adds a "View My Requests"
     button. ``recipient_email`` only fills the "sent to" footer line; the
     ``To`` header is set by ``app/email_service.send_email``.
+
+    ``schedule_change`` (``SCHEDULE_SET`` / ``SCHEDULE_UPDATED``) re-sends the
+    Ready for Pickup email after the office sets or changes the pickup date and
+    time on a request that is already Ready for Pickup.
     """
     content = STATUS_EMAIL_CONTENT.get(status) or _FALLBACK_STATUS_CONTENT
     tone = str(content["tone"])
@@ -1049,9 +1111,30 @@ def render_request_status_email(
     if len(remarks) > 1000:
         remarks = f"{remarks[:997]}..."
 
-    pickup_text = format_pickup_date(pickup_date)
+    pickup_text = format_pickup_schedule(pickup_date, pickup_time)
+    pickup_label = (
+        "Pickup date & time"
+        if pickup_text and format_pickup_time(pickup_time)
+        else "Pickup date"
+    )
     updated_text = format_manila_datetime(event_time)
     is_pickup = status == "Ready for Pickup"
+    schedule_change = schedule_change if is_pickup and pickup_text else None
+    eyebrow = str(content["eyebrow"])
+    message = str(content["message"])
+    verb = "Updated" if schedule_change == SCHEDULE_UPDATED else "Set"
+    if schedule_change is not None:
+        eyebrow = f"Pickup schedule {verb.lower()}"
+        message = (
+            f"Your requested document is ready for pickup at the {_OFFICE}. "
+            + (
+                "The Barangay office has changed your pickup schedule; it replaces "
+                "the one in our earlier email."
+                if schedule_change == SCHEDULE_UPDATED
+                else "The Barangay office has set your pickup schedule."
+            )
+            + " Please review the date, time and instructions below."
+        )
     if is_pickup and not pickup_text:
         steps.append(
             "The pickup date has not been set yet - the Barangay office will confirm "
@@ -1059,6 +1142,8 @@ def render_request_status_email(
         )
 
     subject = str(content["subject"])
+    if schedule_change is not None:
+        subject = f"Pickup Schedule {verb}: {subject}"
     remarks_title = (
         "Reason from the Barangay office"
         if status == "Rejected"
@@ -1087,15 +1172,15 @@ def render_request_status_email(
         ("Status", _status_pill(pill, tone)),
     ]
     if pickup_text and not is_pickup:
-        detail_rows.append(("Pickup date", escape(pickup_text)))
+        detail_rows.append((pickup_label, escape(pickup_text)))
     detail_rows.append(("Updated", escape(updated_text)))
 
     blocks = [
         _paragraph(f'Hello <strong style="color:{_INK};">{escape(name)}</strong>,'),
-        _paragraph(escape(str(content["message"]))),
+        _paragraph(escape(message)),
     ]
     if is_pickup:
-        blocks.append(_pickup_panel(document, pickup_text, number))
+        blocks.append(_pickup_panel(document, pickup_text, number, pickup_label))
     if remarks:
         remarks_tone = "danger" if status == "Rejected" else "warning"
         blocks.append(_callout(remarks_title, _html_text(remarks), remarks_tone))
@@ -1121,7 +1206,7 @@ def render_request_status_email(
         subject=subject,
         preheader=preheader,
         tone=tone,
-        eyebrow=str(content["eyebrow"]),
+        eyebrow=eyebrow,
         heading=str(content["headline"]),
         content_html="".join(blocks),
         footer_lines=footer_html,
@@ -1132,7 +1217,7 @@ def render_request_status_email(
         *_text_header(str(content["headline"]), pill),
         f"Hello {name},",
         "",
-        str(content["message"]),
+        message,
         "",
     ]
     if is_pickup:
@@ -1140,7 +1225,7 @@ def render_request_status_email(
             "Pickup details",
             [
                 ("Document", document),
-                ("Pickup date", pickup_text or "To be confirmed by the Barangay office"),
+                (pickup_label, pickup_text or "To be confirmed by the Barangay office"),
                 ("Where", _OFFICE),
                 ("Request ID", number),
             ],
@@ -1150,7 +1235,7 @@ def render_request_status_email(
 
     rows = [("Request ID", number), ("Document", document), ("Status", status)]
     if pickup_text and not is_pickup:
-        rows.append(("Pickup date", pickup_text))
+        rows.append((pickup_label, pickup_text))
     rows.append(("Updated", updated_text))
     text_lines += _text_rows("Request details", rows)
     text_lines += _text_list(str(content["steps_title"]), steps)

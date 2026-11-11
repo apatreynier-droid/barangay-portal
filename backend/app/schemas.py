@@ -1,22 +1,52 @@
 from __future__ import annotations
 
 import re
-from datetime import date, datetime
-from typing import Literal
+from datetime import date, datetime, time, timedelta
+from typing import Annotated, Literal
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import AfterValidator, BaseModel, BeforeValidator, Field, field_validator
 
 from .puroks import validate_purok
 
 #: Basic deliverability check; registration emails are sent to this address.
 _EMAIL_PATTERN = re.compile(r"^[^\s@]+@[^\s@]+\.[^\s@]+$")
 
+#: Registration password rule: at least 8 characters, one uppercase letter and
+#: one number. Same rule as PASSWORD_PATTERN in the frontend
+#: (src/Utils/Auth/CreateAccountLogic.ts). `[0-9]` instead of `\d` because
+#: Python's `\d` also matches non-ASCII digits, JavaScript's does not.
+_REGISTRATION_PASSWORD_PATTERN = re.compile(r"^(?=.*[A-Z])(?=.*[0-9]).{8,}$")
+
+
+def pickup_time_from_db(value: object) -> object:
+    """mysql-connector returns TIME columns as ``timedelta``; accept that too."""
+    if isinstance(value, timedelta):
+        seconds = int(value.total_seconds())
+        if not 0 <= seconds < 24 * 3600:
+            raise ValueError("Pickup time must be within one day.")
+        return time(seconds // 3600, seconds % 3600 // 60)
+    return value
+
+
+def _whole_minutes(value: time | None) -> time | None:
+    """Pickup times are scheduled to the minute; drop seconds and time zones."""
+    return None if value is None else value.replace(second=0, microsecond=0, tzinfo=None)
+
+
+#: Time of day a document can be collected (e.g. 09:30), or None when the
+#: office has not set one. Serialized as "HH:MM:SS".
+PickupTime = Annotated[
+    time | None,
+    BeforeValidator(pickup_time_from_db),
+    AfterValidator(_whole_minutes),
+]
+
 
 class RegisterInput(BaseModel):
     first_name: str = Field(min_length=1, max_length=100)
     last_name: str = Field(min_length=1, max_length=100)
     email: str = Field(min_length=3, max_length=255)
-    password: str = Field(min_length=6, max_length=128)
+    password: str = Field(min_length=8, max_length=128)
     phone: str = Field(min_length=10, max_length=20)
     address: str = Field(min_length=1, max_length=255)
     # Extended registration details (all optional to stay backward compatible)
@@ -39,6 +69,21 @@ class RegisterInput(BaseModel):
     def _validate_email(cls, value: str) -> str:
         if not _EMAIL_PATTERN.match(value.strip()):
             raise ValueError("Enter a valid email address.")
+        return value
+
+    @field_validator("password")
+    @classmethod
+    def _validate_password(cls, value: str) -> str:
+        """At least 8 characters with an uppercase letter and a number.
+
+        Only new registrations use this rule; sign-in still accepts passwords
+        created under the older 6-character minimum.
+        """
+        if not _REGISTRATION_PASSWORD_PATTERN.match(value):
+            raise ValueError(
+                "Password must be at least 8 characters and include an "
+                "uppercase letter and a number."
+            )
         return value
 
     @field_validator("purok")
@@ -129,6 +174,7 @@ class RequestResponse(BaseModel):
     submitted_at: datetime
     last_updated: datetime
     pickup_date: date | None
+    pickup_time: PickupTime = None
 
 
 class RequestStatusHistoryEntry(BaseModel):
@@ -148,6 +194,12 @@ class RequestDetailResponse(BaseModel):
     submitted_at: datetime
     last_updated: datetime
     pickup_date: date | None
+    pickup_time: PickupTime = None
+    #: The requesting resident's full name (from their profile).
+    resident_name: str | None = None
+    #: Where and how to collect the document; only while Ready for Pickup.
+    pickup_location: str | None = None
+    pickup_instructions: list[str] = Field(default_factory=list)
     history: list[RequestStatusHistoryEntry]
 
 
@@ -446,6 +498,7 @@ class AdminDocumentRequestDetailResponse(BaseModel):
     submitted_at: datetime
     last_updated: datetime
     pickup_date: date | None
+    pickup_time: PickupTime = None
     fee: float
     processed_by: str | None
     attachment: RequestAttachmentResponse | None = None
@@ -464,6 +517,8 @@ class AdminRequestActionInput(BaseModel):
     ) = None
     admin_remarks: str | None = Field(default=None, max_length=2000)
     pickup_date: date | None = None
+    #: Requires a pickup date (sent together, or already saved on the request).
+    pickup_time: PickupTime = None
 
 
 class AdminDashboardResponse(BaseModel):
@@ -721,8 +776,13 @@ PotholeStatus = Literal[
     "pending", "verified", "under_maintenance", "resolved", "rejected"
 ]
 #: ``gps``: the device's Geolocation API. ``manual``: a pin the resident placed
-#: on the map. ``None``: no coordinates were captured.
-PotholeLocationSource = Literal["gps", "manual"]
+#: on the map. ``photo``: GPS metadata stored in the photo itself. ``None``: no
+#: coordinates were captured.
+PotholeLocationSource = Literal["gps", "manual", "photo"]
+#: ``completed``: ``detection_count`` is the model's real result (0 included).
+#: ``failed``: the model could not process the photo. ``not_run``: no model was
+#: available. Only ``completed`` carries a count; nothing is ever estimated.
+PotholeDetectionStatus = Literal["completed", "failed", "not_run"]
 
 
 class PotholePhotoMeta(BaseModel):
@@ -743,9 +803,30 @@ class PotholeLocationFields(BaseModel):
     gps_accuracy_m: float | None
     location_source: PotholeLocationSource | None
     location_captured_at: datetime | None
+    #: Reverse-geocoded place name; None when no lookup succeeded.
+    resolved_address: str | None
 
 
-class ResidentPotholeReportResponse(PotholeLocationFields):
+class PotholeDetectionEntry(BaseModel):
+    """One pothole the model found; the box is in pixels of the upright photo."""
+
+    number: int
+    confidence: float
+    x_min: float
+    y_min: float
+    x_max: float
+    y_max: float
+
+
+class PotholeDetectionFields(BaseModel):
+    detection_status: PotholeDetectionStatus
+    detection_count: int | None
+    detection_threshold: float | None
+    detections: list[PotholeDetectionEntry]
+    has_annotated_photo: bool
+
+
+class ResidentPotholeReportResponse(PotholeLocationFields, PotholeDetectionFields):
     """A resident's own report, as listed on the Pothole Detection page."""
 
     id: int
@@ -759,7 +840,7 @@ class ResidentPotholeReportResponse(PotholeLocationFields):
     updated_at: datetime
 
 
-class AdminPotholeReportResponse(PotholeLocationFields):
+class AdminPotholeReportResponse(PotholeLocationFields, PotholeDetectionFields):
     id: int
     report_number: str
     resident_name: str
@@ -770,6 +851,29 @@ class AdminPotholeReportResponse(PotholeLocationFields):
     reported_at: datetime
     updated_at: datetime
     photo: PotholePhotoMeta
+    #: Unique real defects an administrator confirmed (never set by the model).
+    verified_defect_count: int | None
+    #: Set when an administrator marked this photo as showing an earlier report's
+    #: defect; such reports add nothing to the unique defect totals.
+    duplicate_of_report_id: int | None
+    duplicate_of_report_number: str | None
+    #: Straight-line distance from the barangay center (None without coordinates).
+    distance_from_barangay_m: float | None
+    #: True when the coordinates lie beyond BARANGAY_RADIUS_KM: a warning for
+    #: reviewers that the location may not be inside the barangay.
+    outside_barangay: bool
+
+
+class AdminPotholeNearbyReport(BaseModel):
+    """A close-by report, offered to the administrator as a possible duplicate."""
+
+    id: int
+    report_number: str
+    status: PotholeStatus
+    distance_m: float
+    detection_count: int | None
+    duplicate_of_report_id: int | None
+    reported_at: datetime
 
 
 class AdminPotholeUpdateEntry(BaseModel):
@@ -784,6 +888,7 @@ class AdminPotholeUpdateEntry(BaseModel):
 
 class AdminPotholeReportDetailResponse(AdminPotholeReportResponse):
     history: list[AdminPotholeUpdateEntry]
+    nearby_reports: list[AdminPotholeNearbyReport]
 
 
 class AdminPotholeStatusCounts(BaseModel):
@@ -795,19 +900,41 @@ class AdminPotholeStatusCounts(BaseModel):
     rejected: int
 
 
+class AdminPotholePurokCount(AdminPurokCount):
+    #: Unverified AI detections in this Purok's photos (rejected reports excluded).
+    detected_potholes: int
+    #: Unique defects administrators confirmed in this Purok.
+    verified_defects: int
+
+
 class AdminPotholeSummaryResponse(BaseModel):
     status_counts: AdminPotholeStatusCounts
     #: Always the seven standardized Puroks, in order (zero counts included).
-    by_purok: list[AdminPurokCount]
+    by_purok: list[AdminPotholePurokCount]
     #: Reports sent without a Purok.
     unspecified_purok: int
     #: Reports that can be placed on the map (GPS or manual pin).
     with_coordinates: int
+    #: Sum of per-photo AI counts: unverified, and several photos of one pothole
+    #: each add to it. Rejected reports are excluded.
+    total_detected_potholes: int
+    #: Administrator-confirmed unique defects, excluding duplicates and rejections.
+    verified_unique_defects: int
+    #: Puroks tied for the most AI detections; empty when there are none yet.
+    top_puroks: list[str]
+    top_purok_detected: int
 
 
 class AdminPotholeStatusInput(BaseModel):
     status: Literal["verified", "under_maintenance", "resolved", "rejected"]
     remark: str | None = Field(default=None, max_length=500)
+    #: With ``verified``: how many unique real defects the administrator confirms.
+    verified_defect_count: int | None = Field(default=None, ge=1, le=100)
+
+
+class AdminPotholeDuplicateInput(BaseModel):
+    #: The earlier report showing the same defect; null removes the link.
+    duplicate_of_report_id: int | None
 
 
 class AdminPotholeRemarkInput(BaseModel):

@@ -7,9 +7,20 @@ export type PotholeStatus =
 
 /**
  * Where a report's coordinates came from. "gps": the resident's device GPS
- * (with its accuracy). "manual": a pin the resident placed on the map.
+ * (with its accuracy). "manual": a pin the resident placed on the map. "photo":
+ * GPS metadata stored in the photo itself.
  */
-export type PotholeLocationSource = "gps" | "manual";
+export type PotholeLocationSource = "gps" | "manual" | "photo";
+
+/**
+ * "completed": the count is the model's real result (0 included). "failed": the
+ * model could not process the photo. "not_run": no model was available. Only
+ * "completed" carries a count.
+ */
+export type PotholeDetectionStatus = "completed" | "failed" | "not_run";
+
+/** Which stored image of a report to load. */
+export type PotholePhotoKind = "original" | "annotated";
 
 /* -------------------------------------------------------------------------- */
 /*  API payloads (backend/app/schemas.py)                                     */
@@ -19,6 +30,25 @@ export type ApiPotholePhoto = {
   original_filename: string;
   content_type: string;
   file_size: number;
+};
+
+export type ApiPotholeDetection = {
+  number: number;
+  confidence: number;
+  x_min: number;
+  y_min: number;
+  x_max: number;
+  y_max: number;
+};
+
+export type ApiPotholeNearbyReport = {
+  id: number;
+  report_number: string;
+  status: PotholeStatus;
+  distance_m: number;
+  detection_count: number | null;
+  duplicate_of_report_id: number | null;
+  reported_at: string;
 };
 
 export type ApiAdminPotholeReport = {
@@ -36,10 +66,21 @@ export type ApiAdminPotholeReport = {
   gps_accuracy_m: number | null;
   location_source: PotholeLocationSource | null;
   location_captured_at: string | null;
+  resolved_address: string | null;
   status: PotholeStatus;
   reported_at: string;
   updated_at: string;
   photo: ApiPotholePhoto;
+  detection_status: PotholeDetectionStatus;
+  detection_count: number | null;
+  detection_threshold: number | null;
+  detections: ApiPotholeDetection[];
+  has_annotated_photo: boolean;
+  verified_defect_count: number | null;
+  duplicate_of_report_id: number | null;
+  duplicate_of_report_number: string | null;
+  distance_from_barangay_m: number | null;
+  outside_barangay: boolean;
 };
 
 export type ApiPotholeUpdateEntry = {
@@ -54,6 +95,7 @@ export type ApiPotholeUpdateEntry = {
 
 export type ApiAdminPotholeReportDetail = ApiAdminPotholeReport & {
   history: ApiPotholeUpdateEntry[];
+  nearby_reports: ApiPotholeNearbyReport[];
 };
 
 export type ApiAdminPotholeSummary = {
@@ -65,9 +107,18 @@ export type ApiAdminPotholeSummary = {
     resolved: number;
     rejected: number;
   };
-  by_purok: { purok: string; count: number }[];
+  by_purok: {
+    purok: string;
+    count: number;
+    detected_potholes: number;
+    verified_defects: number;
+  }[];
   unspecified_purok: number;
   with_coordinates: number;
+  total_detected_potholes: number;
+  verified_unique_defects: number;
+  top_puroks: string[];
+  top_purok_detected: number;
 };
 
 /* -------------------------------------------------------------------------- */
@@ -106,6 +157,42 @@ export type PotholeReport = {
   updatedAt: string;
   description: string | null;
   status: PotholeStatus;
+  /** Reverse-geocoded place name, when a lookup succeeded. */
+  resolvedAddress: string | null;
+  detection: PotholeDetectionSummary;
+  /** Unique defects an administrator confirmed (never set by the model). */
+  verifiedDefectCount: number | null;
+  /** The earlier report this photo duplicates, when an administrator said so. */
+  duplicateOf: { recordId: number; id: string } | null;
+  /** Metres from the barangay center; null when there are no coordinates. */
+  distanceFromBarangayM: number | null;
+  /** The coordinates lie outside the barangay radius (BARANGAY_RADIUS_KM). */
+  outsideBarangay: boolean;
+};
+
+export type PotholeDetectionItem = {
+  number: number;
+  /** 0 to 1. */
+  confidence: number;
+};
+
+export type PotholeDetectionSummary = {
+  status: PotholeDetectionStatus;
+  /** Null unless the detection completed. */
+  count: number | null;
+  threshold: number | null;
+  items: PotholeDetectionItem[];
+  hasAnnotatedPhoto: boolean;
+};
+
+export type PotholeNearbyReport = {
+  recordId: number;
+  id: string;
+  status: PotholeStatus;
+  distanceM: number;
+  detectionCount: number | null;
+  isDuplicate: boolean;
+  reportedAt: string;
 };
 
 export type PotholeHistoryEntry = {
@@ -121,6 +208,7 @@ export type PotholeHistoryEntry = {
 
 export type PotholeReportDetail = PotholeReport & {
   history: PotholeHistoryEntry[];
+  nearbyReports: PotholeNearbyReport[];
 };
 
 export type PotholeStats = {
@@ -134,9 +222,20 @@ export type PotholeStats = {
 
 export type PotholeSummary = {
   stats: PotholeStats;
-  byPurok: { purok: string; count: number }[];
+  byPurok: {
+    purok: string;
+    count: number;
+    detectedPotholes: number;
+    verifiedDefects: number;
+  }[];
   unspecifiedPurok: number;
   withCoordinates: number;
+  /** Sum of per-photo AI counts: unverified, and not unique. */
+  totalDetectedPotholes: number;
+  /** Administrator-confirmed unique defects. */
+  verifiedUniqueDefects: number;
+  topPuroks: string[];
+  topPurokDetected: number;
 };
 
 /** Purok filter value for reports sent without a Purok. */
@@ -160,6 +259,7 @@ export type PotholeSortKey =
   | "road"
   | "location"
   | "gpsAccuracyM"
+  | "detectionCount"
   | "reportedAt"
   | "status";
 

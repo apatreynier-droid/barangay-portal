@@ -1,3 +1,4 @@
+import { Check } from "lucide-react";
 import logo from "../../assets/logo-256.png";
 import "../../Styles/Shared/Components/CreateAccountHeader.css";
 
@@ -36,7 +37,11 @@ const CreateAccountHeader = ({ currentStep }: CreateAccountHeaderProps) => {
               className={`registration-step ${isCompleted ? "registration-step--completed" : ""} ${isCurrent ? "registration-step--current" : ""}`}
             >
               <span className="step-indicator" aria-hidden="true">
-                {isCompleted ? "✓" : stepNumber}
+                {isCompleted ? (
+                  <Check size={14} strokeWidth={3} aria-hidden="true" />
+                ) : (
+                  stepNumber
+                )}
               </span>
 
               <span className="step-label">{label}</span>

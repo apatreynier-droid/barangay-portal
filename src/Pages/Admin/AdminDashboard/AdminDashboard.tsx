@@ -124,8 +124,6 @@ const AdminDashboard = ({
         <AdminTopbar
           fullName={fullName || "Administrator"}
           onMenuToggle={toggleDrawer}
-          unreadNotifications={unreadNotifications}
-          onNotifications={onNotifications}
         />
 
         {error && (

@@ -1,6 +1,6 @@
 r"""End-to-end checks for resident pothole reports and Admin Pothole Management.
 
-Runs against the backend on http://127.0.0.1:8000 (start it first) and the
+Runs against the backend on https://localhost:8000 (start it first with run_https.py) and the
 configured MySQL database, after migration 012:
 
     cd backend
@@ -23,6 +23,7 @@ notifications, activity logs) is removed at the end.
 
 from __future__ import annotations
 
+import io
 import json
 import os
 import subprocess
@@ -40,7 +41,10 @@ for path in (BACKEND_DIR, BACKEND_DIR / "scripts"):
         sys.path.insert(0, str(path))
 
 import test_request_attachments as base  # noqa: E402  (shared HTTP/DB helpers)
+from PIL import Image  # noqa: E402
+
 from app.attachments import STORED_FILENAME_PATTERN  # noqa: E402
+from app.config import settings  # noqa: E402
 from app.database import create_connection  # noqa: E402
 from app.potholes import pothole_photos_dir  # noqa: E402
 
@@ -56,13 +60,19 @@ PROBE_EMAILS = (RESIDENT_A_EMAIL, RESIDENT_B_EMAIL, STAFF_EMAIL)
 STAFF_PASSWORD = "ProbeStaff123!"
 FRESH_PROCESS_PORT = 8012
 
-# A JPEG-signature file carrying an EXIF-like segment: the stored copy must be
-# byte-for-byte identical (no re-encoding, no metadata stripping).
-JPEG_WITH_EXIF = (
-    b"\xff\xd8\xff\xe1\x00\x16Exif\x00\x00MM\x00*\x00\x00\x00\x08probe-gps"
-    + bytes(range(256)) * 4
-    + b"\xff\xd9"
-)
+
+
+def _real_jpeg_with_metadata() -> bytes:
+    """A decodable JPEG with metadata: the stored copy must stay byte-identical."""
+    exif = Image.Exif()
+    exif[0x010F] = "probe-camera"
+    output = io.BytesIO()
+    Image.new("RGB", (64, 48), (120, 120, 120)).save(output, format="JPEG", exif=exif)
+    return output.getvalue()
+
+
+# The stored copy must be byte-for-byte identical (no re-encoding or stripping).
+JPEG_WITH_EXIF = _real_jpeg_with_metadata()
 
 
 def submit_report(
@@ -118,7 +128,8 @@ def remove_probe_accounts() -> None:
     placeholders = ", ".join(["%s"] * len(PROBE_EMAILS))
     rows = db_query(
         f"""
-        SELECT pothole_reports.photo_stored_filename AS stored_name
+        SELECT pothole_reports.photo_stored_filename AS stored_name,
+               pothole_reports.annotated_stored_filename AS annotated_name
         FROM pothole_reports
         JOIN users ON users.id = pothole_reports.user_id
         WHERE users.email IN ({placeholders})
@@ -126,8 +137,9 @@ def remove_probe_accounts() -> None:
         PROBE_EMAILS,
     )
     for row in rows:
-        if STORED_FILENAME_PATTERN.fullmatch(row["stored_name"]):
-            (pothole_photos_dir() / row["stored_name"]).unlink(missing_ok=True)
+        for name in (row["stored_name"], row["annotated_name"]):
+            if name and STORED_FILENAME_PATTERN.fullmatch(name):
+                (pothole_photos_dir() / name).unlink(missing_ok=True)
 
     connection = create_connection()
     try:
@@ -324,7 +336,7 @@ def run_checks() -> None:
     check(
         (pothole_photos_dir() / manual_row["photo_stored_filename"]).read_bytes()
         == JPEG_WITH_EXIF,
-        "JPEG with metadata is stored unchanged (no image processing)",
+        "JPEG with metadata is stored unchanged (the original is never re-encoded)",
     )
 
     # ----------------------------------------------------------- validation
@@ -535,6 +547,63 @@ def run_checks() -> None:
     print("\n8. Persistence across a backend restart")
     status, body = fetch_photo_from_fresh_process(admin_token, gps_report["id"])
     check(status == 200 and body == png, f"a fresh backend process serves the photo (got {status})")
+
+    # ------------------------------------------------- outside the barangay
+    # Last, so the reports created here cannot change the counts checked above.
+    print("\n9. Locations outside the barangay are flagged for reviewers")
+    radius_m = settings.barangay_radius_km * 1000
+    status, listed = request_json("/api/admin/pothole-reports", token=admin_token)
+    by_id = {entry["id"]: entry for entry in listed} if status == 200 else {}
+    for label, report in (("GPS", gps_report), ("manual-pin", manual_report)):
+        entry = by_id.get(report["id"], {})
+        check(
+            entry.get("outside_barangay") is False
+            and 0 <= (entry.get("distance_from_barangay_m") or -1) < radius_m,
+            f"{label} report inside the barangay is not flagged "
+            f"({entry.get('distance_from_barangay_m')} m)",
+        )
+    entry = by_id.get(no_location_report["id"], {})
+    check(
+        entry.get("outside_barangay") is False
+        and entry.get("distance_from_barangay_m", 0) is None,
+        "a report without coordinates is not flagged and has no distance",
+    )
+
+    # Davao City, ~83 km away: a resident's device GPS is saved as sent,
+    # but reviewers are warned. The same applies to a map pin.
+    outside_reports = []
+    for source in ("gps", "manual"):
+        status, outside = submit_report(
+            token_b,
+            {
+                "location_description": f"Probe outside the barangay ({source})",
+                "latitude": "7.0731",
+                "longitude": "125.6128",
+                "location_source": source,
+            },
+            ("far.png", png, "image/png"),
+        )
+        check(status == 201, f"{source} report outside the barangay is still accepted (got {status})")
+        if status == 201:
+            outside_reports.append(outside)
+    for outside in outside_reports:
+        status, detail = request_json(
+            f"/api/admin/pothole-reports/{outside['id']}", token=admin_token
+        )
+        check(
+            status == 200
+            and detail["outside_barangay"] is True
+            and detail["distance_from_barangay_m"] > 80_000,
+            f"{outside['location_source']} report ~83 km away is flagged outside the "
+            f"barangay in the admin details (got {status}, "
+            f"{detail.get('distance_from_barangay_m') if status == 200 else None} m)",
+        )
+        status, mine = request_json("/api/pothole-reports", token=token_b)
+        resident_view = next((r for r in mine if r["id"] == outside["id"]), {})
+        check(
+            "outside_barangay" not in resident_view,
+            "the flag is shown to reviewers only, not in the resident's own list",
+        )
 
 
 if __name__ == "__main__":

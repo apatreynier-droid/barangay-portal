@@ -11,7 +11,10 @@ import type {
   AdminReportsData,
   AdminReportsQuery,
 } from "../../../Types/Admin/AdminReportsType";
-import { getPortalProfileName } from "../../../Utils/Admin/AdminDisplay";
+import {
+  getPortalProfileName,
+  getPortalRoleLabel,
+} from "../../../Utils/Admin/AdminDisplay";
 import AdminSidebar from "../../../components/Admin/AdminDashboard/AdminSidebar";
 import AdminTopbar from "../../../components/Admin/AdminDashboard/AdminTopbar";
 import useResponsiveSidebar from "../../../Utils/Shared/useResponsiveSidebar";
@@ -54,6 +57,17 @@ type AdminReportsProps = {
   onUserManagement: () => void;
   onLogout: () => void;
 };
+
+/** "November 11, 2026, 9:42 AM" in Philippine time (printed report). */
+const formatPrintTimestamp = (date: Date): string =>
+  new Intl.DateTimeFormat("en-US", {
+    timeZone: "Asia/Manila",
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  }).format(date);
 
 const AdminReports = ({
   user,
@@ -164,6 +178,19 @@ const AdminReports = ({
   }, []);
 
   const fullName = getPortalProfileName(user);
+  // "Prepared by" on the printed report. Administrators are shown by role only
+  // (the portal never displays their account name), Staff by their own name.
+  const preparedByName =
+    user.role === "staff" ? `${user.first_name} ${user.last_name}`.trim() : "";
+  const preparedByRole = getPortalRoleLabel(user);
+
+  // "Date generated" on the printed report: refreshed whenever printing starts.
+  const [printedAt, setPrintedAt] = useState(() => formatPrintTimestamp(new Date()));
+  useEffect(() => {
+    const handleBeforePrint = () => setPrintedAt(formatPrintTimestamp(new Date()));
+    window.addEventListener("beforeprint", handleBeforePrint);
+    return () => window.removeEventListener("beforeprint", handleBeforePrint);
+  }, []);
 
   const interval = data ? granularityLabel(data.filters.granularity) : "";
   // The volume charts follow the selected interval (daily/weekly/...).
@@ -209,13 +236,50 @@ const AdminReports = ({
         />
       )}
 
-      <main className="admin-main">
+      <main className="admin-main reports-page">
         <AdminTopbar
           fullName={fullName || "Administrator"}
           onMenuToggle={toggleDrawer}
           title="Reports"
           subtitle="Barangay reporting and monitoring."
         />
+
+        {/* Formal letterhead, shown only on paper in place of the top bar
+            (print styles in AdminReports.css). */}
+        <header className="reports-print-header" aria-hidden="true">
+          <div className="reports-letterhead">
+            <img
+              className="reports-letterhead-logo"
+              src="/logo-lagab.png"
+              alt=""
+            />
+            <div className="reports-letterhead-text">
+              <p>Republic of the Philippines</p>
+              <p>Province of Davao de Oro</p>
+              <p>Municipality of Compostela</p>
+              <p className="reports-letterhead-barangay">Barangay Lagab</p>
+            </div>
+          </div>
+          <h1 className="reports-print-title">Barangay Reports and Analytics</h1>
+          {data && (
+            <table className="reports-print-meta">
+              <tbody>
+                <tr>
+                  <th scope="row">Reporting period</th>
+                  <td>{describeReportRange(data)}</td>
+                  <th scope="row">Date generated</th>
+                  <td>{printedAt}</td>
+                </tr>
+                <tr>
+                  <th scope="row">Interval</th>
+                  <td>{interval}</td>
+                  <th scope="row">Time zone</th>
+                  <td>Philippine Standard Time ({data.filters.timezone})</td>
+                </tr>
+              </tbody>
+            </table>
+          )}
+        </header>
 
         {error && (
           <div className="admin-error-banner" role="alert">
@@ -292,6 +356,20 @@ const AdminReports = ({
                 stats={data.potholes}
                 intervalLabel={interval}
               />
+
+              {/* Signatories, shown only on paper. */}
+              <section className="reports-print-signatures" aria-hidden="true">
+                <div className="reports-signature">
+                  <p className="reports-signature-caption">Prepared by:</p>
+                  <p className="reports-signature-line">{preparedByName}</p>
+                  <p className="reports-signature-role">{preparedByRole}</p>
+                </div>
+                <div className="reports-signature">
+                  <p className="reports-signature-caption">Noted by:</p>
+                  <p className="reports-signature-line"></p>
+                  <p className="reports-signature-role">Punong Barangay</p>
+                </div>
+              </section>
 
               <GenerateReportCard
                 onExportCsv={() => downloadReportsCsv(data)}

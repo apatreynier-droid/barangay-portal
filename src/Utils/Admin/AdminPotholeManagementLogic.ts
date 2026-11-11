@@ -165,12 +165,42 @@ export const mapApiPotholeReport = (
   updatedAt: toUtcTimestamp(report.updated_at),
   description: report.notes,
   status: report.status,
+  resolvedAddress: report.resolved_address,
+  detection: {
+    status: report.detection_status,
+    count: report.detection_count,
+    threshold: report.detection_threshold,
+    items: report.detections.map((item) => ({
+      number: item.number,
+      confidence: item.confidence,
+    })),
+    hasAnnotatedPhoto: report.has_annotated_photo,
+  },
+  verifiedDefectCount: report.verified_defect_count,
+  duplicateOf:
+    report.duplicate_of_report_id !== null && report.duplicate_of_report_number
+      ? {
+          recordId: report.duplicate_of_report_id,
+          id: report.duplicate_of_report_number,
+        }
+      : null,
+  distanceFromBarangayM: report.distance_from_barangay_m,
+  outsideBarangay: report.outside_barangay,
 });
 
 export const mapApiPotholeDetail = (
   detail: ApiAdminPotholeReportDetail,
 ): PotholeReportDetail => ({
   ...mapApiPotholeReport(detail),
+  nearbyReports: detail.nearby_reports.map((nearby) => ({
+    recordId: nearby.id,
+    id: nearby.report_number,
+    status: nearby.status,
+    distanceM: nearby.distance_m,
+    detectionCount: nearby.detection_count,
+    isDuplicate: nearby.duplicate_of_report_id !== null,
+    reportedAt: toUtcTimestamp(nearby.reported_at),
+  })),
   history: detail.history.map(
     (entry): PotholeHistoryEntry => ({
       id: entry.id,
@@ -197,9 +227,18 @@ export const mapApiPotholeSummary = (
     resolved: summary.status_counts.resolved,
     rejected: summary.status_counts.rejected,
   },
-  byPurok: summary.by_purok,
+  byPurok: summary.by_purok.map((entry) => ({
+    purok: entry.purok,
+    count: entry.count,
+    detectedPotholes: entry.detected_potholes,
+    verifiedDefects: entry.verified_defects,
+  })),
   unspecifiedPurok: summary.unspecified_purok,
   withCoordinates: summary.with_coordinates,
+  totalDetectedPotholes: summary.total_detected_potholes,
+  verifiedUniqueDefects: summary.verified_unique_defects,
+  topPuroks: summary.top_puroks,
+  topPurokDetected: summary.top_purok_detected,
 });
 
 /* -------------------------------------------------------------------------- */
@@ -284,6 +323,11 @@ const compareBy = (
       (a.gpsAccuracyM ?? Number.POSITIVE_INFINITY) -
       (b.gpsAccuracyM ?? Number.POSITIVE_INFINITY)
     );
+  }
+
+  if (key === "detectionCount") {
+    // Reports without a completed detection sort below a real count of 0.
+    return (a.detection.count ?? -1) - (b.detection.count ?? -1);
   }
 
   return (a[key] ?? "").localeCompare(b[key] ?? "", undefined, {
@@ -381,6 +425,10 @@ export const formatPotholeAccuracy = (report: PotholeReport): string => {
       : `±${Math.round(report.gpsAccuracyM)} m`;
   }
 
+  if (report.locationSource === "photo") {
+    return "From photo";
+  }
+
   return report.locationSource === "manual" ? "Manual pin" : "—";
 };
 
@@ -388,6 +436,31 @@ export const isLowPotholeAccuracy = (report: PotholeReport): boolean =>
   report.locationSource === "gps" &&
   report.gpsAccuracyM !== null &&
   report.gpsAccuracyM > LOW_GPS_ACCURACY_M;
+
+/** e.g. "850 m" or "12.4 km" from the barangay center. */
+export const formatDistanceFromBarangay = (metres: number): string =>
+  metres < 1000
+    ? `${Math.round(metres)} m`
+    : `${(metres / 1000).toFixed(metres < 10_000 ? 1 : 0)} km`;
+
+/**
+ * Warning shown to reviewers when a report's coordinates fall outside the
+ * barangay; null when the location is inside (or there is none).
+ */
+export const getOutsideBarangayWarning = (report: PotholeReport): string | null => {
+  if (!report.outsideBarangay || report.distanceFromBarangayM === null) {
+    return null;
+  }
+
+  const distance = formatDistanceFromBarangay(report.distanceFromBarangayM);
+  const source =
+    report.locationSource === "manual"
+      ? "The map pin"
+      : report.locationSource === "photo"
+        ? "The photo's GPS data"
+        : "The resident's device GPS";
+  return `${source} is ${distance} from the barangay center, outside Barangay Lagab. Check that this pothole is really in the barangay before verifying it.`;
+};
 
 export const getPotholeLocationSourceLabel = (report: PotholeReport): string => {
   if (report.locationSource === "gps") {
@@ -398,8 +471,25 @@ export const getPotholeLocationSourceLabel = (report: PotholeReport): string => 
     return "Pinned manually on the map (not GPS-verified)";
   }
 
+  if (report.locationSource === "photo") {
+    return "GPS data stored in the photo (not the device's live position)";
+  }
+
   return "Not captured";
 };
+
+/** Short text for the table and map, e.g. "3 potholes" or "Not completed". */
+export const formatPotholeDetection = (report: PotholeReport): string => {
+  const { status, count } = report.detection;
+
+  if (status === "failed") return "Failed";
+  if (status === "not_run" || count === null) return "Not run";
+  if (count === 0) return "None found";
+  return count === 1 ? "1 pothole" : `${count} potholes`;
+};
+
+export const formatPotholeConfidence = (confidence: number): string =>
+  `${Math.round(confidence * 100)}%`;
 
 export const formatPotholeFileSize = (bytes: number): string => {
   if (bytes < 1024) return `${bytes} B`;

@@ -206,6 +206,8 @@ def send_document_status_email(
     admin_remarks: str | None = None,
     event_time: object | None = None,
     portal_url: str = "",
+    pickup_time: object | None = None,
+    schedule_change: str | None = None,
 ) -> None:
     """Email a resident that one of their document requests changed status.
 
@@ -220,6 +222,8 @@ def send_document_status_email(
         request_number=request_number,
         status=status,
         pickup_date=pickup_date,
+        pickup_time=pickup_time,
+        schedule_change=schedule_change,
         admin_remarks=admin_remarks,
         event_time=event_time,
         portal_url=portal_url,

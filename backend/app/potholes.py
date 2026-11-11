@@ -1,19 +1,28 @@
 """Pothole reports: resident submissions and their administration.
 
 Residents submit via ``POST /api/pothole-reports`` (multipart photo +
-location); admins review via ``GET /api/admin/pothole-reports``. Reports are
-stored as submitted: no image processing or automatic detection.
+location); admins review via ``GET /api/admin/pothole-reports``.
 
-Location: coordinates are optional. ``location_source`` is ``gps`` (with
-accuracy in metres) or ``manual`` (a map pin, no accuracy). Reports without
-coordinates are listed but not mapped.
+Detection: each photo goes through the YOLO model (``app.ml.detector``), which
+finds and counts potholes. The counts are unverified AI output: a report always
+starts as pending, and only an administrator confirms real, unique defects. If
+the model cannot run, the report is still saved with ``detection_status`` saying
+so and no count; a result is never made up.
+
+Location: coordinates are optional and always come from outside the image
+analysis. ``location_source`` is ``gps`` (with accuracy in metres), ``manual``
+(a map pin, no accuracy) or ``photo`` (valid GPS metadata inside the photo, used
+only when the device sent no position and the metadata places it near the
+barangay). Reports without coordinates are listed but not mapped.
 
 Storage: photos reuse ``app.attachments`` (magic-byte validation, random
-names, authenticated streaming) under ``uploads/pothole_reports``.
+names, authenticated streaming) under ``uploads/pothole_reports``. The original
+is stored byte for byte; the annotated copy is a separate file.
 
 Access: residents see only their own reports. Admin Portal roles see all
-reports; verifying/rejecting is reserved for administrators, while Staff may
-record repair progress (under maintenance, resolved).
+reports; verifying/rejecting and marking duplicates are reserved for
+administrators, while Staff may record repair progress (under maintenance,
+resolved).
 """
 
 from __future__ import annotations
@@ -45,9 +54,11 @@ from mysql.connector import MySQLConnection
 from .activity_logs import record_activity_log
 from .attachments import (
     TABLE_MISSING_ERROR,
+    ValidatedImage,
     build_attachment_response,
     delete_stored_file,
     read_validated_image,
+    resolve_stored_path,
     store_image_file,
     upload_subdir,
 )
@@ -58,6 +69,16 @@ from .dependencies import (
     get_current_admin_portal_user,
     get_current_user,
 )
+from .geolocation import read_photo_gps, reverse_geocode
+from .ml.detector import (
+    DetectionFailed,
+    DetectionResult,
+    DetectionUnavailable,
+    InvalidPhoto,
+    decode_photo,
+    detector,
+    draw_annotated_jpeg,
+)
 from .notifications import (
     action_time_bucket,
     build_dedupe_key,
@@ -65,8 +86,11 @@ from .notifications import (
     notify_admins,
 )
 from .puroks import STANDARDIZED_PUROKS, validate_purok
-from .rate_limit import get_client_ip
+from .rate_limit import get_client_ip, pothole_report_limiter
 from .schemas import (
+    AdminPotholeDuplicateInput,
+    AdminPotholeNearbyReport,
+    AdminPotholePurokCount,
     AdminPotholeRemarkInput,
     AdminPotholeReportDetailResponse,
     AdminPotholeReportResponse,
@@ -74,7 +98,7 @@ from .schemas import (
     AdminPotholeStatusInput,
     AdminPotholeSummaryResponse,
     AdminPotholeUpdateEntry,
-    AdminPurokCount,
+    PotholeDetectionEntry,
     PotholePhotoMeta,
     ResidentPotholeReportResponse,
 )
@@ -116,6 +140,16 @@ MAX_NOTES_LENGTH = 1000
 #: Anything worse than this is not a usable position (it is not stored).
 MAX_ACCEPTED_ACCURACY_M = 100_000
 
+#: MySQL error number for a column that does not exist yet.
+COLUMN_MISSING_ERROR = 1054
+#: Statuses in which a report counts as an administrator-confirmed defect.
+CONFIRMED_STATUSES = ("verified", "under_maintenance", "resolved")
+#: Possible-duplicate search radius: the two GPS accuracy circles, within limits.
+MIN_NEARBY_RADIUS_M = 30.0
+MAX_NEARBY_RADIUS_M = 100.0
+METRES_PER_DEGREE_LATITUDE = 111_320.0
+EARTH_RADIUS_M = 6_371_000.0
+
 
 def pothole_photos_dir() -> Path:
     return upload_subdir(POTHOLE_PHOTOS_SUBDIR)
@@ -130,22 +164,23 @@ def pothole_photos_dir() -> Path:
 def pothole_db_errors(action: str) -> Iterator[None]:
     """Turn database errors into clear HTTP errors.
 
-    A missing table means migration 012 has not been applied yet; say so
-    instead of failing with a bare 500.
+    A missing table or column means a migration has not been applied yet; say
+    so instead of failing with a bare 500.
     """
     try:
         yield
     except mysql.connector.Error as error:
-        if error.errno == TABLE_MISSING_ERROR:
+        if error.errno in (TABLE_MISSING_ERROR, COLUMN_MISSING_ERROR):
             logger.error(
-                "pothole_reports table is missing; run "
-                "scripts/apply_pothole_reports_migration.py"
+                "Pothole tables are out of date; run "
+                "scripts/apply_pothole_reports_migration.py and "
+                "scripts/apply_pothole_detection_migration.py"
             )
             raise HTTPException(
                 status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
                 detail=(
                     "Pothole reports are not set up on the server yet "
-                    "(database migration 012 is missing)."
+                    "(database migrations 012 and 013 are required)."
                 ),
             ) from error
         logger.exception("Database error while trying to %s", action)
@@ -253,28 +288,176 @@ def _location_summary(row: dict[str, object]) -> str:
     return ", ".join(seen)
 
 
+# --------------------------------------------------------------------------- #
+#  Detection                                                                  #
+# --------------------------------------------------------------------------- #
+
+
+def run_detection(image) -> tuple[str, DetectionResult | None]:
+    """Return ``(detection_status, result)``; a result only if the model ran."""
+    try:
+        return "completed", detector.detect(image)
+    except DetectionUnavailable as error:
+        logger.warning("Pothole detection did not run: %s", error)
+        return "not_run", None
+    except DetectionFailed as error:
+        logger.error("Pothole detection failed: %s", error)
+        return "failed", None
+
+
+def store_annotated_photo(image, result: DetectionResult | None) -> str | None:
+    """Save the photo with its boxes. No detections means no annotated copy.
+
+    A drawing or disk problem must not lose the report or the real detection
+    results, so it only logs and leaves the report without this extra image.
+    """
+    if result is None or result.count == 0:
+        return None
+    try:
+        data = draw_annotated_jpeg(image, result.detections)
+        return store_image_file(
+            ValidatedImage(
+                data=data,
+                content_type="image/jpeg",
+                extension=".jpg",
+                original_filename="annotated.jpg",
+            ),
+            POTHOLE_PHOTOS_SUBDIR,
+        )
+    except OSError:
+        logger.exception("Could not save the annotated pothole photo")
+        return None
+
+
+def insert_detections(cursor, report_id: int, result: DetectionResult | None) -> None:
+    if result is None or result.count == 0:
+        return
+    cursor.executemany(
+        """
+        INSERT INTO pothole_detections
+          (report_id, detection_number, confidence, x_min, y_min, x_max, y_max)
+        VALUES (%s, %s, %s, %s, %s, %s, %s)
+        """,
+        [
+            (report_id, item.number, item.confidence, item.x_min, item.y_min, item.x_max, item.y_max)
+            for item in result.detections
+        ],
+    )
+
+
+def load_detections(
+    connection: MySQLConnection, report_ids: list[int]
+) -> dict[int, list[PotholeDetectionEntry]]:
+    """The stored detections of several reports, in one query."""
+    if not report_ids:
+        return {}
+    placeholders = ", ".join(["%s"] * len(report_ids))
+    cursor = connection.cursor(dictionary=True)
+    try:
+        cursor.execute(
+            f"""
+            SELECT report_id, detection_number AS number, confidence,
+                   x_min, y_min, x_max, y_max
+            FROM pothole_detections
+            WHERE report_id IN ({placeholders})
+            ORDER BY report_id, detection_number
+            """,
+            tuple(report_ids),
+        )
+        rows = cursor.fetchall()
+    finally:
+        cursor.close()
+
+    grouped: dict[int, list[PotholeDetectionEntry]] = {}
+    for row in rows:
+        grouped.setdefault(row.pop("report_id"), []).append(PotholeDetectionEntry(**row))
+    return grouped
+
+
+def detection_fields(
+    row: dict[str, object], detections: dict[int, list[PotholeDetectionEntry]]
+) -> dict[str, object]:
+    return {
+        "detection_status": row["detection_status"],
+        "detection_count": row["detection_count"],
+        "detection_threshold": row["detection_threshold"],
+        "detections": detections.get(row["id"], []),
+        "has_annotated_photo": bool(row["annotated_stored_filename"]),
+    }
+
+
+def _describe_detection(detection_status: str, result: DetectionResult | None) -> str:
+    """One sentence for the administrators' notification."""
+    if result is None:
+        return "AI detection did not run on this photo."
+    if result.count == 0:
+        return "The AI found no potholes in the photo; please review it."
+    noun = "pothole" if result.count == 1 else "potholes"
+    return f"The AI found {result.count} possible {noun} (unverified)."
+
+
+def annotated_photo_response(
+    row: dict[str, object] | None, *, download: bool = False
+) -> FileResponse:
+    """Stream a report's annotated photo; 404 when it has none."""
+    has_photo = row is not None and row["stored_filename"]
+    return build_attachment_response(
+        {
+            "stored_filename": row["stored_filename"],
+            "content_type": "image/jpeg",
+            "original_filename": f"{row['report_number']}-detections.jpg",
+        }
+        if has_photo
+        else None,
+        download=download,
+        subdir=POTHOLE_PHOTOS_SUBDIR,
+        not_found_detail="This report has no annotated photo.",
+    )
+
+
 ADMIN_REPORT_SELECT = """
     SELECT pothole_reports.id, pothole_reports.report_number,
            pothole_reports.purok, pothole_reports.road_name,
            pothole_reports.location_description, pothole_reports.notes,
            pothole_reports.latitude, pothole_reports.longitude,
            pothole_reports.gps_accuracy_m, pothole_reports.location_source,
-           pothole_reports.location_captured_at, pothole_reports.status,
+           pothole_reports.location_captured_at, pothole_reports.resolved_address,
+           pothole_reports.status,
            pothole_reports.reported_at, pothole_reports.updated_at,
            pothole_reports.photo_original_filename,
            pothole_reports.photo_content_type,
            pothole_reports.photo_file_size,
+           pothole_reports.detection_status, pothole_reports.detection_count,
+           pothole_reports.detection_threshold,
+           pothole_reports.annotated_stored_filename,
+           pothole_reports.verified_defect_count,
+           pothole_reports.duplicate_of_report_id,
+           original_report.report_number AS duplicate_of_report_number,
            TRIM(CONCAT(resident_profiles.first_name, ' ',
                        resident_profiles.last_name)) AS resident_name,
            resident_profiles.contact_number AS resident_contact,
            resident_profiles.address AS resident_address
     FROM pothole_reports
     JOIN resident_profiles ON resident_profiles.user_id = pothole_reports.user_id
+    LEFT JOIN pothole_reports AS original_report
+           ON original_report.id = pothole_reports.duplicate_of_report_id
 """
 
 
-def admin_report_response(row: dict[str, object]) -> AdminPotholeReportResponse:
+def admin_report_response(
+    row: dict[str, object], detections: dict[int, list[PotholeDetectionEntry]]
+) -> AdminPotholeReportResponse:
+    distance_m = distance_from_barangay_m(row["latitude"], row["longitude"])
     return AdminPotholeReportResponse(
+        **detection_fields(row, detections),
+        distance_from_barangay_m=distance_m,
+        outside_barangay=(
+            distance_m is not None and distance_m > settings.barangay_radius_km * 1000
+        ),
+        resolved_address=row["resolved_address"],
+        verified_defect_count=row["verified_defect_count"],
+        duplicate_of_report_id=row["duplicate_of_report_id"],
+        duplicate_of_report_number=row["duplicate_of_report_number"],
         id=row["id"],
         report_number=row["report_number"],
         resident_name=row["resident_name"],
@@ -332,11 +515,108 @@ def load_admin_report_detail(
     finally:
         cursor.close()
 
-    base = admin_report_response(row)
+    base = admin_report_response(row, load_detections(connection, [report_id]))
     return AdminPotholeReportDetailResponse(
         **base.model_dump(),
         history=[AdminPotholeUpdateEntry(**entry) for entry in history],
+        nearby_reports=find_nearby_reports(connection, row),
     )
+
+
+def _distance_m(lat1: float, lng1: float, lat2: float, lng2: float) -> float:
+    phi1, phi2 = math.radians(lat1), math.radians(lat2)
+    half_lat = math.radians(lat2 - lat1) / 2
+    half_lng = math.radians(lng2 - lng1) / 2
+    value = math.sin(half_lat) ** 2 + math.cos(phi1) * math.cos(phi2) * math.sin(half_lng) ** 2
+    return 2 * EARTH_RADIUS_M * math.asin(min(1.0, math.sqrt(value)))
+
+
+def is_near_barangay(latitude: float, longitude: float) -> bool:
+    return (
+        _distance_m(
+            latitude,
+            longitude,
+            settings.barangay_center_latitude,
+            settings.barangay_center_longitude,
+        )
+        <= settings.photo_gps_max_distance_km * 1000
+    )
+
+
+def distance_from_barangay_m(latitude: object, longitude: object) -> float | None:
+    """Metres from the barangay center, or None when there are no coordinates."""
+    if latitude is None or longitude is None:
+        return None
+    return round(
+        _distance_m(
+            float(latitude),
+            float(longitude),
+            settings.barangay_center_latitude,
+            settings.barangay_center_longitude,
+        ),
+        1,
+    )
+
+
+def find_nearby_reports(
+    connection: MySQLConnection, report: dict[str, object]
+) -> list[AdminPotholeNearbyReport]:
+    """Other reports close enough to possibly show the same pothole.
+
+    These are suggestions for the administrator. Nothing is merged or excluded
+    until the administrator decides.
+    """
+    if report["latitude"] is None or report["longitude"] is None:
+        return []
+
+    latitude, longitude = float(report["latitude"]), float(report["longitude"])
+    lat_margin = MAX_NEARBY_RADIUS_M / METRES_PER_DEGREE_LATITUDE
+    lng_margin = lat_margin / max(0.01, math.cos(math.radians(latitude)))
+    own_accuracy = float(report["gps_accuracy_m"] or 0)
+
+    cursor = connection.cursor(dictionary=True)
+    try:
+        cursor.execute(
+            """
+            SELECT id, report_number, status, latitude, longitude, gps_accuracy_m,
+                   detection_count, duplicate_of_report_id, reported_at
+            FROM pothole_reports
+            WHERE id <> %s AND status <> 'rejected'
+              AND latitude BETWEEN %s AND %s
+              AND longitude BETWEEN %s AND %s
+            """,
+            (
+                report["id"],
+                latitude - lat_margin,
+                latitude + lat_margin,
+                longitude - lng_margin,
+                longitude + lng_margin,
+            ),
+        )
+        rows = cursor.fetchall()
+    finally:
+        cursor.close()
+
+    nearby = []
+    for row in rows:
+        distance = _distance_m(latitude, longitude, float(row["latitude"]), float(row["longitude"]))
+        radius = min(
+            MAX_NEARBY_RADIUS_M,
+            max(MIN_NEARBY_RADIUS_M, own_accuracy + float(row["gps_accuracy_m"] or 0)),
+        )
+        if distance <= radius:
+            nearby.append(
+                AdminPotholeNearbyReport(
+                    id=row["id"],
+                    report_number=row["report_number"],
+                    status=row["status"],
+                    distance_m=round(distance, 1),
+                    detection_count=row["detection_count"],
+                    duplicate_of_report_id=row["duplicate_of_report_id"],
+                    reported_at=row["reported_at"],
+                )
+            )
+    return sorted(nearby, key=lambda item: item.distance_m)
 
 
 # --------------------------------------------------------------------------- #
@@ -362,8 +642,12 @@ RESIDENT_REPORT_SELECT = """
            pothole_reports.location_description, pothole_reports.notes,
            pothole_reports.latitude, pothole_reports.longitude,
            pothole_reports.gps_accuracy_m, pothole_reports.location_source,
-           pothole_reports.location_captured_at, pothole_reports.status,
+           pothole_reports.location_captured_at, pothole_reports.resolved_address,
+           pothole_reports.status,
            pothole_reports.reported_at, pothole_reports.updated_at,
+           pothole_reports.detection_status, pothole_reports.detection_count,
+           pothole_reports.detection_threshold,
+           pothole_reports.annotated_stored_filename,
            (SELECT updates.remark
             FROM pothole_report_updates updates
             WHERE updates.report_id = pothole_reports.id
@@ -397,8 +681,10 @@ def create_pothole_report(
 ) -> ResidentPotholeReportResponse:
     """A resident submits a pothole photo and where it is (multipart).
 
-    The row and the stored photo are created atomically: if anything fails,
-    neither is kept.
+    The photo is run through the detection model before anything is stored. The
+    row, its detections and the stored photos are created atomically: if anything
+    fails, none of them is kept. A model failure is not a submission failure: the
+    report is kept and says that detection did not complete.
     """
     location_text = _clean_text(location_description, MAX_LOCATION_LENGTH, "location")
     if location_text is None:
@@ -420,21 +706,53 @@ def create_pothole_report(
         latitude, longitude, gps_accuracy_m, location_source, location_captured_at
     )
     image = read_validated_image(photo, settings.pothole_photo_max_bytes)
+    try:
+        decoded_photo = decode_photo(image.data)
+    except InvalidPhoto as error:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="This image could not be read. Please choose another photo.",
+        ) from error
+
+    retry_after = pothole_report_limiter.hit(f"user:{current_user['id']}")
+    if retry_after > 0:
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="You have sent many reports recently. Please try again later.",
+            headers={"Retry-After": str(int(retry_after) + 1)},
+        )
+
+    # The device's position wins; a photo's own GPS metadata is only a fallback,
+    # and is ignored if it places the photo away from the barangay (for example
+    # an old picture, or one received from someone else).
+    if lat is None:
+        photo_gps = read_photo_gps(image.data)
+        if photo_gps is not None and is_near_barangay(photo_gps.latitude, photo_gps.longitude):
+            lat, lng, source = photo_gps.latitude, photo_gps.longitude, "photo"
+            captured_at = photo_gps.captured_at
+
+    detection_status, detection = run_detection(decoded_photo)
+    resolved_address = reverse_geocode(lat, lng)
 
     stored_filename: str | None = None
+    annotated_filename: str | None = None
     cursor = connection.cursor(dictionary=True)
     try:
         with pothole_db_errors("save the pothole report"):
             stored_filename = store_image_file(image, POTHOLE_PHOTOS_SUBDIR)
+            annotated_filename = store_annotated_photo(decoded_photo, detection)
             cursor.execute(
                 """
                 INSERT INTO pothole_reports
                   (report_number, user_id, purok, road_name, location_description,
                    notes, latitude, longitude, gps_accuracy_m, location_source,
-                   location_captured_at, status, photo_original_filename,
-                   photo_stored_filename, photo_content_type, photo_file_size)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 'pending',
-                        %s, %s, %s, %s)
+                   location_captured_at, resolved_address, status,
+                   photo_original_filename,
+                   photo_stored_filename, photo_content_type, photo_file_size,
+                   detection_status, detection_count, detection_threshold,
+                   detection_model, annotated_stored_filename)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 'pending',
+                        %s, %s, %s, %s, %s, %s, %s, %s, %s)
                 """,
                 (
                     f"TEMP-{stored_filename[:24]}",
@@ -448,13 +766,20 @@ def create_pothole_report(
                     accuracy,
                     source,
                     captured_at,
+                    resolved_address,
                     image.original_filename,
                     stored_filename,
                     image.content_type,
                     image.size,
+                    detection_status,
+                    detection.count if detection else None,
+                    detection.threshold if detection else None,
+                    detection.model_name if detection else None,
+                    annotated_filename,
                 ),
             )
             report_id = cursor.lastrowid
+            insert_detections(cursor, report_id, detection)
             report_number = f"PH-{datetime.now(timezone.utc).year}-{report_id:06d}"
             cursor.execute(
                 "UPDATE pothole_reports SET report_number = %s WHERE id = %s",
@@ -493,8 +818,11 @@ def create_pothole_report(
                         if source == "gps"
                         else "Location pinned on the map."
                         if source == "manual"
+                        else "Location read from the photo's GPS data."
+                        if source == "photo"
                         else "No map location was captured."
                     )
+                    + f" {_describe_detection(detection_status, detection)}"
                 ),
                 dedupe_key=build_dedupe_key(
                     "pothole-submitted",
@@ -505,11 +833,12 @@ def create_pothole_report(
             )
             connection.commit()
     except Exception as error:
-        # Nothing is kept from a failed submission: no row, no photo file.
+        # Nothing is kept from a failed submission: no row, no photo files.
         try:
             connection.rollback()
         finally:
             delete_stored_file(stored_filename, POTHOLE_PHOTOS_SUBDIR)
+            delete_stored_file(annotated_filename, POTHOLE_PHOTOS_SUBDIR)
             cursor.close()
         if isinstance(error, OSError):
             logger.exception("Could not store a pothole report photo")
@@ -532,7 +861,9 @@ def create_pothole_report(
         ip_address=get_client_ip(request),
     )
 
-    return ResidentPotholeReportResponse(**row)
+    return ResidentPotholeReportResponse(
+        **{**row, **detection_fields(row, load_detections(connection, [report_id]))}
+    )
 
 
 @router.get(
@@ -554,9 +885,71 @@ def list_my_pothole_reports(
                 (current_user["id"],),
             )
             rows = cursor.fetchall()
+            detections = load_detections(connection, [row["id"] for row in rows])
     finally:
         cursor.close()
-    return [ResidentPotholeReportResponse(**row) for row in rows]
+    return [
+        ResidentPotholeReportResponse(**{**row, **detection_fields(row, detections)})
+        for row in rows
+    ]
+
+
+def _load_own_report_files(
+    connection: MySQLConnection, report_id: int, user_id: object
+) -> dict[str, object] | None:
+    """A report's file details, only if it belongs to this resident."""
+    cursor = connection.cursor(dictionary=True)
+    try:
+        with pothole_db_errors("load the photo"):
+            cursor.execute(
+                """
+                SELECT id, report_number, photo_stored_filename,
+                       photo_content_type, photo_original_filename,
+                       annotated_stored_filename
+                FROM pothole_reports WHERE id = %s AND user_id = %s
+                """,
+                (report_id, user_id),
+            )
+            return cursor.fetchone()
+    finally:
+        cursor.close()
+
+
+@router.get("/api/pothole-reports/{report_id}/photo", response_class=FileResponse)
+def get_my_pothole_photo(
+    report_id: int,
+    connection: MySQLConnection = Depends(get_db),
+    current_user: dict[str, object] = Depends(require_resident),
+) -> FileResponse:
+    """A resident's own original photo. Another resident's report looks absent."""
+    row = _load_own_report_files(connection, report_id, current_user["id"])
+    return build_attachment_response(
+        {
+            "stored_filename": row["photo_stored_filename"],
+            "content_type": row["photo_content_type"],
+            "original_filename": row["photo_original_filename"],
+        }
+        if row
+        else None,
+        subdir=POTHOLE_PHOTOS_SUBDIR,
+        not_found_detail="The photo of this report was not found.",
+    )
+
+
+@router.get(
+    "/api/pothole-reports/{report_id}/annotated-photo", response_class=FileResponse
+)
+def get_my_annotated_pothole_photo(
+    report_id: int,
+    connection: MySQLConnection = Depends(get_db),
+    current_user: dict[str, object] = Depends(require_resident),
+) -> FileResponse:
+    row = _load_own_report_files(connection, report_id, current_user["id"])
+    return annotated_photo_response(
+        {"stored_filename": row["annotated_stored_filename"], "report_number": row["report_number"]}
+        if row
+        else None
+    )
 
 
 # --------------------------------------------------------------------------- #
@@ -630,9 +1023,10 @@ def list_pothole_reports(
                 tuple(params),
             )
             rows = cursor.fetchall()
+            detections = load_detections(connection, [row["id"] for row in rows])
     finally:
         cursor.close()
-    return [admin_report_response(row) for row in rows]
+    return [admin_report_response(row, detections) for row in rows]
 
 
 @router.get(
@@ -651,10 +1045,20 @@ def pothole_reports_summary(
                 "SELECT status, COUNT(*) AS total FROM pothole_reports GROUP BY status"
             )
             by_status = {row["status"]: int(row["total"]) for row in cursor.fetchall()}
+            # AI counts per photo stay separate from confirmed, unique defects:
+            # a duplicate still adds its detections, never a confirmed defect.
             cursor.execute(
-                "SELECT purok, COUNT(*) AS total FROM pothole_reports GROUP BY purok"
+                f"""
+                SELECT purok, COUNT(*) AS total,
+                       COALESCE(SUM(CASE WHEN status <> 'rejected'
+                                         THEN detection_count ELSE 0 END), 0) AS detected,
+                       COALESCE(SUM(CASE WHEN status IN {CONFIRMED_STATUSES!r}
+                                          AND duplicate_of_report_id IS NULL
+                                         THEN verified_defect_count ELSE 0 END), 0) AS verified
+                FROM pothole_reports GROUP BY purok
+                """
             )
-            by_purok = {row["purok"]: int(row["total"]) for row in cursor.fetchall()}
+            purok_rows = {row["purok"]: row for row in cursor.fetchall()}
             cursor.execute(
                 """
                 SELECT COUNT(*) AS total FROM pothole_reports
@@ -665,7 +1069,23 @@ def pothole_reports_summary(
     finally:
         cursor.close()
 
+    def purok_value(name: str | None, key: str) -> int:
+        row = purok_rows.get(name)
+        return int(row[key]) if row else 0
+
+    top_purok_detected = max(
+        (purok_value(name, "detected") for name in STANDARDIZED_PUROKS), default=0
+    )
+
     return AdminPotholeSummaryResponse(
+        total_detected_potholes=sum(int(row["detected"]) for row in purok_rows.values()),
+        verified_unique_defects=sum(int(row["verified"]) for row in purok_rows.values()),
+        top_puroks=[
+            name
+            for name in STANDARDIZED_PUROKS
+            if top_purok_detected > 0 and purok_value(name, "detected") == top_purok_detected
+        ],
+        top_purok_detected=top_purok_detected,
         status_counts=AdminPotholeStatusCounts(
             total=sum(by_status.values()),
             pending=by_status.get("pending", 0),
@@ -675,10 +1095,15 @@ def pothole_reports_summary(
             rejected=by_status.get("rejected", 0),
         ),
         by_purok=[
-            AdminPurokCount(purok=name, count=by_purok.get(name, 0))
+            AdminPotholePurokCount(
+                purok=name,
+                count=purok_value(name, "total"),
+                detected_potholes=purok_value(name, "detected"),
+                verified_defects=purok_value(name, "verified"),
+            )
             for name in STANDARDIZED_PUROKS
         ],
-        unspecified_purok=by_purok.get(None, 0),
+        unspecified_purok=purok_value(None, "total"),
         with_coordinates=with_coordinates,
     )
 
@@ -730,6 +1155,271 @@ def get_pothole_report_photo(
     )
 
 
+@router.get(
+    "/api/admin/pothole-reports/{report_id}/annotated-photo",
+    response_class=FileResponse,
+)
+def get_annotated_pothole_photo(
+    report_id: int,
+    download: bool = False,
+    connection: MySQLConnection = Depends(get_db),
+    _: dict[str, object] = Depends(get_current_admin_portal_user),
+) -> FileResponse:
+    """The photo with the model's boxes drawn on it."""
+    cursor = connection.cursor(dictionary=True)
+    try:
+        with pothole_db_errors("load the annotated photo"):
+            cursor.execute(
+                """
+                SELECT report_number, annotated_stored_filename AS stored_filename
+                FROM pothole_reports WHERE id = %s
+                """,
+                (report_id,),
+            )
+            row = cursor.fetchone()
+    finally:
+        cursor.close()
+    return annotated_photo_response(row, download=download)
+
+
+def _require_administrator(current_user: dict[str, object], action: str) -> None:
+    if current_user.get("role") not in ADMINISTRATOR_ROLES:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=f"Only an administrator can {action}.",
+        )
+
+
+@router.post(
+    "/api/admin/pothole-reports/{report_id}/detection",
+    response_model=AdminPotholeReportDetailResponse,
+)
+def retry_pothole_detection(
+    report_id: int,
+    request: Request,
+    connection: MySQLConnection = Depends(get_db),
+    current_user: dict[str, object] = Depends(get_current_admin_portal_user),
+) -> AdminPotholeReportDetailResponse:
+    """Run the model on a report whose detection did not complete.
+
+    A completed result is never replaced, so what a report recorded at the time
+    stays the same when a newer model is installed later.
+    """
+    _require_administrator(current_user, "re-run pothole detection")
+
+    cursor = connection.cursor(dictionary=True)
+    try:
+        with pothole_db_errors("load the pothole report"):
+            cursor.execute(
+                """
+                SELECT report_number, detection_status,
+                       photo_stored_filename AS stored_filename
+                FROM pothole_reports WHERE id = %s
+                """,
+                (report_id,),
+            )
+            report = cursor.fetchone()
+    finally:
+        cursor.close()
+
+    if report is None:
+        raise HTTPException(status_code=404, detail="Pothole report was not found.")
+    if report["detection_status"] == "completed":
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Detection already completed for this report.",
+        )
+
+    path = resolve_stored_path(str(report["stored_filename"]), POTHOLE_PHOTOS_SUBDIR)
+    if path is None:
+        raise HTTPException(status_code=404, detail="The photo of this report was not found.")
+    try:
+        decoded_photo = decode_photo(path.read_bytes())
+    except (InvalidPhoto, OSError) as error:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="The stored photo could not be read.",
+        ) from error
+
+    detection_status, detection = run_detection(decoded_photo)
+    if detection is None:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="The detection model is not available right now. Please try again later.",
+        )
+
+    annotated_filename = store_annotated_photo(decoded_photo, detection)
+    cursor = connection.cursor(dictionary=True)
+    try:
+        with pothole_db_errors("save the detection results"):
+            # Conditional, so two people retrying at once store one result.
+            cursor.execute(
+                """
+                UPDATE pothole_reports
+                SET detection_status = %s, detection_count = %s, detection_threshold = %s,
+                    detection_model = %s, annotated_stored_filename = %s
+                WHERE id = %s AND detection_status <> 'completed'
+                """,
+                (
+                    detection_status,
+                    detection.count,
+                    detection.threshold,
+                    detection.model_name,
+                    annotated_filename,
+                    report_id,
+                ),
+            )
+            if cursor.rowcount == 0:
+                raise HTTPException(
+                    status_code=status.HTTP_409_CONFLICT,
+                    detail="Detection already completed for this report.",
+                )
+            insert_detections(cursor, report_id, detection)
+            connection.commit()
+    except Exception:
+        connection.rollback()
+        delete_stored_file(annotated_filename, POTHOLE_PHOTOS_SUBDIR)
+        raise
+    finally:
+        cursor.close()
+
+    record_activity_log(
+        connection,
+        user_id=int(current_user["id"]),
+        action_type="Update",
+        action="re-ran pothole detection",
+        target=report["report_number"],
+        target_type="Pothole Report",
+        ip_address=get_client_ip(request),
+    )
+
+    with pothole_db_errors("load the pothole report"):
+        return load_admin_report_detail(connection, report_id)
+
+
+@router.put(
+    "/api/admin/pothole-reports/{report_id}/duplicate",
+    response_model=AdminPotholeReportDetailResponse,
+)
+def set_pothole_report_duplicate(
+    report_id: int,
+    payload: AdminPotholeDuplicateInput,
+    request: Request,
+    connection: MySQLConnection = Depends(get_db),
+    current_user: dict[str, object] = Depends(get_current_admin_portal_user),
+) -> AdminPotholeReportDetailResponse:
+    """Mark (or unmark) a report as another photo of an earlier report's defect.
+
+    Its AI count stays on record, but it adds nothing to the unique defect totals.
+    The link is always to an original report, so duplicates never form chains.
+    """
+    _require_administrator(current_user, "mark duplicate reports")
+    target_id = payload.duplicate_of_report_id
+    if target_id == report_id:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="A report cannot be a duplicate of itself.",
+        )
+
+    cursor = connection.cursor(dictionary=True)
+    try:
+        with pothole_db_errors("update the pothole report"):
+            # Locked in id order, so two opposite requests cannot deadlock.
+            ids = [report_id] if target_id is None else sorted((report_id, target_id))
+            placeholders = ", ".join(["%s"] * len(ids))
+            cursor.execute(
+                f"""
+                SELECT id, report_number, status, duplicate_of_report_id
+                FROM pothole_reports WHERE id IN ({placeholders})
+                ORDER BY id FOR UPDATE
+                """,
+                tuple(ids),
+            )
+            rows = {row["id"]: row for row in cursor.fetchall()}
+            report = rows.get(report_id)
+            if report is None:
+                raise HTTPException(status_code=404, detail="Pothole report was not found.")
+
+            if target_id is None:
+                remark = "Unmarked as a duplicate report."
+                # Back in the unique totals: a confirmed report needs a defect count.
+                cursor.execute(
+                    """
+                    UPDATE pothole_reports
+                    SET duplicate_of_report_id = NULL,
+                        verified_defect_count = CASE WHEN status IN ('verified', 'under_maintenance', 'resolved')
+                                                     THEN COALESCE(verified_defect_count, 1) END
+                    WHERE id = %s
+                    """,
+                    (report_id,),
+                )
+            else:
+                target = rows.get(target_id)
+                if target is None:
+                    raise HTTPException(status_code=404, detail="The original report was not found.")
+                if target["status"] == "rejected":
+                    raise HTTPException(
+                        status_code=status.HTTP_409_CONFLICT,
+                        detail="A rejected report cannot be the original of a duplicate.",
+                    )
+                if target["duplicate_of_report_id"] is not None:
+                    raise HTTPException(
+                        status_code=status.HTTP_409_CONFLICT,
+                        detail=(
+                            f"{target['report_number']} is itself a duplicate. "
+                            "Link to its original report instead."
+                        ),
+                    )
+                cursor.execute(
+                    "SELECT COUNT(*) AS total FROM pothole_reports WHERE duplicate_of_report_id = %s",
+                    (report_id,),
+                )
+                if cursor.fetchone()["total"] > 0:
+                    raise HTTPException(
+                        status_code=status.HTTP_409_CONFLICT,
+                        detail=(
+                            "Other reports are marked as duplicates of this one. "
+                            "Unlink them first."
+                        ),
+                    )
+                remark = f"Marked as a duplicate of {target['report_number']}."
+                cursor.execute(
+                    """
+                    UPDATE pothole_reports
+                    SET duplicate_of_report_id = %s, verified_defect_count = NULL
+                    WHERE id = %s
+                    """,
+                    (target_id, report_id),
+                )
+
+            cursor.execute(
+                """
+                INSERT INTO pothole_report_updates (report_id, changed_by, remark)
+                VALUES (%s, %s, %s)
+                """,
+                (report_id, current_user["id"], remark),
+            )
+            connection.commit()
+    except HTTPException:
+        connection.rollback()
+        raise
+    finally:
+        cursor.close()
+
+    record_activity_log(
+        connection,
+        user_id=int(current_user["id"]),
+        action_type="Update",
+        action=remark.rstrip(".").lower(),
+        target=report["report_number"],
+        target_type="Pothole Report",
+        ip_address=get_client_ip(request),
+    )
+
+    with pothole_db_errors("load the pothole report"):
+        return load_admin_report_detail(connection, report_id)
+
+
 @router.patch(
     "/api/admin/pothole-reports/{report_id}/status",
     response_model=AdminPotholeReportDetailResponse,
@@ -765,7 +1455,7 @@ def update_pothole_report_status(
             cursor.execute(
                 """
                 SELECT id, user_id, report_number, status, location_description,
-                       road_name, purok
+                       road_name, purok, duplicate_of_report_id
                 FROM pothole_reports WHERE id = %s FOR UPDATE
                 """,
                 (report_id,),
@@ -789,6 +1479,18 @@ def update_pothole_report_status(
                 "UPDATE pothole_reports SET status = %s WHERE id = %s",
                 (new_status, report_id),
             )
+            if new_status == "verified":
+                # The administrator's number, not the AI's. A duplicate adds no
+                # defect of its own; without a number, one defect is confirmed.
+                cursor.execute(
+                    "UPDATE pothole_reports SET verified_defect_count = %s WHERE id = %s",
+                    (
+                        None
+                        if report["duplicate_of_report_id"] is not None
+                        else payload.verified_defect_count or 1,
+                        report_id,
+                    ),
+                )
             cursor.execute(
                 """
                 INSERT INTO pothole_report_updates

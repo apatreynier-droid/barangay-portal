@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { ArrowLeft } from "lucide-react";
 
 import CreateAccountHeader from "../../components/CreateAccount/CreateAccountHeader";
 import CreateAccountForm from "../../components/CreateAccount/CreateAccountForm";
@@ -56,6 +57,7 @@ const CreateAccount = ({ onBackToLogin }: CreateAccountProps) => {
             className="success-secondary-link"
             onClick={onBackToLogin}
           >
+            <ArrowLeft size={16} strokeWidth={2} aria-hidden="true" />
             Back to Sign In
           </button>
         </div>
@@ -74,7 +76,8 @@ const CreateAccount = ({ onBackToLogin }: CreateAccountProps) => {
             className="back-to-login"
             onClick={onBackToLogin}
           >
-            ← Back to Login
+            <ArrowLeft size={16} strokeWidth={2} aria-hidden="true" />
+            Back to Login
           </button>
         </div>
 

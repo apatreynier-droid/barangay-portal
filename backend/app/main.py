@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import logging
 import math
+import threading
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from datetime import date, datetime, timedelta, timezone
@@ -64,7 +65,14 @@ from .email_service import (
     is_email_configured,
     send_password_reset_email,
 )
-from .email_templates import EVENT_APPROVED, EVENT_REGISTERED, EVENT_REJECTED
+from .email_templates import (
+    EVENT_APPROVED,
+    EVENT_REGISTERED,
+    EVENT_REJECTED,
+    PICKUP_INSTRUCTIONS,
+    PICKUP_LOCATION,
+    format_pickup_schedule,
+)
 from .registration_emails import (
     DELIVERY_FAILED,
     DELIVERY_IN_PROGRESS,
@@ -76,9 +84,11 @@ from .registration_emails import (
     reset_registration_emails,
     start_registration_email_worker,
 )
+from .ml.detector import detector as pothole_detector
 from .potholes import router as pothole_router
-from .request_notifications import send_request_status_email
+from .request_notifications import send_pickup_schedule_email, send_request_status_email
 from .schemas import (
+    pickup_time_from_db,
     AdminActivityEntry,
     AdminDashboardResponse,
     AdminDocumentRequestDetailResponse,
@@ -139,6 +149,11 @@ from .rate_limit import (
 @asynccontextmanager
 async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
     stop_registration_email_worker = start_registration_email_worker()
+    # Load the model in the background so the API starts immediately and the
+    # first resident's upload does not wait for it.
+    threading.Thread(
+        target=pothole_detector.warm_up, name="pothole-model-load", daemon=True
+    ).start()
     try:
         yield
     finally:
@@ -149,6 +164,7 @@ app = FastAPI(title="Barangay Portal API", version="1.0.0", lifespan=lifespan)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=list(settings.cors_origins),
+    allow_origin_regex=settings.cors_origin_regex,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -158,6 +174,11 @@ app.include_router(pothole_router)
 
 
 logger = logging.getLogger(__name__)
+
+#: Resident notification title when a request becomes Ready for Pickup. The
+#: Resident Notifications page shows "View My Request" for it (and for the
+#: older "Request Ready for Pickup" title and the "Pickup schedule ..." notices).
+READY_FOR_PICKUP_NOTIFICATION_TITLE = "Your Document Is Ready for Pickup!"
 
 #: Frontend route the emailed reset link points at (see src/Utils/Shared/routePaths.ts).
 FRONTEND_RESET_PASSWORD_PATH = "/reset-password"
@@ -879,7 +900,7 @@ def list_requests(
         SELECT requests.id, requests.request_number, requests.document_type_id,
                document_types.document_name AS document, requests.purpose,
                requests.status, requests.submitted_at, requests.last_updated,
-               requests.pickup_date
+               requests.pickup_date, requests.pickup_time
         FROM requests
         JOIN document_types ON document_types.id = requests.document_type_id
         WHERE requests.user_id = %s
@@ -903,10 +924,16 @@ def get_request_detail(
         """
         SELECT requests.id, requests.request_number, requests.purpose,
                requests.status, requests.admin_remarks, requests.submitted_at,
-               requests.last_updated, requests.pickup_date,
-               document_types.document_name AS document
+               requests.last_updated, requests.pickup_date, requests.pickup_time,
+               document_types.document_name AS document,
+               NULLIF(CONCAT_WS(' ', NULLIF(resident_profiles.first_name, ''),
+                                     NULLIF(resident_profiles.middle_name, ''),
+                                     NULLIF(resident_profiles.last_name, ''),
+                                     NULLIF(resident_profiles.suffix, '')), '')
+                 AS resident_name
         FROM requests
         JOIN document_types ON document_types.id = requests.document_type_id
+        LEFT JOIN resident_profiles ON resident_profiles.user_id = requests.user_id
         WHERE requests.id = %s AND requests.user_id = %s
         """,
         (request_id, current_user["id"]),
@@ -929,8 +956,11 @@ def get_request_detail(
     history = cursor.fetchall()
     cursor.close()
 
+    is_ready = request["status"] == "Ready for Pickup"
     return RequestDetailResponse(
         **request,
+        pickup_location=PICKUP_LOCATION if is_ready else None,
+        pickup_instructions=list(PICKUP_INSTRUCTIONS) if is_ready else [],
         history=[RequestStatusHistoryEntry(**entry) for entry in history],
     )
 
@@ -1118,7 +1148,7 @@ def create_document_request_record(
         SELECT requests.id, requests.request_number, requests.document_type_id,
                document_types.document_name AS document, requests.purpose,
                requests.status, requests.submitted_at, requests.last_updated,
-               requests.pickup_date
+               requests.pickup_date, requests.pickup_time
         FROM requests
         JOIN document_types ON document_types.id = requests.document_type_id
         WHERE requests.id = %s
@@ -1214,7 +1244,7 @@ def update_request(
         SELECT requests.id, requests.request_number, requests.document_type_id,
                document_types.document_name AS document, requests.purpose,
                requests.status, requests.submitted_at, requests.last_updated,
-               requests.pickup_date
+               requests.pickup_date, requests.pickup_time
         FROM requests
         JOIN document_types ON document_types.id = requests.document_type_id
         WHERE requests.id = %s
@@ -2222,7 +2252,7 @@ def load_document_request_detail(
         SELECT requests.id, requests.user_id, requests.request_number,
                requests.purpose,
                requests.status, requests.admin_remarks, requests.submitted_at,
-               requests.last_updated, requests.pickup_date,
+               requests.last_updated, requests.pickup_date, requests.pickup_time,
                document_types.document_name AS document, document_types.fee,
                CONCAT(resident_profiles.first_name, ' ',
                       resident_profiles.last_name) AS resident_name,
@@ -2262,6 +2292,7 @@ def load_document_request_detail(
         submitted_at=request["submitted_at"],
         last_updated=request["last_updated"],
         pickup_date=request["pickup_date"],
+        pickup_time=request["pickup_time"],
         fee=float(request["fee"]),
         processed_by=request["processed_by"],
         attachment=load_attachment_meta(connection, request_id),
@@ -2308,10 +2339,15 @@ def update_document_request(
     connection: MySQLConnection = Depends(get_db),
     current_user: dict[str, object] = Depends(get_current_admin_portal_user),
 ) -> AdminDocumentRequestDetailResponse:
-    if payload.status is None and payload.admin_remarks is None and payload.pickup_date is None:
+    if (
+        payload.status is None
+        and payload.admin_remarks is None
+        and payload.pickup_date is None
+        and payload.pickup_time is None
+    ):
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail="Provide a status, remarks, or a pickup date.",
+            detail="Provide a status, remarks, or a pickup date and time.",
         )
 
     # Server-side enforcement of the Staff status restriction (not just the UI).
@@ -2332,7 +2368,7 @@ def update_document_request(
     cursor.execute(
         """
         SELECT requests.id, requests.user_id, requests.request_number,
-               requests.status,
+               requests.status, requests.pickup_date, requests.pickup_time,
                document_types.document_name AS document,
                CONCAT(resident_profiles.first_name, ' ',
                       resident_profiles.last_name) AS resident_name
@@ -2351,6 +2387,23 @@ def update_document_request(
 
     new_status = payload.status
     current_status = row["status"]
+
+    # A time only means something on a given day.
+    if payload.pickup_time is not None and payload.pickup_date is None and row["pickup_date"] is None:
+        cursor.close()
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Set a pickup date together with the pickup time.",
+        )
+
+    # Pickup schedule before and after this change (None fields keep their value).
+    old_pickup = (row["pickup_date"], pickup_time_from_db(row["pickup_time"]))
+    new_pickup = (
+        payload.pickup_date if payload.pickup_date is not None else old_pickup[0],
+        payload.pickup_time if payload.pickup_time is not None else old_pickup[1],
+    )
+    pickup_changed = new_pickup != old_pickup
+    pickup_text = format_pickup_schedule(*new_pickup)
 
     if new_status is not None and new_status != current_status:
         allowed_transitions = VALID_STATUS_TRANSITIONS.get(
@@ -2377,7 +2430,8 @@ def update_document_request(
                 END,
                 status = COALESCE(%s, status),
                 admin_remarks = COALESCE(%s, admin_remarks),
-                pickup_date = COALESCE(%s, pickup_date)
+                pickup_date = COALESCE(%s, pickup_date),
+                pickup_time = COALESCE(%s, pickup_time)
             WHERE id = %s
             """,
             (
@@ -2385,9 +2439,41 @@ def update_document_request(
                 payload.status,
                 clean_optional(payload.admin_remarks),
                 payload.pickup_date,
+                payload.pickup_time,
                 request_id,
             ),
         )
+
+        status_changed = payload.status is not None and payload.status != row["status"]
+        # Tell the resident when (and at what time) they can collect the
+        # document. A status change in the same call already notifies them,
+        # and its email carries the schedule.
+        rescheduled = old_pickup[0] is not None
+        schedule_notice = bool(
+            pickup_changed
+            and pickup_text
+            and not status_changed
+            and current_status == "Ready for Pickup"
+        )
+        if schedule_notice:
+            cursor.execute(
+                """
+                INSERT INTO notifications
+                  (user_id, title, message, notification_type,
+                   related_request_id)
+                VALUES (%s, %s, %s, 'request', %s)
+                """,
+                (
+                    row["user_id"],
+                    "Pickup schedule updated" if rescheduled else "Pickup schedule set",
+                    (
+                        f"You can pick up your {row['document']} "
+                        f"({row['request_number']}) at the Barangay office on "
+                        f"{pickup_text}."
+                    ),
+                    request_id,
+                ),
+            )
 
         if payload.status is not None and payload.status != row["status"]:
             cursor.execute(
@@ -2414,10 +2500,26 @@ def update_document_request(
                 """,
                 (
                     row["user_id"],
-                    f"Request {payload.status}",
-                    (
-                        f"Your document request {row['request_number']} "
-                        f"is now {payload.status}."
+                    *(
+                        (
+                            # Matched by the Resident Notifications page
+                            # (isPickupNotification) for "View My Request".
+                            READY_FOR_PICKUP_NOTIFICATION_TITLE,
+                            f"Your {row['document']} request ({row['request_number']}) "
+                            "has been processed and is now ready for pickup. "
+                            + (
+                                f"Pickup: {pickup_text}. "
+                                if pickup_text
+                                else "The pickup schedule will be confirmed soon. "
+                            )
+                            + "Please check the pickup details.",
+                        )
+                        if payload.status == "Ready for Pickup"
+                        else (
+                            f"Request {payload.status}",
+                            f"Your document request {row['request_number']} "
+                            f"is now {payload.status}.",
+                        )
                     ),
                     request_id,
                 ),
@@ -2450,6 +2552,12 @@ def update_document_request(
                 request_id=request_id,
                 new_status=payload.status,
             )
+        elif schedule_notice:
+            # The Ready for Pickup email went out without this schedule:
+            # send it again with the date and time.
+            send_pickup_schedule_email(
+                connection, request_id=request_id, rescheduled=rescheduled
+            )
 
         log_target = (
             f"{row['request_number']} "
@@ -2462,6 +2570,9 @@ def update_document_request(
         elif payload.status is not None and payload.status != row["status"]:
             log_action_type = "Status"
             log_action = f"updated status to {payload.status}"
+        elif pickup_changed and pickup_text:
+            log_action_type = "Update"
+            log_action = f"set pickup schedule to {pickup_text}"
         else:
             log_action_type, log_action = "Update", "updated request details"
         record_activity_log(

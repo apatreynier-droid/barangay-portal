@@ -136,6 +136,61 @@
   cursor: not-allowed;
 }
 
+/* Password fields: eye button inside the input (show / hide the text). */
+.staff-password-wrap {
+  position: relative;
+}
+
+.staff-form-field .staff-password-wrap input {
+  /* Room for the eye button so typed text never runs under it. */
+  padding-right: 44px;
+}
+
+/* Edge adds its own reveal eye to password inputs; keep only ours. */
+.staff-password-wrap input::-ms-reveal,
+.staff-password-wrap input::-ms-clear {
+  display: none;
+}
+
+.staff-password-toggle {
+  position: absolute;
+  /* Centered with top/bottom + auto margins (not transform), so nothing
+     can shift it. */
+  top: 0;
+  bottom: 0;
+  right: 4px;
+  display: grid;
+  width: 36px;
+  height: 36px;
+  margin: auto 0;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: #64748b;
+  cursor: pointer;
+}
+
+/* The global `button:hover` lift in Styles/Shared/global.css would move the
+   eye and add a shadow; keep this button completely still on hover. */
+.staff-password-wrap .staff-password-toggle,
+.staff-password-wrap .staff-password-toggle:hover:not(:disabled) {
+  transform: none;
+  box-shadow: none;
+  transition: none;
+}
+
+.staff-password-toggle:focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: 1px;
+}
+
+.staff-password-toggle:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
 .staff-form-hint {
   color: #b45309;
   font-size: 11px;

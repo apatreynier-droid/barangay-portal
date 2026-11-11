@@ -14,20 +14,33 @@ type PotholeConfirmModalProps = {
   isSaving: boolean;
   /** Error returned by the server for the last attempt. */
   saveError: string;
+  /** The AI's count for this photo, offered as a starting point when verifying. */
+  aiDetectionCount: number | null;
+  /** A duplicate confirms no defect of its own, so it asks for no number. */
+  isDuplicate: boolean;
   onCancel: () => void;
-  onConfirm: (remark: string) => void;
+  /** The count is set only when verifying a report that is not a duplicate. */
+  onConfirm: (remark: string, verifiedDefectCount?: number) => void;
 };
+
+const MAX_DEFECT_COUNT = 100;
 
 const PotholeConfirmModal = ({
   action,
   reportId,
   isSaving,
   saveError,
+  aiDetectionCount,
+  isDuplicate,
   onCancel,
   onConfirm,
 }: PotholeConfirmModalProps) => {
   const meta = POTHOLE_ACTION_META[action];
+  const asksForDefectCount = action === "verify" && !isDuplicate;
   const [remark, setRemark] = useState("");
+  const [defectCount, setDefectCount] = useState(
+    String(Math.max(1, aiDetectionCount ?? 1)),
+  );
   const [error, setError] = useState("");
   const dialogRef = useRef<HTMLElement | null>(null);
   // Escape/backdrop cannot close the dialog while the change is saving.
@@ -45,7 +58,18 @@ const PotholeConfirmModal = ({
       return;
     }
 
-    onConfirm(trimmed);
+    if (!asksForDefectCount) {
+      onConfirm(trimmed);
+      return;
+    }
+
+    const count = Number(defectCount);
+    if (!Number.isInteger(count) || count < 1 || count > MAX_DEFECT_COUNT) {
+      setError(`Enter a whole number from 1 to ${MAX_DEFECT_COUNT}.`);
+      return;
+    }
+
+    onConfirm(trimmed, count);
   };
 
   return (
@@ -76,6 +100,36 @@ const PotholeConfirmModal = ({
         <p>
           <strong>{reportId}</strong>: {meta.confirmBody}
         </p>
+
+        {asksForDefectCount && (
+          <label className="pothole-confirm-field">
+            <span>Unique potholes you confirm in this report</span>
+            <input
+              type="number"
+              className="pothole-number-input"
+              min={1}
+              max={MAX_DEFECT_COUNT}
+              step={1}
+              value={defectCount}
+              onChange={(event) => {
+                setDefectCount(event.target.value);
+                setError("");
+              }}
+            />
+            <small className="pothole-confirm-hint">
+              {aiDetectionCount === null
+                ? "The AI did not produce a count for this photo."
+                : `The AI counted ${aiDetectionCount}. Correct this if the photo shows otherwise.`}
+            </small>
+          </label>
+        )}
+
+        {action === "verify" && isDuplicate && (
+          <p className="pothole-confirm-hint">
+            This report is marked as a duplicate, so it adds no new defect to
+            the unique totals.
+          </p>
+        )}
 
         <label className="pothole-confirm-field">
           <span>

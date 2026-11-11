@@ -1,8 +1,9 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Check,
   CheckCheck,
+  Eye,
   Inbox,
   PackageCheck,
   RefreshCw,
@@ -10,6 +11,7 @@ import {
 } from "lucide-react";
 import Sidebar from "../../../components/Resident/Dashboard/Sidebar";
 import Topbar from "../../../components/Resident/Dashboard/Topbar";
+import PickupDetailsModal from "../../../components/Resident/Notifications/PickupDetailsModal";
 import {
   ApiError,
   markAllNotificationsRead,
@@ -66,6 +68,27 @@ const resolveKind = (notification: ApiNotification): NotificationKind => {
 
   return "update";
 };
+
+/**
+ * Titles of the notifications that tell a resident their document can be
+ * collected, sent by PATCH /api/admin/document-requests/{id}
+ * (backend/app/main.py, READY_FOR_PICKUP_NOTIFICATION_TITLE). The older
+ * "Request Ready for Pickup" title keeps working for existing notifications.
+ */
+const READY_FOR_PICKUP_TITLES = new Set([
+  "Your Document Is Ready for Pickup!",
+  "Request Ready for Pickup",
+]);
+
+/**
+ * Only Ready for Pickup notifications (and the "Pickup schedule set/updated"
+ * notices) that still point to a request get the "View My Request" button.
+ */
+const isPickupNotification = (notification: ApiNotification): boolean =>
+  notification.related_request_id !== null &&
+  notification.notification_type === "request" &&
+  (READY_FOR_PICKUP_TITLES.has(notification.title) ||
+    notification.title.startsWith("Pickup schedule"));
 
 /** Timezone for all resident-facing timestamps (Philippine Standard Time). */
 const PHILIPPINE_TIMEZONE = "Asia/Manila";
@@ -163,6 +186,9 @@ function NotificationPage({
   const [isMarkingAll, setIsMarkingAll] = useState(false);
   const [actionError, setActionError] = useState("");
   const [filter, setFilter] = useState<NotificationFilter>("all");
+  // Request whose pickup details are open (null = modal closed).
+  const [pickupRequestId, setPickupRequestId] = useState<number | null>(null);
+  const closePickupDetails = useCallback(() => setPickupRequestId(null), []);
   // Ticks every minute so relative labels stay accurate without a refresh.
   const [now, setNow] = useState(() => Date.now());
 
@@ -368,6 +394,18 @@ function NotificationPage({
                         </time>
                       </div>
                       <p>{notification.message}</p>
+                      {isPickupNotification(notification) && (
+                        <button
+                          type="button"
+                          className="notification-view-request"
+                          onClick={() =>
+                            setPickupRequestId(notification.related_request_id)
+                          }
+                        >
+                          <Eye size={15} strokeWidth={2.2} aria-hidden="true" />
+                          View My Request
+                        </button>
+                      )}
                     </div>
                     {!notification.is_read && (
                       <button
@@ -389,6 +427,14 @@ function NotificationPage({
           )}
         </section>
       </main>
+
+      {pickupRequestId !== null && (
+        <PickupDetailsModal
+          requestId={pickupRequestId}
+          onClose={closePickupDetails}
+          onSessionExpired={onSessionExpired}
+        />
+      )}
     </div>
   );
 }

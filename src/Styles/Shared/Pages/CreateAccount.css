@@ -49,6 +49,9 @@ body {
 }
 
 .back-to-login {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   padding: 8px 16px;
   background: rgba(255, 255, 255, 0.06);
   border: 1px solid rgba(255, 255, 255, 0.18);
@@ -174,6 +177,9 @@ body {
 }
 
 .success-secondary-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   margin-top: 16px;
   padding: 0;
   background: none;
@@ -183,10 +189,23 @@ body {
   font-weight: 600;
   color: #1d3468;
   cursor: pointer;
+  transition: color 0.3s ease;
 }
 
-.success-secondary-link:hover {
+/* `:not(:disabled)` lifts specificity above global.css's
+   `button:not(:disabled):hover` lift + shadow, which otherwise draws a
+   shadowed box behind this text link (matches the Login page links). */
+.success-secondary-link:not(:disabled):hover {
+  color: #0d1a30;
   text-decoration: underline;
+  background: transparent;
+  transform: none;
+  box-shadow: none;
+}
+
+.success-secondary-link:focus-visible {
+  outline: 2px solid #1d3468;
+  outline-offset: 2px;
 }
 
 /* ============ Responsive ============ */

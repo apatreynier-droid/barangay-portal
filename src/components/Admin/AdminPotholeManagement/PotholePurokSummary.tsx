@@ -22,6 +22,7 @@ const PotholePurokSummary = ({
       key: entry.purok,
       label: entry.purok,
       count: entry.count,
+      detected: entry.detectedPotholes as number | null,
     })),
     ...(summary.unspecifiedPurok > 0
       ? [
@@ -29,6 +30,7 @@ const PotholePurokSummary = ({
             key: UNSPECIFIED_PUROK,
             label: "Not specified",
             count: summary.unspecifiedPurok,
+            detected: null,
           },
         ]
       : []),
@@ -44,7 +46,9 @@ const PotholePurokSummary = ({
         <h2 id="pothole-purok-title" className="admin-panel-title">
           Reports per Purok
         </h2>
-        <span className="pothole-purok-hint">Select a Purok to filter</span>
+        <span className="pothole-purok-hint">
+          Reports · AI detections. Select a Purok to filter
+        </span>
       </div>
 
       <ul className="pothole-purok-list">
@@ -70,6 +74,15 @@ const PotholePurokSummary = ({
                   <span className="pothole-visually-hidden">
                     {row.count === 1 ? " report" : " reports"}
                   </span>
+                </span>
+                <span className="pothole-purok-detected">
+                  {row.detected === null ? "" : `· ${row.detected}`}
+                  {row.detected !== null && (
+                    <span className="pothole-visually-hidden">
+                      {" "}
+                      AI detections
+                    </span>
+                  )}
                 </span>
               </button>
             </li>

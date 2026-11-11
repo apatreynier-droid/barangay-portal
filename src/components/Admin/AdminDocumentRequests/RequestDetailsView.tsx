@@ -7,6 +7,7 @@ import {
   formatSubmittedDateTime,
   getDocumentRequestStatusMeta,
 } from "../../../Utils/Admin/AdminDocumentRequestsLogic";
+import { withPickupTime } from "../../../Utils/Shared/pickupTime";
 import AdminActionsPanel from "./AdminActionsPanel";
 import RequestAttachmentCard from "./RequestAttachmentCard";
 
@@ -128,8 +129,15 @@ const RequestDetailsView = ({
                     <dd>{request.processed_by ?? "—"}</dd>
                   </div>
                   <div className="residents-info-item">
-                    <dt>Pickup Date</dt>
-                    <dd>{request.pickup_date?.slice(0, 10) ?? "—"}</dd>
+                    <dt>Pickup Schedule</dt>
+                    <dd>
+                      {request.pickup_date
+                        ? withPickupTime(
+                            request.pickup_date.slice(0, 10),
+                            request.pickup_time,
+                          )
+                        : "—"}
+                    </dd>
                   </div>
                 </dl>
               </section>

@@ -1,9 +1,10 @@
-import { useRef, useState } from "react";
+import { useLayoutEffect, useRef, useState } from "react";
 import type { MouseEvent } from "react";
+import { flushSync } from "react-dom";
 import {
   SERIES_COLOR,
+  fittingLabelStride,
   formatIsoRange,
-  labelStride,
 } from "../../../Utils/Admin/AdminAnalyticsDisplay";
 
 export type TrendBarPoint = {
@@ -23,15 +24,21 @@ type TrendBarChartProps = {
   color?: string;
 };
 
-const WIDTH = 720;
-const HEIGHT = 240;
-const PADDING_LEFT = 40;
-const PADDING_RIGHT = 12;
-const PADDING_TOP = 14;
-const PADDING_BOTTOM = 32;
+/** Fallback width before the wrapper has been measured. */
+const DEFAULT_WIDTH = 720;
+/** Chart height in real pixels (shorter on phones). */
+const HEIGHT = 200;
+const COMPACT_HEIGHT = 180;
+const COMPACT_WIDTH = 480;
+const PADDING_LEFT = 32;
+const PADDING_RIGHT = 8;
+const PADDING_TOP = 10;
+const PADDING_BOTTOM = 26;
 const GRID_INTERVALS = 4;
-const MAX_BAR_WIDTH = 28;
+const MAX_BAR_WIDTH = 22;
 const MAX_LABELS = 12;
+/** Printable width of an A4 page (portrait, report margins) in CSS pixels. */
+const PRINT_WIDTH = 680;
 const NICE_STEPS = [1, 2, 5, 10, 15, 20, 25, 50, 100, 150, 200, 250, 500, 1000];
 
 /**
@@ -39,6 +46,10 @@ const NICE_STEPS = [1, 2, 5, 10, 15, 20, 25, 50, 100, 150, 200, 250, 500, 1000];
  * year). Bars stay readable for any number of periods: their width adapts
  * to the slot and only every n-th x-axis label is printed, while each bar
  * still has its own hover tooltip.
+ *
+ * The viewBox matches the measured container width 1:1 (like the Admin
+ * Dashboard chart), so the chart keeps a compact height and its labels keep
+ * their real 11-12px size on wide screens instead of being scaled up.
  */
 const TrendBarChart = ({
   data,
@@ -50,18 +61,59 @@ const TrendBarChart = ({
   const wrapperRef = useRef<HTMLDivElement | null>(null);
   const [hoverIndex, setHoverIndex] = useState<number | null>(null);
   const [tooltip, setTooltip] = useState<{ x: number; y: number } | null>(null);
+  const [width, setWidth] = useState(DEFAULT_WIDTH);
+
+  // Measured before paint, then on every resize of the panel.
+  useLayoutEffect(() => {
+    const wrapper = wrapperRef.current;
+    if (!wrapper) {
+      return;
+    }
+
+    const update = () => {
+      const measured = Math.round(wrapper.clientWidth);
+      if (measured > 0) {
+        setWidth(measured);
+      }
+    };
+
+    // Paper is narrower than most screens: draw at the page width while
+    // printing (flushed before the browser lays out the page), then go back.
+    const handleBeforePrint = () => flushSync(() => setWidth(PRINT_WIDTH));
+    const handleAfterPrint = () => update();
+
+    update();
+    window.addEventListener("beforeprint", handleBeforePrint);
+    window.addEventListener("afterprint", handleAfterPrint);
+    const observer =
+      typeof ResizeObserver === "undefined" ? null : new ResizeObserver(update);
+    observer?.observe(wrapper);
+
+    return () => {
+      window.removeEventListener("beforeprint", handleBeforePrint);
+      window.removeEventListener("afterprint", handleAfterPrint);
+      observer?.disconnect();
+    };
+  }, []);
+
+  const height = width < COMPACT_WIDTH ? COMPACT_HEIGHT : HEIGHT;
 
   const maxValue = Math.max(1, ...data.map((point) => point.value));
   const minStep = Math.max(1, Math.ceil(maxValue / GRID_INTERVALS));
   const step = NICE_STEPS.find((candidate) => candidate >= minStep) ?? minStep;
   const topValue = step * GRID_INTERVALS;
-  const plotWidth = WIDTH - PADDING_LEFT - PADDING_RIGHT;
-  const plotHeight = HEIGHT - PADDING_TOP - PADDING_BOTTOM;
+  const plotWidth = width - PADDING_LEFT - PADDING_RIGHT;
+  const plotHeight = height - PADDING_TOP - PADDING_BOTTOM;
   const baseline = PADDING_TOP + plotHeight;
   const slot = plotWidth / Math.max(1, data.length);
   const gap = Math.min(6, slot * 0.25);
   const barWidth = Math.max(1, Math.min(MAX_BAR_WIDTH, slot - gap));
-  const stride = labelStride(data.length, MAX_LABELS);
+  // Print only as many x-axis labels as fit side by side without touching.
+  const stride = fittingLabelStride(
+    data.map((point) => point.label),
+    plotWidth,
+    MAX_LABELS,
+  );
 
   const valueToY = (value: number): number =>
     PADDING_TOP + plotHeight - (value / topValue) * plotHeight;
@@ -74,8 +126,8 @@ const TrendBarChart = ({
     }
 
     const bounds = svg.getBoundingClientRect();
-    const x = ((event.clientX - bounds.left) / bounds.width) * WIDTH;
-    if (x < PADDING_LEFT || x > WIDTH - PADDING_RIGHT) {
+    const x = ((event.clientX - bounds.left) / bounds.width) * width;
+    if (x < PADDING_LEFT || x > width - PADDING_RIGHT) {
       setHoverIndex(null);
       setTooltip(null);
       return;
@@ -103,7 +155,7 @@ const TrendBarChart = ({
       <svg
         ref={svgRef}
         className="reports-chart"
-        viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
+        viewBox={`0 0 ${width} ${height}`}
         role="img"
         aria-label={ariaLabel}
         onMouseMove={handleMouseMove}
@@ -116,7 +168,7 @@ const TrendBarChart = ({
             <g key={`grid-${index}`}>
               <line
                 x1={PADDING_LEFT}
-                x2={WIDTH - PADDING_RIGHT}
+                x2={width - PADDING_RIGHT}
                 y1={y}
                 y2={y}
                 className="admin-chart-gridline"
@@ -161,7 +213,7 @@ const TrendBarChart = ({
               {index % stride === 0 && (
                 <text
                   x={PADDING_LEFT + slot * index + slot / 2}
-                  y={HEIGHT - 10}
+                  y={height - 8}
                   textAnchor="middle"
                   className="admin-chart-axis-label"
                 >

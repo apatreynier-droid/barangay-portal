@@ -153,3 +153,25 @@ export const countIsoDays = (from: string, to: string): number =>
  */
 export const labelStride = (points: number, maxLabels: number): number =>
   Math.max(1, Math.ceil(points / Math.max(1, maxLabels)));
+
+/** Rough width of one x-axis label character at 12px, and the gap between labels. */
+const AXIS_LABEL_CHAR_WIDTH = 6.6;
+const AXIS_LABEL_GAP = 16;
+
+/**
+ * Like {@link labelStride}, but also limited to the labels that fit side by
+ * side in `plotWidth` (chart units), so dates such as "Dec 2025" never touch
+ * or overlap - on screen or on paper.
+ */
+export const fittingLabelStride = (
+  labels: string[],
+  plotWidth: number,
+  maxLabels: number,
+): number => {
+  const longest = Math.max(1, ...labels.map((label) => label.length));
+  const fitting = Math.max(
+    1,
+    Math.floor(plotWidth / (longest * AXIS_LABEL_CHAR_WIDTH + AXIS_LABEL_GAP)),
+  );
+  return labelStride(labels.length, Math.min(maxLabels, fitting));
+};

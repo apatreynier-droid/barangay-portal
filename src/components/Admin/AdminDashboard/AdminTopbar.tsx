@@ -2,7 +2,6 @@ import "../../../Styles/Admin/Components/AdminTopBar.css";
 
 import MobileMenuButton from "../../Shared/MobileMenuButton";
 import notificationIcon from "../../../assets/icons/notification-bell.png";
-import { getInitials } from "../../../Utils/Admin/AdminDashboardLogic";
 
 type AdminTopbarProps = {
   fullName: string;
@@ -70,14 +69,6 @@ const AdminTopbar = ({
             )}
           </button>
         )}
-
-        <span
-          className="admin-topbar-avatar"
-          title={fullName}
-          aria-hidden="true"
-        >
-          {getInitials(fullName)}
-        </span>
       </div>
     </header>
   );

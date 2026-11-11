@@ -31,12 +31,14 @@ import type {
   ApiAdminPotholeReport,
   ApiAdminPotholeReportDetail,
   ApiAdminPotholeSummary,
+  PotholePhotoKind,
   PotholeStatus,
 } from "../../Types/Admin/AdminPotholeManagementType";
 import type {
   NewPotholeReport,
   ResidentPotholeReport,
 } from "../../Types/Resident/PotholeReportType";
+import { withPickupTime } from "./pickupTime";
 
 /** Port the FastAPI backend listens on (uvicorn ... --port 8000). */
 const API_PORT = 8000;
@@ -102,6 +104,7 @@ export type ApiRequest = {
   submitted_at: string;
   last_updated: string;
   pickup_date: string | null;
+  pickup_time: string | null;
 };
 
 export type DocumentTypeOption = {
@@ -144,6 +147,13 @@ export type RequestDetail = {
   submitted_at: string;
   last_updated: string;
   pickup_date: string | null;
+  pickup_time: string | null;
+  /** The requesting resident's full name from their profile. */
+  resident_name: string | null;
+  /** Where to collect the document; only while Ready for Pickup. */
+  pickup_location: string | null;
+  /** What to bring / how to claim; empty unless Ready for Pickup. */
+  pickup_instructions: string[];
   history: RequestStatusHistoryEntry[];
 };
 
@@ -982,14 +992,13 @@ export const fetchAdminPotholeReport = async (
   return readJson(response, "Could not load the pothole report.");
 };
 
-/**
- * Downloads a report's original photo as a Blob (authenticated endpoint only).
- * Callers display it via an object URL and revoke it when done.
- */
-export const fetchAdminPotholePhoto = async (recordId: number): Promise<Blob> => {
-  const response = await authedFetch(
-    `/api/admin/pothole-reports/${recordId}/photo`,
-  );
+const POTHOLE_PHOTO_PATHS: Record<PotholePhotoKind, string> = {
+  original: "photo",
+  annotated: "annotated-photo",
+};
+
+const readPhotoBlob = async (path: string): Promise<Blob> => {
+  const response = await authedFetch(path);
 
   if (!response.ok) {
     const body: unknown = await response.json().catch(() => null);
@@ -1002,20 +1011,71 @@ export const fetchAdminPotholePhoto = async (recordId: number): Promise<Blob> =>
   return response.blob();
 };
 
+/**
+ * Downloads a report's photo as a Blob (authenticated endpoint only). Callers
+ * display it via an object URL and revoke it when done.
+ */
+export const fetchAdminPotholePhoto = (
+  recordId: number,
+  kind: PotholePhotoKind = "original",
+): Promise<Blob> =>
+  readPhotoBlob(
+    `/api/admin/pothole-reports/${recordId}/${POTHOLE_PHOTO_PATHS[kind]}`,
+  );
+
+/** A resident's own report photo; other residents' reports are refused. */
+export const fetchMyPotholePhoto = (
+  recordId: number,
+  kind: PotholePhotoKind = "original",
+): Promise<Blob> =>
+  readPhotoBlob(`/api/pothole-reports/${recordId}/${POTHOLE_PHOTO_PATHS[kind]}`);
+
 export const updateAdminPotholeStatus = async (
   recordId: number,
   status: Exclude<PotholeStatus, "pending">,
   remark: string,
+  verifiedDefectCount?: number,
 ): Promise<ApiAdminPotholeReportDetail> => {
   const response = await authedFetch(
     `/api/admin/pothole-reports/${recordId}/status`,
     {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ status, remark: remark || null }),
+      body: JSON.stringify({
+        status,
+        remark: remark || null,
+        verified_defect_count: verifiedDefectCount ?? null,
+      }),
     },
   );
   return readJson(response, "Could not update the report status.");
+};
+
+/** Links a report to the earlier report of the same defect (null: unlinks). */
+export const setAdminPotholeDuplicate = async (
+  recordId: number,
+  duplicateOfRecordId: number | null,
+): Promise<ApiAdminPotholeReportDetail> => {
+  const response = await authedFetch(
+    `/api/admin/pothole-reports/${recordId}/duplicate`,
+    {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ duplicate_of_report_id: duplicateOfRecordId }),
+    },
+  );
+  return readJson(response, "Could not update the duplicate link.");
+};
+
+/** Runs the model again on a report whose detection did not complete. */
+export const retryAdminPotholeDetection = async (
+  recordId: number,
+): Promise<ApiAdminPotholeReportDetail> => {
+  const response = await authedFetch(
+    `/api/admin/pothole-reports/${recordId}/detection`,
+    { method: "POST" },
+  );
+  return readJson(response, "Could not run the detection.");
 };
 
 export const addAdminPotholeRemark = async (
@@ -1162,6 +1222,9 @@ export const mapApiRequest = (apiRequest: ApiRequest): Request => ({
   submittedDate: formatDateValue(apiRequest.submitted_at),
   updatedDate: formatDateValue(apiRequest.last_updated),
   pickupDate: apiRequest.pickup_date
-    ? formatDateValue(apiRequest.pickup_date)
+    ? withPickupTime(
+        formatDateValue(apiRequest.pickup_date),
+        apiRequest.pickup_time,
+      )
     : undefined,
 });

@@ -242,6 +242,12 @@
   gap: 8px;
 }
 
+.docmgmt-no-actions {
+  font-size: 12px;
+  color: #94a3b8;
+  white-space: nowrap;
+}
+
 .docmgmt-action-button {
   display: inline-flex;
   align-items: center;

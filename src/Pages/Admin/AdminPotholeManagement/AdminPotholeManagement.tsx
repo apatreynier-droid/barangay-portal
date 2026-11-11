@@ -11,6 +11,8 @@ import {
   fetchAdminPotholeReport,
   fetchAdminPotholeReports,
   fetchAdminPotholeSummary,
+  retryAdminPotholeDetection,
+  setAdminPotholeDuplicate,
   updateAdminPotholeStatus,
 } from "../../../Utils/Shared/api";
 import type { AuthUser } from "../../../Utils/Shared/api";
@@ -45,6 +47,7 @@ import type {
   PotholeAction,
   PotholeFilters,
   PotholeHistoryEntry,
+  PotholeNearbyReport,
   PotholeReport,
   PotholeReportDetail,
   PotholeSortKey,
@@ -113,6 +116,11 @@ const AdminPotholeManagement = ({
   const [history, setHistory] = useState<PotholeHistoryEntry[] | null>(null);
   const [historyError, setHistoryError] = useState("");
   const [historyReloadKey, setHistoryReloadKey] = useState(0);
+  const [nearbyReports, setNearbyReports] = useState<
+    PotholeNearbyReport[] | null
+  >(null);
+  const [isSavingDetection, setIsSavingDetection] = useState(false);
+  const [detectionError, setDetectionError] = useState("");
   const [pendingAction, setPendingAction] = useState<PotholeAction | null>(null);
   const [isSavingAction, setIsSavingAction] = useState(false);
   const [actionError, setActionError] = useState("");
@@ -258,13 +266,14 @@ const AdminPotholeManagement = ({
 
   /** Puts a fresh copy of one report (from a detail/update call) in the list. */
   const applyDetail = useCallback((detail: PotholeReportDetail) => {
-    const { history: nextHistory, ...report } = detail;
+    const { history: nextHistory, nearbyReports: nextNearby, ...report } = detail;
     setReports((current) =>
       current.map((entry) =>
         entry.recordId === report.recordId ? report : entry,
       ),
     );
     setHistory(nextHistory);
+    setNearbyReports(nextNearby);
     setHistoryError("");
   }, []);
 
@@ -276,7 +285,9 @@ const AdminPotholeManagement = ({
 
     let cancelled = false;
     setHistory(null);
+    setNearbyReports(null);
     setHistoryError("");
+    setDetectionError("");
 
     fetchAdminPotholeReport(detailsRecordId)
       .then((detail) => {
@@ -364,9 +375,55 @@ const AdminPotholeManagement = ({
     setDetailsReportId(null);
     setPendingAction(null);
     setHistory(null);
+    setNearbyReports(null);
   };
 
-  const handleConfirmAction = async (remark: string) => {
+  /** A duplicate link or detection retry: refreshes the panel and statistics. */
+  const runDetailChange = async (
+    change: (recordId: number) => ReturnType<typeof setAdminPotholeDuplicate>,
+    successMessage: (report: PotholeReport) => string,
+    fallbackError: string,
+  ) => {
+    if (!detailsReport || isSavingDetection) {
+      return;
+    }
+
+    setIsSavingDetection(true);
+    setDetectionError("");
+
+    try {
+      const detail = await change(detailsReport.recordId);
+      applyDetail(mapApiPotholeDetail(detail));
+      refreshSummary();
+      setToast(successMessage(detailsReport));
+    } catch (error) {
+      setDetectionError(errorMessage(error, fallbackError));
+    } finally {
+      setIsSavingDetection(false);
+    }
+  };
+
+  const handleSetDuplicate = (duplicateOfRecordId: number | null) =>
+    runDetailChange(
+      (recordId) => setAdminPotholeDuplicate(recordId, duplicateOfRecordId),
+      (report) =>
+        duplicateOfRecordId === null
+          ? `${report.id} is no longer marked as a duplicate.`
+          : `${report.id} is marked as a duplicate.`,
+      "Could not update the duplicate link.",
+    );
+
+  const handleRetryDetection = () =>
+    runDetailChange(
+      retryAdminPotholeDetection,
+      (report) => `Detection finished for ${report.id}.`,
+      "Could not run the detection.",
+    );
+
+  const handleConfirmAction = async (
+    remark: string,
+    verifiedDefectCount?: number,
+  ) => {
     if (!detailsReport || !pendingAction || isSavingAction) {
       return;
     }
@@ -384,6 +441,7 @@ const AdminPotholeManagement = ({
         detailsReport.recordId,
         targetStatus,
         remark,
+        verifiedDefectCount,
       );
       applyDetail(mapApiPotholeDetail(detail));
       refreshSummary();
@@ -463,8 +521,6 @@ const AdminPotholeManagement = ({
           onMenuToggle={toggleDrawer}
           title="Pothole Management"
           subtitle="Review residents' pothole reports, see where they are, and track repairs."
-          unreadNotifications={unreadNotifications}
-          onNotifications={onNotifications}
         />
 
         {loadState === "loading" && (
@@ -515,7 +571,7 @@ const AdminPotholeManagement = ({
               </button>
             </div>
 
-            <PotholeStatsGrid stats={summary.stats} />
+            <PotholeStatsGrid summary={summary} />
 
             <PotholeToolbar
               filters={filters}
@@ -600,9 +656,14 @@ const AdminPotholeManagement = ({
             report={detailsReport}
             history={history}
             historyError={historyError}
+            nearbyReports={nearbyReports}
             isAdministratorAccount={isAdministratorAccount}
             isActive={pendingAction === null}
             isSavingRemark={isSavingRemark}
+            isSavingDetection={isSavingDetection}
+            detectionError={detectionError}
+            onSetDuplicate={(recordId) => void handleSetDuplicate(recordId)}
+            onRetryDetection={() => void handleRetryDetection()}
             onClose={handleCloseDetails}
             onAction={(action) => {
               setActionError("");
@@ -624,11 +685,15 @@ const AdminPotholeManagement = ({
             reportId={detailsReport.id}
             isSaving={isSavingAction}
             saveError={actionError}
+            aiDetectionCount={detailsReport.detection.count}
+            isDuplicate={detailsReport.duplicateOf !== null}
             onCancel={() => {
               setPendingAction(null);
               setActionError("");
             }}
-            onConfirm={(remark) => void handleConfirmAction(remark)}
+            onConfirm={(remark, verifiedDefectCount) =>
+              void handleConfirmAction(remark, verifiedDefectCount)
+            }
           />
         )}
 

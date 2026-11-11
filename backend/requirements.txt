@@ -7,3 +7,6 @@ python-multipart>=0.0.9,<1.0
 # Data analytics for the Admin Dashboard and Reports (app/analytics.py).
 # NumPy is installed automatically as a Pandas dependency; it is not used directly.
 pandas>=2.2,<4.0
+# Reading pothole photos: rotation, GPS metadata and the annotated copy.
+pillow>=11.0,<14.0
+# Pothole detection itself needs requirements-ml.txt (large; see that file).

@@ -415,10 +415,14 @@ body {
   transition: transform 0.35s cubic-bezier(0.65, 0, 0.35, 1);
 }
 
-.forgot-link:hover,
+/* `:not(:disabled)` lifts specificity above global.css's
+   `button:not(:disabled):hover` lift + shadow, which otherwise wins and draws a
+   shadowed box behind this text link. */
+.forgot-link:not(:disabled):hover,
 .forgot-link:focus-visible {
   color: var(--navy-900);
   text-decoration: none;
+  background: transparent;
   transform: none;
   box-shadow: none;
 }
@@ -589,10 +593,16 @@ body {
   font-weight: 600;
   color: var(--navy-800);
   cursor: pointer;
+  transition: color 0.3s ease;
 }
 
-.help-link:hover {
+/* Same specificity fix as .forgot-link: no global button lift/shadow box. */
+.help-link:not(:disabled):hover {
+  color: var(--navy-900);
   text-decoration: underline;
+  background: transparent;
+  transform: none;
+  box-shadow: none;
 }
 
 .login-footer {
@@ -621,6 +631,13 @@ body {
   margin-top: 6px;
   font-size: 12px;
   color: var(--danger);
+}
+
+/* Helper line under a field ("Forgot your email? ..."). */
+.field-hint {
+  margin-top: 6px;
+  font-size: 12px;
+  color: var(--text-muted);
 }
 
 .success-message {

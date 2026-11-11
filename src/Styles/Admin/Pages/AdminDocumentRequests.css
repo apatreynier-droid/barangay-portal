@@ -31,8 +31,8 @@
 
 /* ------------------------- Request details view ------------------------------ */
 
-/* "Back to Request" button above the details card. Own class so the shared
-   .residents-back-link used by the Residents details view stays unchanged. */
+/* "Back to Request" button above the details card. The Residents details view
+   uses the same look under its own class (.residents-back-link). */
 .docreq-back-button {
   display: inline-flex;
   align-items: center;
@@ -226,6 +226,46 @@
 .docreq-pickup-date .date-picker {
   width: 100%;
   max-width: 14rem;
+}
+
+/* Pickup Schedule: date and time side by side, wrapping on narrow cards. */
+.docreq-pickup-schedule {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 10px 12px;
+}
+
+.docreq-pickup-part {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.docreq-pickup-part--date {
+  flex: 0 1 14rem;
+}
+
+.docreq-pickup-part--time {
+  flex: 0 1 9.5rem;
+}
+
+.docreq-pickup-sublabel {
+  color: #64748b;
+  font-size: 11.5px;
+  font-weight: 600;
+}
+
+.docreq-pickup-hint {
+  margin: 0;
+  color: #64748b;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.docreq-pickup-optional {
+  color: #64748b;
+  font-weight: 500;
 }
 
 .docreq-actions-error {
@@ -716,6 +756,11 @@ button.docreq-attachment-thumb:focus-visible .docreq-attachment-thumb-overlay {
      target, while the calendar icon keeps its 12px inset. */
   .docreq-pickup-date .date-picker {
     max-width: 100%;
+  }
+
+  .docreq-pickup-part--date,
+  .docreq-pickup-part--time {
+    flex-basis: 100%;
   }
 
   /* Comfortable tap target on phones. */

@@ -1,0 +1,11 @@
+# Pothole detection (app/ml/detector.py) and model training (ml_training/).
+# Without these the API still runs: reports are saved with detection_status
+# "not_run" and no count. Install CPU-only PyTorch first to avoid a much larger
+# download:
+#   pip install torch torchvision --index-url https://download.pytorch.org/whl/cpu
+#   pip install -r requirements-ml.txt
+torch>=2.15,<3.0
+torchvision>=0.29,<1.0
+# Pinned: a saved best.pt must load with the version that trained it. AGPL-3.0
+# licensed; see ml_training/README.md before deploying publicly.
+ultralytics==8.4.207

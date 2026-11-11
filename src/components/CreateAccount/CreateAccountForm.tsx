@@ -1,5 +1,23 @@
 import { useState } from "react";
 import type { ChangeEvent, FormEvent, ReactNode } from "react";
+import {
+  ArrowLeft,
+  ArrowRight,
+  Building2,
+  CalendarDays,
+  Circle,
+  CircleCheck,
+  CircleX,
+  Contact,
+  LockKeyhole,
+  Mail,
+  MapPin,
+  Phone,
+  ShieldCheck,
+  User,
+} from "lucide-react";
+import type { LucideIcon } from "lucide-react";
+import PasswordToggle from "../Shared/PasswordToggle";
 
 import type {
   CreateAccountFormData,
@@ -7,6 +25,7 @@ import type {
 } from "../../Types/Auth/CreateAccountType";
 
 import {
+  PASSWORD_REQUIREMENTS,
   validateStep,
   submitRegistration,
   getCreateAccountError,
@@ -21,17 +40,27 @@ import "../../Styles/Shared/Components/CreateAccountForm.css";
 
 const TOTAL_STEPS = 3;
 
-const STEP_META: Record<number, { title: string; subtitle: string }> = {
+/** Shared size/stroke so every Lucide icon in the form looks the same. */
+const ICON_SIZE = 16;
+const ICON_STROKE = 2;
+
+const STEP_META: Record<
+  number,
+  { title: string; subtitle: string; icon: LucideIcon }
+> = {
   1: {
     title: "Personal Information",
     subtitle: "All fields marked with * are required",
+    icon: User,
   },
   2: {
     title: "Address & Contact Details",
     subtitle: "Provide your current residential address within the barangay",
+    icon: MapPin,
   },
   3: {
     title: "Emergency Contact",
+    icon: Contact,
     subtitle:
       "Who should we reach in case of emergency, plus your account credentials",
   },
@@ -92,6 +121,10 @@ type FormFieldProps = {
   htmlFor: string;
   required?: boolean;
   error?: string;
+  /** Lucide icon shown inside the left edge of the input. */
+  icon?: LucideIcon;
+  /** Extra content between the input and the error (e.g. requirements). */
+  hint?: ReactNode;
   children: ReactNode;
 };
 
@@ -100,6 +133,8 @@ const FormField = ({
   htmlFor,
   required = false,
   error,
+  icon: Icon,
+  hint,
   children,
 }: FormFieldProps) => (
   <div className="form-field">
@@ -108,10 +143,57 @@ const FormField = ({
       {required && <span className="required-mark"> *</span>}
     </label>
 
-    {children}
+    {Icon ? (
+      <div className="field-control field-control--icon">
+        <Icon
+          className="field-icon"
+          size={ICON_SIZE}
+          strokeWidth={ICON_STROKE}
+          aria-hidden="true"
+        />
+        {children}
+      </div>
+    ) : (
+      children
+    )}
+
+    {hint}
 
     {error && <span className="field-error">{error}</span>}
   </div>
+);
+
+type PasswordRequirementsProps = {
+  password: string;
+  /** True after a failed submit: unmet rules turn red instead of grey. */
+  showErrors: boolean;
+};
+
+/** Live checklist of the registration password rules. */
+const PasswordRequirements = ({
+  password,
+  showErrors,
+}: PasswordRequirementsProps) => (
+  <ul id="password-requirements" className="password-requirements">
+    {PASSWORD_REQUIREMENTS.map((requirement) => {
+      const met = requirement.test(password);
+      const state = met ? "met" : showErrors ? "unmet" : "pending";
+      const RuleIcon = met ? CircleCheck : showErrors ? CircleX : Circle;
+
+      return (
+        <li
+          key={requirement.id}
+          className={`password-requirement password-requirement--${state}`}
+        >
+          <RuleIcon size={14} strokeWidth={ICON_STROKE} aria-hidden="true" />
+          <span>{requirement.label}</span>
+          <span className="password-requirement-status">
+            {met ? " (met)" : " (not met)"}
+          </span>
+        </li>
+      );
+    })}
+  </ul>
 );
 
 const inputClass = (error?: string) =>
@@ -227,6 +309,8 @@ const CreateAccountForm = ({
     }
   };
 
+  const StepIcon = STEP_META[step].icon;
+
   return (
     <form className="registration-form" onSubmit={handleSubmit}>
       {formError && (
@@ -237,8 +321,14 @@ const CreateAccountForm = ({
 
       <div className="registration-card">
         <header className="registration-card-header">
-          <h2>{STEP_META[step].title}</h2>
-          <p>{STEP_META[step].subtitle}</p>
+          <span className="registration-card-icon" aria-hidden="true">
+            <StepIcon size={20} strokeWidth={ICON_STROKE} />
+          </span>
+
+          <div className="registration-card-heading">
+            <h2>{STEP_META[step].title}</h2>
+            <p>{STEP_META[step].subtitle}</p>
+          </div>
         </header>
 
         <div className="registration-fields">
@@ -344,6 +434,14 @@ const CreateAccountForm = ({
                     }
                   }}
                   disabled={isLoading}
+                  toggleIcon={
+                    <CalendarDays
+                      className="date-picker-toggle-icon registration-date-icon"
+                      size={18}
+                      strokeWidth={ICON_STROKE}
+                      aria-hidden="true"
+                    />
+                  }
                 />
               </FormField>
 
@@ -549,6 +647,7 @@ const CreateAccountForm = ({
                 htmlFor="contactNumber"
                 required
                 error={errors.contactNumber}
+                icon={Phone}
               >
                 <input
                   id="contactNumber"
@@ -567,6 +666,7 @@ const CreateAccountForm = ({
                 htmlFor="email"
                 required
                 error={errors.email}
+                icon={Mail}
               >
                 <input
                   id="email"
@@ -601,14 +701,16 @@ const CreateAccountForm = ({
                 label="Employer / Company"
                 htmlFor="employer"
                 error={errors.employer}
+                icon={Building2}
               >
+                {/* Optional: may be left blank (sent as null). */}
                 <input
                   id="employer"
                   name="employer"
                   type="text"
                   value={formData.employer}
                   onChange={handleChange}
-                  placeholder="e.g. DepEd"
+                  placeholder="e.g. DepEd (optional)"
                   disabled={isLoading}
                   className={inputClass(errors.employer)}
                 />
@@ -663,6 +765,7 @@ const CreateAccountForm = ({
                 htmlFor="emergencyContactNumber"
                 required
                 error={errors.emergencyContactNumber}
+                icon={Phone}
               >
                 <input
                   id="emergencyContactNumber"
@@ -680,6 +783,7 @@ const CreateAccountForm = ({
                 label="Address"
                 htmlFor="emergencyAddress"
                 error={errors.emergencyAddress}
+                icon={MapPin}
               >
                 <input
                   id="emergencyAddress"
@@ -700,6 +804,13 @@ const CreateAccountForm = ({
                 htmlFor="password"
                 required
                 error={errors.password}
+                icon={LockKeyhole}
+                hint={
+                  <PasswordRequirements
+                    password={formData.password}
+                    showErrors={Boolean(errors.password)}
+                  />
+                }
               >
                 <div className="password-wrapper">
                   <input
@@ -708,19 +819,20 @@ const CreateAccountForm = ({
                     type={showPassword ? "text" : "password"}
                     value={formData.password}
                     onChange={handleChange}
-                    placeholder="At least 6 characters"
+                    placeholder="At least 8 characters"
+                    autoComplete="new-password"
+                    aria-describedby="password-requirements"
+                    aria-invalid={errors.password ? true : undefined}
                     disabled={isLoading}
                     className={inputClass(errors.password)}
                   />
 
-                  <button
-                    type="button"
-                    className="password-toggle"
-                    onClick={() => setShowPassword((previous) => !previous)}
+                  <PasswordToggle
+                    visible={showPassword}
+                    fieldName="password"
                     disabled={isLoading}
-                  >
-                    {showPassword ? "Hide" : "Show"}
-                  </button>
+                    onToggle={() => setShowPassword((previous) => !previous)}
+                  />
                 </div>
               </FormField>
 
@@ -729,6 +841,7 @@ const CreateAccountForm = ({
                 htmlFor="confirmPassword"
                 required
                 error={errors.confirmPassword}
+                icon={ShieldCheck}
               >
                 <div className="password-wrapper">
                   <input
@@ -738,20 +851,20 @@ const CreateAccountForm = ({
                     value={formData.confirmPassword}
                     onChange={handleChange}
                     placeholder="Re-enter your password"
+                    autoComplete="new-password"
+                    aria-invalid={errors.confirmPassword ? true : undefined}
                     disabled={isLoading}
                     className={inputClass(errors.confirmPassword)}
                   />
 
-                  <button
-                    type="button"
-                    className="password-toggle"
-                    onClick={() =>
+                  <PasswordToggle
+                    visible={showConfirmPassword}
+                    fieldName="confirm password"
+                    disabled={isLoading}
+                    onToggle={() =>
                       setShowConfirmPassword((previous) => !previous)
                     }
-                    disabled={isLoading}
-                  >
-                    {showConfirmPassword ? "Hide" : "Show"}
-                  </button>
+                  />
                 </div>
               </FormField>
 
@@ -787,7 +900,12 @@ const CreateAccountForm = ({
             onClick={handlePrevious}
             disabled={step === 1 || isLoading}
           >
-            ← Previous
+            <ArrowLeft
+              size={ICON_SIZE}
+              strokeWidth={ICON_STROKE}
+              aria-hidden="true"
+            />
+            Previous
           </button>
 
           <div className="wizard-progress" aria-hidden="true">
@@ -801,18 +919,35 @@ const CreateAccountForm = ({
             )}
           </div>
 
-          <button
-            type={step === TOTAL_STEPS ? "submit" : "button"}
-            className="wizard-button wizard-button--primary"
-            onClick={step === TOTAL_STEPS ? undefined : handleNext}
-            disabled={isLoading}
-          >
-            {isLoading
-              ? "Submitting..."
-              : step === TOTAL_STEPS
-                ? "Submit Registration"
-                : "Next →"}
-          </button>
+          {/* Separate keys make Next and Submit different DOM elements. If one
+              button switched type="button" -> "submit" inside its own click,
+              the browser would then submit the form for that same click and
+              step 3 would open already covered in "required" errors. */}
+          {step === TOTAL_STEPS ? (
+            <button
+              key="submit"
+              type="submit"
+              className="wizard-button wizard-button--primary"
+              disabled={isLoading}
+            >
+              {isLoading ? "Submitting..." : "Submit Registration"}
+            </button>
+          ) : (
+            <button
+              key="next"
+              type="button"
+              className="wizard-button wizard-button--primary"
+              onClick={handleNext}
+              disabled={isLoading}
+            >
+              Next
+              <ArrowRight
+                size={ICON_SIZE}
+                strokeWidth={ICON_STROKE}
+                aria-hidden="true"
+              />
+            </button>
+          )}
         </div>
       </div>
     </form>

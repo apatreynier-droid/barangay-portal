@@ -1,0 +1,274 @@
+/*
+ * "Document Pickup Details" modal (Resident Notifications).
+ * Builds on the shared request-details modal shell (RequestDetailsModal.css)
+ * and the resident design tokens (Styles/Shared/theme.css), so it follows
+ * the light and dark themes automatically.
+ */
+
+.request-details-modal.pickup-modal {
+  width: min(100%, 620px);
+}
+
+/* ------------------------------ Header ------------------------------ */
+
+.pickup-modal-heading {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.pickup-modal-icon {
+  display: grid;
+  width: 42px;
+  height: 42px;
+  flex-shrink: 0;
+  place-items: center;
+  border-radius: 12px;
+  background: var(--db-brand-soft);
+  color: var(--db-brand);
+}
+
+/* Overrides the monospace request-number heading of the shared modal. */
+.pickup-modal .request-details-header h2 {
+  font-family: "Bricolage Grotesque", "Public Sans", system-ui, sans-serif;
+  font-size: 19px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.pickup-modal-subtitle {
+  margin: 2px 0 0;
+  color: var(--db-muted);
+  font-family: ui-monospace, "Cascadia Mono", Consolas, monospace;
+  font-size: 12.5px;
+}
+
+/* ------------------------------ Sections ------------------------------ */
+
+.pickup-modal-section + .pickup-modal-section {
+  margin-top: 24px;
+}
+
+.pickup-modal-section-title {
+  margin: 0 0 10px;
+  color: var(--db-muted);
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.pickup-modal-facts {
+  margin-bottom: 0;
+}
+
+.pickup-modal-facts dd {
+  overflow-wrap: anywhere;
+}
+
+.pickup-modal-mono {
+  font-family: ui-monospace, "Cascadia Mono", Consolas, monospace;
+}
+
+/* --------------------- Pickup schedule (the highlight) --------------------- */
+
+.pickup-schedule-card {
+  padding: 16px 18px;
+  border: 2px solid var(--db-ok);
+  border-radius: 14px;
+  background: var(--db-ok-bg);
+  color: var(--db-ink);
+}
+
+.pickup-schedule-card.is-pending {
+  border-color: var(--db-warn);
+  background: var(--db-warn-bg);
+}
+
+.pickup-schedule-top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.pickup-schedule-label {
+  color: var(--db-ok);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.pickup-schedule-card.is-pending .pickup-schedule-label {
+  color: var(--db-warn);
+}
+
+.pickup-schedule-date,
+.pickup-schedule-time,
+.pickup-schedule-location,
+.pickup-schedule-pending {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin: 0;
+}
+
+.pickup-schedule-date svg,
+.pickup-schedule-time svg,
+.pickup-schedule-location svg,
+.pickup-schedule-pending svg {
+  flex-shrink: 0;
+  margin-top: 0.15em;
+  color: var(--db-ok);
+}
+
+.pickup-schedule-pending svg {
+  color: var(--db-warn);
+}
+
+.pickup-schedule-date {
+  font-family: "Bricolage Grotesque", "Public Sans", system-ui, sans-serif;
+  font-size: clamp(19px, 4.6vw, 23px);
+  font-weight: 800;
+  line-height: 1.25;
+}
+
+.pickup-schedule-time {
+  margin-top: 6px;
+  font-size: clamp(17px, 4vw, 20px);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.pickup-schedule-zone {
+  color: var(--db-muted);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.pickup-schedule-missing {
+  color: var(--db-warn);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.pickup-schedule-location {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid color-mix(in srgb, var(--db-ok) 30%, transparent);
+  font-size: 14.5px;
+  font-weight: 600;
+}
+
+.pickup-schedule-card.is-pending .pickup-schedule-location {
+  border-top-color: color-mix(in srgb, var(--db-warn) 30%, transparent);
+}
+
+.pickup-schedule-pending {
+  font-size: 14.5px;
+  font-weight: 600;
+  line-height: 1.5;
+}
+
+.pickup-modal-note {
+  margin: 10px 0 0;
+  color: var(--db-muted);
+  font-size: 13.5px;
+}
+
+.pickup-modal-block {
+  margin-top: 16px;
+}
+
+.pickup-modal-block h4 {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin: 0 0 8px;
+  color: var(--db-ink);
+  font-size: 13.5px;
+  font-weight: 700;
+}
+
+.pickup-modal-block h4 svg {
+  color: var(--db-brand);
+}
+
+.pickup-instructions {
+  margin: 0;
+  padding-left: 20px;
+  color: var(--db-ink);
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+.pickup-instructions li + li {
+  margin-top: 6px;
+}
+
+.pickup-modal-footnote {
+  margin: 12px 0 0;
+  color: var(--db-muted);
+  font-size: 12px;
+}
+
+/* ------------------------------ Footer ------------------------------ */
+
+.pickup-modal-footer {
+  flex-shrink: 0;
+  display: flex;
+  justify-content: flex-end;
+  padding: 14px 22px;
+  border-top: 1px solid var(--db-line);
+  background: var(--db-surface);
+}
+
+.pickup-modal-close {
+  min-height: 40px;
+  padding: 8px 22px;
+  border: 0;
+  border-radius: 10px;
+  background: var(--db-brand);
+  color: var(--db-on-brand);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.pickup-modal-close:hover {
+  filter: brightness(1.08);
+}
+
+.pickup-modal-close:focus-visible {
+  outline: 2px solid var(--db-brand);
+  outline-offset: 2px;
+}
+
+/* ------------------------------ Mobile ------------------------------ */
+
+@media (max-width: 520px) {
+  .pickup-schedule-card {
+    padding: 14px;
+  }
+
+  .pickup-modal-footer {
+    padding: 12px 18px;
+  }
+
+  .pickup-modal-close {
+    width: 100%;
+    min-height: 44px;
+  }
+
+  /* Long values (names, document types) wrap under their label. */
+  .pickup-modal-facts .request-details-fact {
+    flex-wrap: wrap;
+    gap: 4px 16px;
+  }
+}

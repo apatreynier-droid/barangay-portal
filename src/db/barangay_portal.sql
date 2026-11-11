@@ -99,7 +99,8 @@ CREATE TABLE `requests` (
   `submitted_at` timestamp NOT NULL DEFAULT current_timestamp(),
   `last_updated` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
   `completed_at` timestamp NULL DEFAULT NULL,
-  `pickup_date` date DEFAULT NULL
+  `pickup_date` date DEFAULT NULL,
+  `pickup_time` time DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------

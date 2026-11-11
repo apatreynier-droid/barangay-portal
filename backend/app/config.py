@@ -34,7 +34,7 @@ class Settings:
     login_ip_window_seconds: int = int(os.getenv("LOGIN_IP_WINDOW_SECONDS", "60"))
     # -- Password reset (token + email, see app/email_service.py) ----------
     # Public base URL of the React app; used to build links inside emails.
-    frontend_url: str = os.getenv("FRONTEND_URL", "http://localhost:5173").rstrip(
+    frontend_url: str = os.getenv("FRONTEND_URL", "https://localhost:5173").rstrip(
         "/"
     )
     # How long a password-reset link stays valid.
@@ -118,10 +118,57 @@ class Settings:
     pothole_photo_max_bytes: int = int(
         os.getenv("POTHOLE_PHOTO_MAX_BYTES", str(10 * 1024 * 1024))
     )
+    # -- Pothole detection (see app/ml/detector.py) -------------------------
+    # Private weights file; never placed anywhere the frontend can reach.
+    pothole_model_path: Path = Path(
+        os.getenv(
+            "POTHOLE_MODEL_PATH",
+            str(Path(__file__).resolve().parent / "ml" / "weights" / "best.pt"),
+        )
+    ).resolve()
+    # Empty: use the threshold tuned for this model (weights/model_info.json).
+    pothole_confidence_threshold: float | None = (
+        float(os.environ["POTHOLE_CONFIDENCE_THRESHOLD"])
+        if os.getenv("POTHOLE_CONFIDENCE_THRESHOLD", "").strip()
+        else None
+    )
+    # CPU threads for one inference, leaving the rest for the API and database.
+    pothole_inference_threads: int = int(os.getenv("POTHOLE_INFERENCE_THREADS", "4"))
+    # Reports one resident may file per hour (each one runs the model).
+    pothole_report_max_per_hour: int = int(os.getenv("POTHOLE_REPORT_MAX_PER_HOUR", "30"))
+    # GPS stored inside a photo can be old or from elsewhere, so it is used only
+    # when it is this close to the barangay. Live device GPS is not limited.
+    # The default center matches LAGAB_CENTER in src/Utils/Shared/mapConfig.ts.
+    barangay_center_latitude: float = float(os.getenv("BARANGAY_CENTER_LATITUDE", "7.6691215"))
+    barangay_center_longitude: float = float(os.getenv("BARANGAY_CENTER_LONGITUDE", "126.0648858"))
+    photo_gps_max_distance_km: float = float(os.getenv("PHOTO_GPS_MAX_DISTANCE_KM", "25"))
+    # Reports whose coordinates (device GPS, map pin or photo GPS) are farther
+    # than this from the barangay center are flagged "Outside barangay" in the
+    # Admin Portal. Only a warning for reviewers; such reports are still saved.
+    # OpenStreetMap has no boundary for Lagab, so this is a radius around the
+    # center; set it to roughly the distance to the farthest edge of the barangay.
+    barangay_radius_km: float = float(os.getenv("BARANGAY_RADIUS_KM", "3"))
+    # -- Reverse geocoding (see app/geolocation.py) -------------------------
+    # Set REVERSE_GEOCODE_URL to an empty value to turn lookups off.
+    reverse_geocode_url: str = os.getenv(
+        "REVERSE_GEOCODE_URL", "https://nominatim.openstreetmap.org/reverse"
+    ).strip()
+    reverse_geocode_user_agent: str = os.getenv(
+        "REVERSE_GEOCODE_USER_AGENT", "BarangayLagabPortal/1.0"
+    )
+    reverse_geocode_timeout_seconds: float = float(
+        os.getenv("REVERSE_GEOCODE_TIMEOUT_SECONDS", "4")
+    )
     cors_origins: tuple[str, ...] = tuple(
         origin.strip()
-        for origin in os.getenv("CORS_ORIGINS", "http://localhost:5173").split(",")
+        for origin in os.getenv("CORS_ORIGINS", "https://localhost:5173").split(",")
         if origin.strip()
+    )
+    # Optional regex matched against the whole Origin header, in addition to
+    # CORS_ORIGINS. Useful in development so phones keep working when the
+    # computer's LAN IP changes (see .env.example). Empty = off.
+    cors_origin_regex: str | None = (
+        os.getenv("CORS_ORIGIN_REGEX", "").strip() or None
     )
 
     @property

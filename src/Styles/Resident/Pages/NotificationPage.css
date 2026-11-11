@@ -287,6 +287,34 @@
   color: var(--db-ink);
 }
 
+/* "View My Request" on Ready for Pickup notifications (opens the pickup
+   details modal; it never navigates or marks the notification as read). */
+.notification-view-request {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 34px;
+  margin-top: 10px;
+  padding: 6px 14px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--db-brand);
+  color: var(--db-on-brand);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.notification-view-request:hover {
+  filter: brightness(1.08);
+}
+
+.notification-view-request:focus-visible {
+  outline: 2px solid var(--db-brand);
+  outline-offset: 2px;
+}
+
 .notification-read-button {
   display: inline-flex;
   align-items: center;

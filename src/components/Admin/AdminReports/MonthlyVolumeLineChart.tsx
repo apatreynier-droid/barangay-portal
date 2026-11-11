@@ -1,7 +1,7 @@
 import { useRef, useState } from "react";
 import type { MouseEvent } from "react";
 import type { AdminReportsMonthlyPoint } from "../../../Types/Admin/AdminReportsType";
-import { labelStride } from "../../../Utils/Admin/AdminAnalyticsDisplay";
+import { fittingLabelStride } from "../../../Utils/Admin/AdminAnalyticsDisplay";
 
 type MonthlyVolumeLineChartProps = {
   /** One point per period; `month` holds the period label. */
@@ -101,7 +101,11 @@ const MonthlyVolumeLineChart = ({
   };
 
   const hoveredPoint = hoveredIndex !== null ? data[hoveredIndex] : undefined;
-  const stride = labelStride(data.length, MAX_LABELS);
+  const stride = fittingLabelStride(
+    data.map((point) => point.month),
+    plotWidth,
+    MAX_LABELS,
+  );
   const showDots = data.length <= MAX_DOTS;
   const tooltipLeft = tooltipPosition
     ? Math.min(Math.max(tooltipPosition.x + 14, 8), Math.max(8, WIDTH - 170))

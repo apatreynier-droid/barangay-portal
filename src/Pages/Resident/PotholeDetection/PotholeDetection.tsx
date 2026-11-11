@@ -14,7 +14,14 @@ import {
 } from "lucide-react";
 import Sidebar from "../../../components/Resident/Dashboard/Sidebar";
 import Topbar from "../../../components/Resident/Dashboard/Topbar";
+import PotholeDetectionResult from "../../../components/Resident/PotholeDetection/PotholeDetectionResult";
 import { RESIDENT_ROLE_LABEL } from "../../../Utils/Resident/ResidentDisplay";
+import {
+  STATUS_DISPLAY,
+  describeReportDetection,
+  describeReportLocation,
+  formatReportDate,
+} from "../../../Utils/Resident/potholeReportDisplay";
 import useGpsCapture, {
   LOW_GPS_ACCURACY_M,
 } from "../../../Utils/Resident/useGpsCapture";
@@ -32,7 +39,6 @@ import {
   NOTIFICATIONS_PATH,
   POTHOLE_DETECTION_PATH,
 } from "../../../Utils/Shared/routePaths";
-import type { PotholeStatus } from "../../../Types/Admin/AdminPotholeManagementType";
 import type {
   CapturedLocation,
   ResidentPotholeReport,
@@ -48,14 +54,6 @@ type PotholeDetectionProps = {
   };
   onBackToDashboard: () => void;
   onLogout: () => void;
-};
-
-const STATUS_DISPLAY: Record<PotholeStatus, { label: string; tone: string }> = {
-  pending: { label: "Under review", tone: "is-review" },
-  verified: { label: "Verified", tone: "is-verified" },
-  under_maintenance: { label: "Being repaired", tone: "is-maintenance" },
-  resolved: { label: "Repaired", tone: "is-repaired" },
-  rejected: { label: "Not accepted", tone: "is-rejected" },
 };
 
 const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp"];
@@ -86,29 +84,6 @@ const formatFileSize = (bytes: number): string =>
 const formatCoordinates = (latitude: number, longitude: number): string =>
   `${latitude.toFixed(6)}, ${longitude.toFixed(6)}`;
 
-/** MySQL timestamps arrive in UTC without a zone marker. */
-const formatReportDate = (timestamp: string): string => {
-  const value = /[zZ]|[+-]\d{2}:?\d{2}$/.test(timestamp)
-    ? timestamp
-    : `${timestamp}Z`;
-  return new Date(value).toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  });
-};
-
-const describeReportLocation = (report: ResidentPotholeReport): string => {
-  if (report.location_source === "gps") {
-    return report.gps_accuracy_m === null
-      ? "GPS location"
-      : `GPS location (±${Math.round(report.gps_accuracy_m)} m)`;
-  }
-  return report.location_source === "manual"
-    ? "Pinned on the map"
-    : "No map location";
-};
-
 function PotholeDetection({ user, onLogout }: PotholeDetectionProps) {
   const navigate = useNavigate();
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -132,6 +107,9 @@ function PotholeDetection({ user, onLogout }: PotholeDetectionProps) {
     "loading" | "ready" | "error"
   >("loading");
   const [reportsError, setReportsError] = useState("");
+  /** The report whose detection result is open. */
+  const [resultReportId, setResultReportId] = useState<number | null>(null);
+  const resultAnchorRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   // Opens the phone's rear camera directly (ignored on desktop browsers).
   const cameraInputRef = useRef<HTMLInputElement>(null);
@@ -202,6 +180,12 @@ function PotholeDetection({ user, onLogout }: PotholeDetectionProps) {
     setPreviewUrl(url);
     setFileError("");
     setSentMessage("");
+
+    // The photo was just taken or chosen: ask for the position now. Refusing is
+    // fine, since the resident can still pin the spot or describe it.
+    if (locationMode === "gps" && gps.state.status === "idle") {
+      gps.capture();
+    }
   };
 
   const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
@@ -267,6 +251,23 @@ function PotholeDetection({ user, onLogout }: PotholeDetectionProps) {
     !isLocating &&
     !isSubmitting;
 
+  // Looked up on every render so the open result shows the latest status.
+  const resultReport =
+    reports.find((report) => report.id === resultReportId) ?? null;
+
+  const openResult = (reportId: number) => {
+    setResultReportId(reportId);
+    // After the result has rendered above the form.
+    window.requestAnimationFrame(() => {
+      resultAnchorRef.current?.scrollIntoView({
+        behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches
+          ? "auto"
+          : "smooth",
+        block: "start",
+      });
+    });
+  };
+
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!canSend || !selectedFile) return;
@@ -296,6 +297,7 @@ function PotholeDetection({ user, onLogout }: PotholeDetectionProps) {
       setSentMessage(
         `Report ${created.report_number} sent. Barangay staff will review it.`,
       );
+      openResult(created.id);
     } catch (error) {
       setSubmitError(
         error instanceof Error && error.message
@@ -518,14 +520,23 @@ function PotholeDetection({ user, onLogout }: PotholeDetectionProps) {
           onLogout={onLogout}
         />
 
+        <div ref={resultAnchorRef} className="pd-result-anchor">
+          {resultReport && (
+            <PotholeDetectionResult
+              report={resultReport}
+              onClose={() => setResultReportId(null)}
+            />
+          )}
+        </div>
+
         <div className="pd-layout">
           {/* ---------- Report form ---------- */}
           <form className="pd-card pd-form" onSubmit={handleSubmit} noValidate>
             <div className="pd-card-head">
               <h2>Report a damaged road</h2>
               <p>
-                Add a clear photo and where it is. Barangay staff will review
-                it.
+                Add a clear photo and where it is. The AI will look for
+                potholes, then barangay staff will review your report.
               </p>
             </div>
 
@@ -735,7 +746,7 @@ function PotholeDetection({ user, onLogout }: PotholeDetectionProps) {
             <div className="pd-actions">
               <button type="submit" className="pd-submit" disabled={!canSend}>
                 {isSubmitting
-                  ? "Sending…"
+                  ? "Checking the photo…"
                   : isLocating
                     ? "Waiting for location…"
                     : "Send report"}
@@ -805,6 +816,9 @@ function PotholeDetection({ user, onLogout }: PotholeDetectionProps) {
                       </span>
                       <div className="pd-report-text">
                         <strong className="pd-report-title">{place}</strong>
+                        <span className="pd-report-detection">
+                          {describeReportDetection(report)}
+                        </span>
                         <span className="pd-report-note">
                           {report.report_number} &middot;{" "}
                           {formatReportDate(report.reported_at)} &middot;{" "}
@@ -816,9 +830,19 @@ function PotholeDetection({ user, onLogout }: PotholeDetectionProps) {
                           </span>
                         )}
                       </div>
-                      <span className={`pd-status ${display.tone}`}>
-                        {display.label}
-                      </span>
+                      <div className="pd-report-side">
+                        <span className={`pd-status ${display.tone}`}>
+                          {display.label}
+                        </span>
+                        <button
+                          type="button"
+                          className="pd-btn"
+                          onClick={() => openResult(report.id)}
+                          aria-label={`View the detection result of ${report.report_number}`}
+                        >
+                          View result
+                        </button>
+                      </div>
                     </li>
                   );
                 })}

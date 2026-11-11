@@ -56,6 +56,18 @@ export function getIssuanceStatusMeta(status: string): IssuanceStatusMeta {
   );
 }
 
+/** Statuses where the request was approved, so the document may be printed. */
+const PRINTABLE_STATUSES = new Set([
+  "approved",
+  "processing",
+  "ready for pickup",
+  "completed",
+]);
+
+export function isIssuanceRecordPrintable(status: string): boolean {
+  return PRINTABLE_STATUSES.has(status.trim().toLowerCase());
+}
+
 export function filterIssuanceRecords(
   records: AdminRequestHistoryEntry[],
   filters: DocumentManagementFiltersState,
@@ -186,7 +198,8 @@ const buildDocumentHtml = (
   <body>
     <div class="doc-header">
       <div class="republic">Republic of the Philippines</div>
-      <div class="republic">Province · Municipality</div>
+      <div class="republic">Province of Davao de Oro</div>
+      <div class="republic">Municipality of Compostela</div>
       <div class="barangay">Barangay Lagab</div>
       <div class="office">Office of the Punong Barangay</div>
       <div class="divider"></div>
@@ -237,28 +250,168 @@ export function previewDocumentTemplate(templateName: string): void {
   );
 }
 
+const getIssuanceRecordFields = (
+  record: AdminRequestHistoryEntry,
+): PrintableDocumentField[] => [
+  { label: "Reference No.", value: record.request_number },
+  { label: "Resident", value: record.resident_name },
+  { label: "Document Type", value: record.document },
+  { label: "Status", value: record.status },
+  { label: "Date Submitted", value: record.submitted_at.slice(0, 10) },
+  { label: "Processed By", value: record.processed_by ?? "N/A" },
+];
+
+const getIssuanceRecordIntro = (record: AdminRequestHistoryEntry): string =>
+  `The Barangay Office of Lagab hereby issues this ${record.document} to the resident named below.`;
+
+const ensureIssuanceRecordPrintable = (
+  record: AdminRequestHistoryEntry,
+): boolean => {
+  if (isIssuanceRecordPrintable(record.status)) return true;
+
+  window.alert(
+    `This request is ${record.status}. A document can only be printed once the request is approved.`,
+  );
+  return false;
+};
+
 export function printIssuanceRecord(record: AdminRequestHistoryEntry): void {
+  if (!ensureIssuanceRecordPrintable(record)) return;
+
   openPrintWindow(
     buildDocumentHtml(
       record.document,
-      [
-        { label: "Reference No.", value: record.request_number },
-        { label: "Resident", value: record.resident_name },
-        { label: "Document Type", value: record.document },
-        { label: "Status", value: record.status },
-        { label: "Date Submitted", value: record.submitted_at.slice(0, 10) },
-        { label: "Processed By", value: record.processed_by ?? "—" },
-      ],
-      `The Barangay Office of Lagab hereby issues this ${record.document} to the resident named below.`,
+      getIssuanceRecordFields(record),
+      getIssuanceRecordIntro(record),
     ),
   );
 }
 
-export function saveIssuanceRecordAsPdf(
+const toSafeFileName = (value: string): string =>
+  value
+    .trim()
+    .replace(/[^a-z0-9-_]+/gi, "_")
+    .replace(/^_+|_+$/g, "") || "document";
+
+/** Generates the issued document as a real PDF file and downloads it. */
+export async function saveIssuanceRecordAsPdf(
   record: AdminRequestHistoryEntry,
-): void {
-  // Reuses the same printable document; the browser print dialog offers
-  // "Save as PDF" as the destination for generating the PDF copy.
-  printIssuanceRecord(record);
+): Promise<void> {
+  if (!ensureIssuanceRecordPrintable(record)) return;
+
+  try {
+    // Loaded on demand so jsPDF is not part of the main bundle.
+    const { jsPDF } = await import("jspdf");
+    const pdf = new jsPDF({ unit: "pt", format: "a4" });
+
+    const pageWidth = pdf.internal.pageSize.getWidth();
+    const marginX = 56;
+    const contentWidth = pageWidth - marginX * 2;
+    const centerX = pageWidth / 2;
+    const ink: [number, number, number] = [31, 41, 55];
+    let y = 64;
+
+    pdf.setTextColor(...ink);
+    pdf.setDrawColor(...ink);
+
+    // Header
+    pdf.setFont("times", "normal");
+    pdf.setFontSize(10);
+    for (const line of [
+      "REPUBLIC OF THE PHILIPPINES",
+      "PROVINCE OF DAVAO DE ORO",
+      "MUNICIPALITY OF COMPOSTELA",
+    ]) {
+      pdf.text(line, centerX, y, { align: "center" });
+      y += 14;
+    }
+
+    y += 6;
+    pdf.setFont("times", "bold");
+    pdf.setFontSize(18);
+    pdf.text("BARANGAY LAGAB", centerX, y, { align: "center" });
+
+    y += 16;
+    pdf.setFont("times", "italic");
+    pdf.setFontSize(10);
+    pdf.text("Office of the Punong Barangay", centerX, y, { align: "center" });
+
+    y += 14;
+    pdf.setLineWidth(1.5);
+    pdf.line(marginX, y, pageWidth - marginX, y);
+
+    // Title
+    y += 40;
+    pdf.setFont("times", "bold");
+    pdf.setFontSize(15);
+    const titleLines = pdf.splitTextToSize(
+      record.document.toUpperCase(),
+      contentWidth,
+    ) as string[];
+    pdf.text(titleLines, centerX, y, { align: "center" });
+    y += titleLines.length * 18 + 18;
+
+    // Intro paragraph
+    pdf.setFont("times", "normal");
+    pdf.setFontSize(12);
+    const introLines = pdf.splitTextToSize(
+      getIssuanceRecordIntro(record),
+      contentWidth,
+    ) as string[];
+    pdf.text(introLines, marginX, y, { lineHeightFactor: 1.6 });
+    y += introLines.length * 12 * 1.6 + 16;
+
+    // Detail fields
+    const labelWidth = 140;
+    for (const field of getIssuanceRecordFields(record)) {
+      pdf.setFont("times", "bold");
+      pdf.text(`${field.label}:`, marginX, y);
+      pdf.setFont("times", "normal");
+      const valueLines = pdf.splitTextToSize(
+        field.value,
+        contentWidth - labelWidth,
+      ) as string[];
+      pdf.text(valueLines, marginX + labelWidth, y);
+      y += Math.max(valueLines.length, 1) * 15 + 8;
+    }
+
+    // Signatures
+    y += 70;
+    const signatureWidth = 190;
+    pdf.setLineWidth(0.75);
+    pdf.setFontSize(11);
+    const signatures: Array<[string, number]> = [
+      ["Applicant Signature", marginX],
+      ["Punong Barangay", pageWidth - marginX - signatureWidth],
+    ];
+    for (const [label, x] of signatures) {
+      pdf.line(x, y, x + signatureWidth, y);
+      pdf.text(label, x + signatureWidth / 2, y + 15, { align: "center" });
+    }
+
+    // Footer
+    y += 70;
+    pdf.setFontSize(9);
+    pdf.setTextColor(107, 114, 128);
+    pdf.text(
+      "This document was generated by the Barangay Lagab Admin Portal.",
+      centerX,
+      y,
+      { align: "center" },
+    );
+
+    pdf.setProperties({
+      title: `${record.document} - ${record.request_number}`,
+      subject: record.document,
+      author: "Barangay Lagab",
+    });
+
+    pdf.save(
+      `${toSafeFileName(record.request_number)}_${toSafeFileName(record.document)}.pdf`,
+    );
+  } catch (error) {
+    console.error("Failed to generate PDF", error);
+    window.alert("Unable to generate the PDF. Please try again.");
+  }
 }
 

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { ArrowLeft } from "lucide-react";
 import type { ChangeEvent, FormEvent } from "react";
 import type { FormData, FormErrors } from "../../Types/Auth/ForgotPasswordType";
 import {
@@ -185,7 +186,13 @@ const ForgotPasswordPage = ({ onBackToLogin }: ForgotPasswordPageProps) => {
             className="forgot-back-link"
             onClick={onBackToLogin}
           >
-            ← Back to Sign In
+            <ArrowLeft
+              className="forgot-back-link-icon"
+              size={16}
+              strokeWidth={2.25}
+              aria-hidden="true"
+            />
+            <span className="forgot-back-link-text">Back to Sign In</span>
           </button>
         </section>
       )}

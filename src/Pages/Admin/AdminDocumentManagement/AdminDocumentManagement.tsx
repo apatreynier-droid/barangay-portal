@@ -18,6 +18,7 @@ import {
   getDocumentTemplateMeta,
   getIssuanceStatusMeta,
   previewDocumentTemplate,
+  isIssuanceRecordPrintable,
   printIssuanceRecord,
   saveIssuanceRecordAsPdf,
 } from "../../../Utils/Admin/AdminDocumentManagementLogic";
@@ -265,32 +266,38 @@ const AdminDocumentManagement = ({
                           {record.processed_by ?? "—"}
                         </td>
                         <td>
-                          <div className="docmgmt-actions">
-                            <button
-                              type="button"
-                              className="docmgmt-action-button docmgmt-print"
-                              onClick={() => printIssuanceRecord(record)}
-                            >
-                              <Printer
-                                size={14}
-                                strokeWidth={2}
-                                aria-hidden="true"
-                              />
-                              <span>Print</span>
-                            </button>
-                            <button
-                              type="button"
-                              className="docmgmt-action-button docmgmt-pdf"
-                              onClick={() => saveIssuanceRecordAsPdf(record)}
-                            >
-                              <FileDown
-                                size={14}
-                                strokeWidth={2}
-                                aria-hidden="true"
-                              />
-                              <span>PDF</span>
-                            </button>
-                          </div>
+                          {isIssuanceRecordPrintable(record.status) ? (
+                            <div className="docmgmt-actions">
+                              <button
+                                type="button"
+                                className="docmgmt-action-button docmgmt-print"
+                                onClick={() => printIssuanceRecord(record)}
+                              >
+                                <Printer
+                                  size={14}
+                                  strokeWidth={2}
+                                  aria-hidden="true"
+                                />
+                                <span>Print</span>
+                              </button>
+                              <button
+                                type="button"
+                                className="docmgmt-action-button docmgmt-pdf"
+                                onClick={() => void saveIssuanceRecordAsPdf(record)}
+                              >
+                                <FileDown
+                                  size={14}
+                                  strokeWidth={2}
+                                  aria-hidden="true"
+                                />
+                                <span>PDF</span>
+                              </button>
+                            </div>
+                          ) : (
+                            <span className="docmgmt-no-actions">
+                              Available once approved
+                            </span>
+                          )}
                         </td>
                       </tr>
                     );

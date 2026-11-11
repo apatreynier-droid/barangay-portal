@@ -5,13 +5,14 @@ import { ApiError, loginUser } from "../Shared/api";
 export const validateForm = (formData: FormData): FormErrors => {
   const errors: FormErrors = {};
 
+  // Accounts sign in with their email address only (there are no usernames).
+  // Rejecting anything else here keeps a guessed username from using up the
+  // login attempts that lead to a temporary block.
   if (!formData.email.trim()) {
-    errors.email = "Username is required";
-  } else if (
-    !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email.trim()) &&
-    !/^[a-zA-Z0-9._-]{3,}$/.test(formData.email.trim())
-  ) {
-    errors.email = "Enter a valid username or email";
+    errors.email = "Email address is required";
+  } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email.trim())) {
+    errors.email =
+      "Enter the email address you registered with (for example, juan@gmail.com)";
   }
 
   if (!formData.password) {

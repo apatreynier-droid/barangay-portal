@@ -6,6 +6,12 @@ import type {
 } from "react";
 import type { FormData, FormErrors } from "../../Types/Auth/LoginType";
 import { validateForm, authenticateUser } from "../../Utils/Auth/LoginLogic";
+import {
+  forgetRememberedEmail,
+  offerBrowserPasswordSave,
+  readRememberedEmail,
+  saveRememberedEmail,
+} from "../../Utils/Auth/RememberMe";
 import logo from "../../assets/logo-256.png";
 import lagab from "../../assets/lagab.jpg";
 import showIcon from "../../assets/show.png";
@@ -212,8 +218,11 @@ const LoginPage = ({
   onCreateAccount,
   onForgotPassword,
 }: LoginPageProps) => {
+  // "Remember me" restores the last email; the browser's password manager
+  // fills the password (see Utils/Auth/RememberMe.ts).
+  const [rememberedEmail] = useState(readRememberedEmail);
   const [formData, setFormData] = useState<FormData>({
-    email: "",
+    email: rememberedEmail,
     password: "",
   });
 
@@ -221,7 +230,7 @@ const LoginPage = ({
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
-  const [rememberMe, setRememberMe] = useState(false);
+  const [rememberMe, setRememberMe] = useState(rememberedEmail !== "");
 
   const isMobile = useIsMobile();
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
@@ -362,6 +371,13 @@ const LoginPage = ({
       }
 
       setSuccessMessage("Login successful! Welcome back.");
+
+      if (rememberMe) {
+        saveRememberedEmail(formData.email);
+        offerBrowserPasswordSave(formData.email, formData.password);
+      } else {
+        forgetRememberedEmail();
+      }
 
       setFormData({
         email: "",
@@ -512,7 +528,7 @@ const LoginPage = ({
             <form onSubmit={handleSubmit} className="login-form">
               <div className="form-group">
                 <label htmlFor="email" className="field-label">
-                  Username/Email-address
+                  Email address
                 </label>
 
                 <div
@@ -528,9 +544,15 @@ const LoginPage = ({
                     name="email"
                     value={formData.email}
                     onChange={handleChange}
-                    placeholder="e.g. brgy.admin"
+                    placeholder="e.g. juan@gmail.com"
                     className="form-input"
+                    // "username" is the standard token for a sign-in
+                    // identifier; password managers rely on it.
                     autoComplete="username"
+                    inputMode="email"
+                    autoCapitalize="none"
+                    spellCheck={false}
+                    aria-describedby="email-help"
                     disabled={isLoading}
                   />
                 </div>
@@ -538,6 +560,10 @@ const LoginPage = ({
                 {errors.email && (
                   <span className="error-message">{errors.email}</span>
                 )}
+
+                <span id="email-help" className="field-hint">
+                  Forgot your email? Visit the Barangay Lagab office for help.
+                </span>
               </div>
 
               <div className="form-group">
