@@ -473,6 +473,20 @@ class AdminRequestHistoryResponse(BaseModel):
     status: str
     submitted_at: datetime
     processed_by: str | None
+    # Resident details used to fill in issued documents (e.g. Business Permit).
+    resident_first_name: str | None = None
+    resident_middle_name: str | None = None
+    resident_last_name: str | None = None
+    resident_suffix: str | None = None
+    civil_status: str | None = None
+    nationality: str | None = None
+    date_of_birth: date | None = None
+    purok: str | None = None
+    years_of_residency: int | None = None
+    place_of_birth: str | None = None
+    sex: str | None = None
+    purpose: str | None = None
+    fee: float | None = None
 
 
 class RequestAttachmentResponse(BaseModel):

@@ -358,15 +358,6 @@
   outline-offset: 2px;
 }
 
-/* Active chip: matches the sidebar's active-item blue; the count flips to a
-   translucent badge so the state is obvious without relying on color alone
-   (aria-pressed carries it for assistive tech as well). */
-.admin-status-chip.is-active {
-  background: #2563eb;
-  border-color: #2563eb;
-  color: #ffffff;
-}
-
 .admin-status-chip-icon {
   display: flex;
   flex-shrink: 0;
@@ -393,9 +384,240 @@
   text-align: center;
 }
 
-.admin-status-chip.is-active .admin-status-chip-count {
+/* ------------------------- Recent Requests modal --------------------------- */
+
+/* Opened from the status strip; rendered in a portal on <body>. */
+.admin-requests-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: grid;
+  place-items: center;
+  padding: clamp(16px, 3vw, 28px);
+  background: rgba(17, 24, 39, 0.45);
+}
+
+.admin-requests-modal {
+  display: flex;
+  flex-direction: column;
+  width: min(100%, 560px);
+  max-height: min(680px, calc(100dvh - 32px));
+  overflow: hidden;
+  border-radius: 16px;
+  background: #ffffff;
+  box-shadow: 0 24px 60px rgba(17, 24, 39, 0.25);
+}
+
+.admin-requests-modal:focus {
+  outline: none;
+}
+
+.admin-requests-modal-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 20px 20px 14px 22px;
+}
+
+.admin-requests-modal-header h2 {
+  margin: 0;
+  color: #0f172a;
+  font-size: 17px;
+  font-weight: 700;
+}
+
+.admin-requests-modal-header p {
+  margin: 4px 0 0;
+  color: #64748b;
+  font-size: 12.5px;
+}
+
+.admin-requests-modal-close {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: 1px solid #e2e8f0;
+  border-radius: 9px;
+  background: #ffffff;
+  color: #475569;
+  cursor: pointer;
+  transition: background-color 0.18s ease;
+}
+
+.admin-requests-modal-close:hover {
+  background: #f1f5f9;
+  color: #0f172a;
+  transform: none;
+  box-shadow: none;
+}
+
+.admin-requests-modal-close:focus-visible,
+.admin-requests-modal-tab:focus-visible,
+.admin-requests-modal-view-all:focus-visible {
+  outline: 2px solid #1d4ed8;
+  outline-offset: 2px;
+}
+
+/* Status tabs: a segmented row that scrolls sideways on very narrow phones. */
+.admin-requests-modal-tabs {
+  display: flex;
+  gap: 6px;
+  margin: 0 22px;
+  padding-bottom: 14px;
+  overflow-x: auto;
+  border-bottom: 1px solid #f1f5f9;
+  scrollbar-width: none;
+}
+
+.admin-requests-modal-tab {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 6px;
+  min-height: 36px;
+  padding: 6px 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 999px;
+  background: #ffffff;
+  color: #475569;
+  font-size: 12.5px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition:
+    background-color 0.18s ease,
+    border-color 0.18s ease,
+    color 0.18s ease;
+}
+
+.admin-requests-modal-tab:hover {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+  transform: none;
+  box-shadow: none;
+}
+
+.admin-requests-modal-tab.is-active {
+  background: #2563eb;
+  border-color: #2563eb;
+  color: #ffffff;
+}
+
+.admin-requests-modal-tab-count {
+  min-width: 20px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: #f1f5f9;
+  color: #475569;
+  font-size: 11.5px;
+  font-weight: 700;
+  text-align: center;
+}
+
+.admin-requests-modal-tab.is-active .admin-requests-modal-tab-count {
   background: rgba(255, 255, 255, 0.25);
   color: #ffffff;
+}
+
+/* The request list is the only part that scrolls. */
+.admin-requests-modal-body {
+  flex: 1;
+  min-height: 0;
+  padding: 14px 22px;
+  overflow-y: auto;
+}
+
+.admin-requests-modal-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.admin-requests-modal-empty {
+  margin: 0;
+  padding: 28px 12px;
+  border: 1px dashed #cbd5e1;
+  border-radius: 12px;
+  background: #f8fafc;
+  color: #64748b;
+  font-size: 13px;
+  text-align: center;
+}
+
+.admin-requests-modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  padding: 14px 22px 18px;
+  border-top: 1px solid #f1f5f9;
+}
+
+.admin-requests-modal-view-all {
+  min-height: 40px;
+  padding: 9px 18px;
+  border: 0;
+  border-radius: 9px;
+  background: #2563eb;
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background-color 0.18s ease;
+}
+
+.admin-requests-modal-view-all:hover {
+  background: #1d4ed8;
+  transform: none;
+}
+
+/* Phones: the modal becomes a bottom sheet with a full-width action. */
+@media (max-width: 480px) {
+  .admin-requests-modal-backdrop {
+    place-items: end stretch;
+    padding: 0;
+  }
+
+  .admin-requests-modal {
+    width: 100%;
+    max-height: 88dvh;
+    border-radius: 16px 16px 0 0;
+  }
+
+  .admin-requests-modal-header {
+    padding: 18px 16px 12px;
+  }
+
+  .admin-requests-modal-tabs {
+    margin: 0 16px;
+  }
+
+  .admin-requests-modal-body {
+    padding: 12px 16px;
+  }
+
+  .admin-requests-modal-footer {
+    padding: 12px 16px calc(16px + env(safe-area-inset-bottom));
+  }
+
+  .admin-requests-modal-view-all {
+    flex: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .admin-requests-modal-close,
+  .admin-requests-modal-tab,
+  .admin-requests-modal-view-all {
+    transition: none;
+  }
 }
 
 /* -------------------------------- Bar chart --------------------------------- */
@@ -790,19 +1012,6 @@
   font-size: 12px;
   color: #64748b;
   overflow-wrap: anywhere;
-}
-
-/* Filtered-to-empty state for the Recent Requests list. */
-.admin-filter-empty {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 2px;
-  padding-top: 4px;
-}
-
-.admin-filter-empty .admin-empty-note {
-  margin: 0;
 }
 
 /* Up to 768px the card list replaces the table (cards show every table field). */

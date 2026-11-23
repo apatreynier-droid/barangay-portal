@@ -65,7 +65,7 @@ export function formatFee(fee: number): string {
     return "Free";
   }
 
-  return `₱${Number.isInteger(fee) ? fee : fee.toFixed(2)}`;
+  return `₱${fee.toFixed(2)}`;
 }
 
 export function formatSubmittedDateTime(value: string): string {

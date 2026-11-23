@@ -40,10 +40,6 @@ export function getUniqueHistoryDocuments(
   ).sort((a, b) => a.localeCompare(b));
 }
 
-export function getRequestDisplayId(id: number): string {
-  return `BR-${String(id).padStart(4, "0")}`;
-}
-
 export function formatHistoryDateTime(value: string): string {
   return `${value.slice(0, 10)} ${value.slice(11, 16)}`;
 }

@@ -190,6 +190,83 @@
   }
 }
 
+/* ---------------------------- "Main" section ---------------------------- */
+
+/* Section heading that collapses the page links beneath it. */
+.nav-section-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 6px 12px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--sb-muted);
+  font-family: inherit;
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  text-align: left;
+  cursor: pointer;
+  transition: color 0.18s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.nav-section-toggle:hover {
+  color: #ffffff;
+}
+
+.nav-section-toggle:focus-visible {
+  outline: 2px solid var(--sb-gold);
+  outline-offset: 2px;
+}
+
+.nav-section-toggle .nav-chevron {
+  margin-left: auto;
+  transition: transform 0.2s ease;
+}
+
+.nav-section-toggle[aria-expanded="false"] .nav-chevron {
+  transform: rotate(-90deg);
+}
+
+/* Same 0fr -> 1fr height animation as the My Requests dropdown. */
+.nav-section {
+  display: grid;
+  grid-template-rows: 0fr;
+  visibility: hidden;
+  transition:
+    grid-template-rows 0.22s ease,
+    visibility 0.22s;
+}
+
+.nav-section.is-open {
+  grid-template-rows: 1fr;
+  visibility: visible;
+}
+
+/* overflow: hidden is needed for the collapse, so the wrapper reaches into
+   the sidebar's 16px side padding: the active item's gold edge marker
+   (left: -16px) and focus outlines stay visible instead of being clipped. */
+.nav-section-inner {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-height: 0;
+  margin-inline: -16px;
+  padding: 2px 16px;
+  overflow: hidden;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nav-section,
+  .nav-section-toggle,
+  .nav-section-toggle .nav-chevron {
+    transition: none;
+  }
+}
+
 /* ------------------------- My Requests dropdown ------------------------- */
 
 .nav-group {

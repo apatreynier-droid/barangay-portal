@@ -2203,7 +2203,16 @@ def list_request_history(
                 WHERE history.request_id = requests.id
                   AND history.changed_by IS NOT NULL
                 ORDER BY history.changed_at DESC, history.id DESC
-                LIMIT 1) AS processed_by
+                LIMIT 1) AS processed_by,
+               resident_profiles.first_name AS resident_first_name,
+               resident_profiles.middle_name AS resident_middle_name,
+               resident_profiles.last_name AS resident_last_name,
+               resident_profiles.suffix AS resident_suffix,
+               resident_profiles.civil_status, resident_profiles.nationality,
+               resident_profiles.date_of_birth, resident_profiles.purok,
+               resident_profiles.years_of_residency,
+               resident_profiles.place_of_birth, resident_profiles.sex,
+               requests.purpose, document_types.fee
         FROM requests
         JOIN users ON users.id = requests.user_id
         JOIN resident_profiles ON resident_profiles.user_id = users.id
@@ -2220,6 +2229,19 @@ def list_request_history(
             status=row["status"],
             submitted_at=row["submitted_at"],
             processed_by=row["processed_by"],
+            resident_first_name=row["resident_first_name"],
+            resident_middle_name=row["resident_middle_name"],
+            resident_last_name=row["resident_last_name"],
+            resident_suffix=row["resident_suffix"],
+            civil_status=row["civil_status"],
+            nationality=row["nationality"],
+            date_of_birth=row["date_of_birth"],
+            purok=row["purok"],
+            years_of_residency=row["years_of_residency"],
+            place_of_birth=row["place_of_birth"],
+            sex=row["sex"],
+            purpose=row["purpose"],
+            fee=float(row["fee"]) if row["fee"] is not None else None,
         )
         for row in cursor.fetchall()
     ]

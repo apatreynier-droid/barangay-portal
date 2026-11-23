@@ -41,6 +41,8 @@ const AdminActionsPanel = ({
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
+  // Rejecting is final, so the Reject button asks for a second click first.
+  const [confirmReject, setConfirmReject] = useState(false);
 
   const applyAction = async (
     payload: AdminDocumentRequestActionPayload,
@@ -103,8 +105,31 @@ const AdminActionsPanel = ({
     });
   };
 
+  const requestReject = () => {
+    setError("");
+    setNotice("");
+    setConfirmReject(true);
+  };
+
+  const confirmRejectRequest = () => {
+    setConfirmReject(false);
+    applyStatus("Rejected");
+  };
+
   const currentIndex = STATUS_FLOW.indexOf(request.status);
   const status = request.status;
+  const isRejected = status === "Rejected";
+  const isCompleted = status === "Completed";
+
+  // The one forward action for each status, and whether it may be rejected there.
+  const nextAction: { label: string; onClick: () => void; canReject: boolean } | null =
+    status === "Approved"
+      ? { label: "Mark as Processing", onClick: () => applyStatus("Processing"), canReject: true }
+      : status === "Processing"
+        ? { label: "Mark as Ready for Pickup", onClick: markReadyForPickup, canReject: true }
+        : status === "Ready for Pickup"
+          ? { label: "Mark as Completed", onClick: () => applyStatus("Completed"), canReject: false }
+          : null;
   const remarksChanged =
     remarks.trim() !== (request.admin_remarks ?? "").trim();
   const savedPickupTime = toTimeInputValue(request.pickup_time);
@@ -118,30 +143,56 @@ const AdminActionsPanel = ({
 
   return (
     <section className="residents-info-card docreq-actions-card">
-      <h3>Admin Actions</h3>
-
-      <p className="docreq-actions-label">Status Flow</p>
-      <div className="docreq-status-flow">
-        {STATUS_FLOW.map((step, index) => (
-          <span className="docreq-flow-step-wrapper" key={step}>
-            {index > 0 && (
-              <span className="docreq-flow-arrow" aria-hidden="true">
-                →
-              </span>
-            )}
-            <span
-              className={`docreq-flow-step${
-                index === currentIndex ? " current" : ""
-              }${index < currentIndex ? " done" : ""}`}
-              title={
-                index === currentIndex ? "Current status" : `Goes to ${step}`
-              }
-            >
-              {step}
-            </span>
+      <div className="docreq-actions-header">
+        <h3>Admin Actions</h3>
+        {currentIndex >= 0 && (
+          <span className="docreq-actions-progress">
+            {isCompleted
+              ? "All steps done"
+              : `Step ${currentIndex + 1} of ${STATUS_FLOW.length}`}
           </span>
-        ))}
+        )}
       </div>
+
+      <ol
+        className={`docreq-stepper${isRejected ? " is-rejected" : ""}`}
+        aria-label="Request progress"
+      >
+        {STATUS_FLOW.map((step, index) => {
+          // A completed request has every step done, including the last one.
+          const isDone = index < currentIndex || (isCompleted && index === currentIndex);
+          const isCurrent = index === currentIndex && !isCompleted;
+          const state = isDone ? "done" : isCurrent ? "current" : "upcoming";
+
+          return (
+            <li
+              key={step}
+              className={`docreq-step is-${state}`}
+              aria-current={isCurrent ? "step" : undefined}
+            >
+              <span className="docreq-step-marker" aria-hidden="true">
+                {isDone ? (
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
+                    <path
+                      d="M5 12.5l4.5 4.5L19 7.5"
+                      stroke="currentColor"
+                      strokeWidth="3"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                ) : (
+                  index + 1
+                )}
+              </span>
+              <span className="docreq-step-label">{step}</span>
+              <span className="docreq-sr-only">
+                {isDone ? " (done)" : isCurrent ? " (current)" : ""}
+              </span>
+            </li>
+          );
+        })}
+      </ol>
 
       {status === "Processing" && (
         <label className="docreq-actions-field">
@@ -237,21 +288,57 @@ const AdminActionsPanel = ({
         </p>
       )}
 
-      {status === "Approved" && (
-        <div className="docreq-actions-buttons">
-          <button
-            type="button"
-            className="docreq-approve-button"
-            onClick={() => applyStatus("Processing")}
-            disabled={isSaving}
-          >
-            Mark as Processing
-          </button>
-          {canReview && (
+      {nextAction && confirmReject && (
+        <div className="docreq-reject-confirm" role="alertdialog" aria-label="Confirm rejection">
+          <p>
+            <strong>Reject this request?</strong> The resident will see it as
+            rejected and no further actions will be available.
+          </p>
+          <div className="docreq-actions-buttons">
+            <button
+              type="button"
+              className="docreq-secondary-button"
+              onClick={() => setConfirmReject(false)}
+              disabled={isSaving}
+            >
+              Cancel
+            </button>
             <button
               type="button"
               className="docreq-reject-button"
-              onClick={() => applyStatus("Rejected")}
+              onClick={confirmRejectRequest}
+              disabled={isSaving}
+            >
+              {isSaving ? "Rejecting…" : "Yes, reject"}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {nextAction && !confirmReject && (
+        <div className="docreq-actions-buttons docreq-actions-buttons--main">
+          <button
+            type="button"
+            className="docreq-approve-button"
+            onClick={nextAction.onClick}
+            disabled={isSaving}
+          >
+            {nextAction.label}
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path
+                d="M5 12h14M13 6l6 6-6 6"
+                stroke="currentColor"
+                strokeWidth="2.2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+          </button>
+          {canReview && nextAction.canReject && (
+            <button
+              type="button"
+              className="docreq-reject-outline-button"
+              onClick={requestReject}
               disabled={isSaving}
             >
               Reject
@@ -260,45 +347,13 @@ const AdminActionsPanel = ({
         </div>
       )}
 
-      {status === "Processing" && (
-        <div className="docreq-actions-buttons">
-          <button
-            type="button"
-            className="docreq-approve-button"
-            onClick={markReadyForPickup}
-            disabled={isSaving}
-          >
-            Mark as Ready for Pickup
-          </button>
-          {canReview && (
-            <button
-              type="button"
-              className="docreq-reject-button"
-              onClick={() => applyStatus("Rejected")}
-              disabled={isSaving}
-            >
-              Reject
-            </button>
-          )}
-        </div>
-      )}
-
-      {status === "Ready for Pickup" && (
-        <div className="docreq-actions-buttons">
-          <button
-            type="button"
-            className="docreq-approve-button"
-            onClick={() => applyStatus("Completed")}
-            disabled={isSaving}
-          >
-            Mark as Completed
-          </button>
-        </div>
-      )}
-
-      {(status === "Completed" || status === "Rejected") && (
-        <p className="docreq-actions-note">
-          {status === "Completed"
+      {(isCompleted || isRejected) && (
+        <p
+          className={`docreq-actions-note docreq-actions-note--${
+            isCompleted ? "completed" : "rejected"
+          }`}
+        >
+          {isCompleted
             ? "This request has been completed. No further actions are available."
             : "This request was rejected. No further actions are available."}
         </p>

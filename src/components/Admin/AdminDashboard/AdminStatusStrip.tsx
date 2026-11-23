@@ -12,10 +12,8 @@ import processingIcon from "../../../assets/icons/clock.png";
 type AdminStatusStripProps = {
   /** Latest requests (from GET /api/admin/dashboard); counts come from these rows. */
   requests: AdminRecentRequest[];
-  /** Active status filter shared with the Recent Requests list. */
-  activeFilter: AdminStatusFilter;
-  /** Applies (or clears, via the active chip) the filter on the request list. */
-  onFilterChange: (filter: AdminStatusFilter) => void;
+  /** Opens the Recent Requests modal on the chosen status. */
+  onOpenStatus: (filter: AdminStatusFilter) => void;
 };
 
 /** Icon per filter chip, matching the stat-card icons for the same statuses. */
@@ -27,14 +25,10 @@ const FILTER_ICONS: Record<AdminStatusFilter, string> = {
 };
 
 /**
- * Compact status summary for the mobile dashboard. Each chip filters the
- * Recent Requests list (tap again to clear); counts come from the loaded rows.
+ * Compact status summary for the dashboard. Each chip opens the Recent
+ * Requests modal on that status; counts come from the loaded rows.
  */
-const AdminStatusStrip = ({
-  requests,
-  activeFilter,
-  onFilterChange,
-}: AdminStatusStripProps) => {
+const AdminStatusStrip = ({ requests, onOpenStatus }: AdminStatusStripProps) => {
   if (requests.length === 0) {
     return null;
   }
@@ -46,27 +40,21 @@ const AdminStatusStrip = ({
 
   return (
     <section className="admin-status-strip" aria-label="Request status summary">
-      {ADMIN_STATUS_FILTER_OPTIONS.map((option) => {
-        const isActive = activeFilter === option.key;
-
-        return (
-          <button
-            key={option.key}
-            type="button"
-            className={`admin-status-chip${isActive ? " is-active" : ""}`}
-            aria-pressed={isActive}
-            onClick={() =>
-              onFilterChange(isActive ? "all" : option.key)
-            }
-          >
-            <span className="admin-status-chip-icon" aria-hidden="true">
-              <img src={FILTER_ICONS[option.key]} alt="" />
-            </span>
-            <span className="admin-status-chip-label">{option.label}</span>
-            <span className="admin-status-chip-count">{countFor(option.key)}</span>
-          </button>
-        );
-      })}
+      {ADMIN_STATUS_FILTER_OPTIONS.map((option) => (
+        <button
+          key={option.key}
+          type="button"
+          className="admin-status-chip"
+          aria-haspopup="dialog"
+          onClick={() => onOpenStatus(option.key)}
+        >
+          <span className="admin-status-chip-icon" aria-hidden="true">
+            <img src={FILTER_ICONS[option.key]} alt="" />
+          </span>
+          <span className="admin-status-chip-label">{option.label}</span>
+          <span className="admin-status-chip-count">{countFor(option.key)}</span>
+        </button>
+      ))}
     </section>
   );
 };

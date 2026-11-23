@@ -9,6 +9,10 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import type { AdminRequestHistoryEntry } from "../../Types/Admin/AdminRequestHistoryType";
+import {
+  getOfficialDocumentTemplate,
+  previewOfficialDocument,
+} from "./OfficialDocuments";
 
 export type DocumentManagementFiltersState = {
   search: string;
@@ -241,6 +245,12 @@ const openPrintWindow = (html: string): void => {
 };
 
 export function previewDocumentTemplate(templateName: string): void {
+  const officialTemplate = getOfficialDocumentTemplate(templateName);
+  if (officialTemplate) {
+    previewOfficialDocument(officialTemplate);
+    return;
+  }
+
   openPrintWindow(
     buildDocumentHtml(
       templateName,
@@ -264,7 +274,7 @@ const getIssuanceRecordFields = (
 const getIssuanceRecordIntro = (record: AdminRequestHistoryEntry): string =>
   `The Barangay Office of Lagab hereby issues this ${record.document} to the resident named below.`;
 
-const ensureIssuanceRecordPrintable = (
+export const ensureIssuanceRecordPrintable = (
   record: AdminRequestHistoryEntry,
 ): boolean => {
   if (isIssuanceRecordPrintable(record.status)) return true;

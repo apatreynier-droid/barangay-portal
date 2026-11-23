@@ -20,7 +20,6 @@ import {
   REQUEST_HISTORY_STATUS_OPTIONS,
   filterAdminRequestHistory,
   formatHistoryDateTime,
-  getRequestDisplayId,
   getRequestHistoryStatusMeta,
   getUniqueHistoryDocuments,
 } from "../../../Utils/Admin/AdminRequestHistoryLogic";
@@ -267,7 +266,6 @@ const AdminRequestHistory = ({
               <thead>
                 <tr>
                   <th scope="col">Request ID</th>
-                  <th scope="col">Reference No.</th>
                   <th scope="col">Resident</th>
                   <th scope="col">Document Type</th>
                   <th scope="col">Submitted</th>
@@ -278,7 +276,7 @@ const AdminRequestHistory = ({
               <tbody>
                 {filteredRequests.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="reqhist-empty">
+                    <td colSpan={6} className="reqhist-empty">
                       No requests match the selected filters.
                     </td>
                   </tr>
@@ -291,9 +289,6 @@ const AdminRequestHistory = ({
                     return (
                       <tr key={request.id}>
                         <td className="reqhist-request-id">
-                          {getRequestDisplayId(request.id)}
-                        </td>
-                        <td className="reqhist-reference">
                           {request.request_number}
                         </td>
                         <td className="reqhist-resident">

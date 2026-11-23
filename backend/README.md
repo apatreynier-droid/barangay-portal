@@ -113,6 +113,22 @@ Admin Actions → Pickup Schedule) needs migration `014`: one nullable
 .\.venv\Scripts\python.exe scripts\test_pickup_schedule.py
 ```
 
+Migration `015` adds three more requestable document types: Business Permit
+(fee 100.00), Certificate of Indigency (free) and Travel Pass (fee 100.00). Apply
+it once (idempotent; existing names are skipped):
+
+```powershell
+.\.venv\Scripts\python.exe scripts\apply_more_document_types_migration.py
+```
+
+Migration `016` sets every document type's fee to 100.00 except Certificate of
+Indigency, which stays free, and makes 100.00 the default for new types. Safe to
+run more than once:
+
+```powershell
+.\.venv\Scripts\python.exe scripts\apply_document_fee_standardization_migration.py
+```
+
 AI counts are unverified and per photo. Only an administrator confirms unique
 defects (`verified_defect_count`) and marks another photo of the same defect as a
 duplicate (`duplicate_of_report_id`), which keeps the two totals separate.

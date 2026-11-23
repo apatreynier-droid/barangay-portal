@@ -15,6 +15,7 @@ import AdminSidebar from "../../../components/Admin/AdminDashboard/AdminSidebar"
 import AdminTopbar from "../../../components/Admin/AdminDashboard/AdminTopbar";
 import useResponsiveSidebar from "../../../Utils/Shared/useResponsiveSidebar";
 import {
+  ensureIssuanceRecordPrintable,
   getDocumentTemplateMeta,
   getIssuanceStatusMeta,
   previewDocumentTemplate,
@@ -22,6 +23,8 @@ import {
   printIssuanceRecord,
   saveIssuanceRecordAsPdf,
 } from "../../../Utils/Admin/AdminDocumentManagementLogic";
+import { getOfficialDocumentTemplate } from "../../../Utils/Admin/OfficialDocuments";
+import OfficialDocumentDialog from "../../../components/Admin/AdminDocumentManagement/OfficialDocumentDialog";
 
 type AdminDocumentManagementProps = {
   user: AuthUser;
@@ -56,6 +59,8 @@ const AdminDocumentManagement = ({
   const [records, setRecords] = useState<AdminRequestHistoryEntry[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
+  const [officialDocumentRecord, setOfficialDocumentRecord] =
+    useState<AdminRequestHistoryEntry | null>(null);
   const [sidebarStats, setSidebarStats] = useState({
     pending: 0,
     approved: 0,
@@ -111,6 +116,34 @@ const AdminDocumentManagement = ({
   }, []);
 
   const fullName = getPortalProfileName(user);
+
+  // Documents with an official layout (Business Permit, Certificate of
+  // Residency, ...) open a details dialog so the admin can check what is
+  // printed; other documents use the generic printout.
+  const officialDocumentTemplate = officialDocumentRecord
+    ? getOfficialDocumentTemplate(officialDocumentRecord.document)
+    : null;
+
+  const handlePrint = (record: AdminRequestHistoryEntry) => {
+    if (getOfficialDocumentTemplate(record.document)) {
+      if (ensureIssuanceRecordPrintable(record)) setOfficialDocumentRecord(record);
+      return;
+    }
+    printIssuanceRecord(record);
+  };
+
+  const handleSavePdf = (record: AdminRequestHistoryEntry) => {
+    if (getOfficialDocumentTemplate(record.document)) {
+      if (ensureIssuanceRecordPrintable(record)) setOfficialDocumentRecord(record);
+      return;
+    }
+    void saveIssuanceRecordAsPdf(record);
+  };
+
+  const closeOfficialDocumentDialog = useCallback(
+    () => setOfficialDocumentRecord(null),
+    [],
+  );
 
   const { isDrawerOpen, closeDrawer, toggleDrawer } = useResponsiveSidebar();
 
@@ -271,7 +304,7 @@ const AdminDocumentManagement = ({
                               <button
                                 type="button"
                                 className="docmgmt-action-button docmgmt-print"
-                                onClick={() => printIssuanceRecord(record)}
+                                onClick={() => handlePrint(record)}
                               >
                                 <Printer
                                   size={14}
@@ -283,7 +316,7 @@ const AdminDocumentManagement = ({
                               <button
                                 type="button"
                                 className="docmgmt-action-button docmgmt-pdf"
-                                onClick={() => void saveIssuanceRecordAsPdf(record)}
+                                onClick={() => handleSavePdf(record)}
                               >
                                 <FileDown
                                   size={14}
@@ -308,6 +341,15 @@ const AdminDocumentManagement = ({
           </div>
         )}
       </main>
+
+      {officialDocumentRecord && officialDocumentTemplate && (
+        <OfficialDocumentDialog
+          key={officialDocumentRecord.id}
+          template={officialDocumentTemplate}
+          record={officialDocumentRecord}
+          onClose={closeOfficialDocumentDialog}
+        />
+      )}
     </div>
   );
 };

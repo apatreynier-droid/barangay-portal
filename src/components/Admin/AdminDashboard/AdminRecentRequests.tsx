@@ -1,24 +1,17 @@
-import { useMemo } from "react";
 import type { AdminRecentRequest } from "../../../Types/Admin/AdminDashboardType";
 import {
   formatRelativeTime,
   formatShortDate,
   getAdminStatusClass,
   getAdminStatusLabel,
-  matchesAdminStatusFilter,
-  type AdminStatusFilter,
 } from "../../../Utils/Admin/AdminDashboardLogic";
 
 type AdminRecentRequestsProps = {
   requests: AdminRecentRequest[];
-  /** Active status filter from the dashboard's status strip. */
-  statusFilter: AdminStatusFilter;
   /** Opens the full Document Requests page. */
   onViewAll: () => void;
   /** Opens one request's details (deep-linked via the Document Requests page). */
   onOpenRequest: (requestNumber: string) => void;
-  /** Clears the status strip filter (used by the filtered empty state). */
-  onClearFilter: () => void;
 };
 
 /**
@@ -27,21 +20,9 @@ type AdminRecentRequestsProps = {
  */
 const AdminRecentRequests = ({
   requests,
-  statusFilter,
   onViewAll,
   onOpenRequest,
-  onClearFilter,
 }: AdminRecentRequestsProps) => {
-  const visibleRequests = useMemo(
-    () =>
-      requests.filter((request) =>
-        matchesAdminStatusFilter(request.status, statusFilter),
-      ),
-    [requests, statusFilter],
-  );
-
-  const filterLabel = getAdminStatusLabel(statusFilter);
-
   return (
     <section className="admin-panel admin-recent-requests">
       <div className="admin-panel-header">
@@ -64,7 +45,7 @@ const AdminRecentRequests = ({
         <>
           {/* Mobile: readable request cards replace the desktop table. */}
           <ul className="admin-request-cards">
-            {visibleRequests.map((request) => (
+            {requests.map((request) => (
               <li key={request.request_number}>
                 <button
                   type="button"
@@ -115,7 +96,7 @@ const AdminRecentRequests = ({
               </thead>
 
               <tbody>
-                {visibleRequests.map((request) => (
+                {requests.map((request) => (
                   <tr key={request.request_number}>
                     <td>
                       <button
@@ -144,21 +125,6 @@ const AdminRecentRequests = ({
               </tbody>
             </table>
           </div>
-
-          {visibleRequests.length === 0 && (
-            <div className="admin-filter-empty">
-              <p className="admin-empty-note">
-                No recent requests with the “{filterLabel}” status.
-              </p>
-              <button
-                type="button"
-                className="admin-panel-link"
-                onClick={onClearFilter}
-              >
-                Show all requests
-              </button>
-            </div>
-          )}
         </>
       )}
 

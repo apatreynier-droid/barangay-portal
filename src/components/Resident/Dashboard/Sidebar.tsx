@@ -98,6 +98,27 @@ const TAB_LABELS: Record<(typeof NAV_ITEMS)[number]["key"], string> = {
   "pothole-detection": "Potholes",
 };
 
+// Each page renders its own sidebar, so the "Main" section's open/closed
+// choice is remembered here to survive navigation. Storage can be blocked
+// (private mode), in which case the section simply starts open.
+const MAIN_OPEN_KEY = "resident-sidebar-main-open";
+
+const readMainOpen = (): boolean => {
+  try {
+    return localStorage.getItem(MAIN_OPEN_KEY) !== "false";
+  } catch {
+    return true;
+  }
+};
+
+const saveMainOpen = (open: boolean) => {
+  try {
+    localStorage.setItem(MAIN_OPEN_KEY, String(open));
+  } catch {
+    // Not remembered; the section still toggles for this page.
+  }
+};
+
 // Dropdown under "My Requests".
 const REQUEST_FILTERS: { key: RequestsTab; label: string; icon: LucideIcon }[] =
   [
@@ -136,6 +157,14 @@ const Sidebar = ({
   const isRequestsPage = activePage === "my-requests";
   const [isRequestsOpen, setIsRequestsOpen] = useState(isRequestsPage);
   const [currentTab, setCurrentTab] = useState<RequestsTab>(readRequestsTab);
+  const [isMainOpen, setIsMainOpen] = useState(readMainOpen);
+
+  const toggleMain = () => {
+    setIsMainOpen((open) => {
+      saveMainOpen(!open);
+      return !open;
+    });
+  };
 
   // Keep the highlighted dropdown item in sync with the page's tabs.
   useEffect(() => subscribeRequestsTab(setCurrentTab), []);
@@ -185,84 +214,107 @@ const Sidebar = ({
         </div>
 
         <nav className="sidebar-nav">
-          {NAV_ITEMS.map((item) => {
-            const handler = handlers[item.handlerKey];
-            const isActive = activePage === item.key;
-            const Icon = item.icon;
+          <button
+            type="button"
+            className="nav-section-toggle"
+            onClick={toggleMain}
+            aria-expanded={isMainOpen}
+            aria-controls="sidebar-main-menu"
+          >
+            Main
+            <ChevronDown
+              className="nav-chevron"
+              size={15}
+              strokeWidth={2.2}
+              aria-hidden="true"
+            />
+          </button>
 
-            if (item.key === "my-requests") {
-              return (
-                <div className="nav-group" key={item.key}>
+          <div
+            id="sidebar-main-menu"
+            className={`nav-section${isMainOpen ? " is-open" : ""}`}
+          >
+            <div className="nav-section-inner">
+              {NAV_ITEMS.map((item) => {
+                const handler = handlers[item.handlerKey];
+                const isActive = activePage === item.key;
+                const Icon = item.icon;
+
+                if (item.key === "my-requests") {
+                  return (
+                    <div className="nav-group" key={item.key}>
+                      <button
+                        type="button"
+                        className={`nav-item nav-button nav-group-toggle ${
+                          isActive ? "active" : ""
+                        }`}
+                        onClick={handleRequestsToggle}
+                        disabled={!handler}
+                        aria-expanded={isRequestsOpen}
+                        aria-controls="sidebar-requests-menu"
+                      >
+                        <span className="nav-icon">
+                          <Icon size={19} strokeWidth={1.9} aria-hidden="true" />
+                        </span>
+                        {item.label}
+                        <ChevronDown
+                          className="nav-chevron"
+                          size={16}
+                          strokeWidth={2}
+                          aria-hidden="true"
+                        />
+                      </button>
+
+                      <div
+                        id="sidebar-requests-menu"
+                        className={`nav-submenu${isRequestsOpen ? " is-open" : ""}`}
+                      >
+                        <div className="nav-submenu-inner">
+                          {REQUEST_FILTERS.map((filter) => {
+                            const FilterIcon = filter.icon;
+                            const isCurrent =
+                              isRequestsPage && currentTab === filter.key;
+
+                            return (
+                              <button
+                                key={filter.key}
+                                type="button"
+                                className={`nav-subitem${isCurrent ? " active" : ""}`}
+                                onClick={() => handleRequestsFilter(filter.key)}
+                                aria-current={isCurrent ? "true" : undefined}
+                              >
+                                <FilterIcon
+                                  size={16}
+                                  strokeWidth={1.9}
+                                  aria-hidden="true"
+                                />
+                                {filter.label}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                }
+
+                return (
                   <button
+                    key={item.key}
                     type="button"
-                    className={`nav-item nav-button nav-group-toggle ${
-                      isActive ? "active" : ""
-                    }`}
-                    onClick={handleRequestsToggle}
-                    disabled={!handler}
-                    aria-expanded={isRequestsOpen}
-                    aria-controls="sidebar-requests-menu"
+                    className={`nav-item nav-button ${isActive ? "active" : ""}`}
+                    onClick={handler ? closeThen(handler) : undefined}
+                    disabled={isActive || !handler}
                   >
                     <span className="nav-icon">
                       <Icon size={19} strokeWidth={1.9} aria-hidden="true" />
                     </span>
                     {item.label}
-                    <ChevronDown
-                      className="nav-chevron"
-                      size={16}
-                      strokeWidth={2}
-                      aria-hidden="true"
-                    />
                   </button>
-
-                  <div
-                    id="sidebar-requests-menu"
-                    className={`nav-submenu${isRequestsOpen ? " is-open" : ""}`}
-                  >
-                    <div className="nav-submenu-inner">
-                      {REQUEST_FILTERS.map((filter) => {
-                        const FilterIcon = filter.icon;
-                        const isCurrent =
-                          isRequestsPage && currentTab === filter.key;
-
-                        return (
-                          <button
-                            key={filter.key}
-                            type="button"
-                            className={`nav-subitem${isCurrent ? " active" : ""}`}
-                            onClick={() => handleRequestsFilter(filter.key)}
-                            aria-current={isCurrent ? "true" : undefined}
-                          >
-                            <FilterIcon
-                              size={16}
-                              strokeWidth={1.9}
-                              aria-hidden="true"
-                            />
-                            {filter.label}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                </div>
-              );
-            }
-
-            return (
-              <button
-                key={item.key}
-                type="button"
-                className={`nav-item nav-button ${isActive ? "active" : ""}`}
-                onClick={handler ? closeThen(handler) : undefined}
-                disabled={isActive || !handler}
-              >
-                <span className="nav-icon">
-                  <Icon size={19} strokeWidth={1.9} aria-hidden="true" />
-                </span>
-                {item.label}
-              </button>
-            );
-          })}
+                );
+              })}
+            </div>
+          </div>
         </nav>
 
         <SidebarUserFooter

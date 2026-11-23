@@ -13,6 +13,7 @@ import AdminStatsGrid from "../../../components/Admin/AdminDashboard/AdminStatsG
 import MonthlyRequestsChart from "../../../components/Admin/AdminDashboard/MonthlyRequestsChart";
 import DocumentTypeDonut from "../../../components/Admin/AdminDashboard/DocumentTypeDonut";
 import AdminRecentRequests from "../../../components/Admin/AdminDashboard/AdminRecentRequests";
+import AdminRecentRequestsModal from "../../../components/Admin/AdminDashboard/AdminRecentRequestsModal";
 import RecentRegistrations from "../../../components/Admin/AdminDashboard/RecentRegistrations";
 import AdminNotificationsCard from "../../../components/Admin/AdminDashboard/AdminNotificationsCard";
 import RequestStatusBreakdown from "../../../components/Admin/AdminDashboard/RequestStatusBreakdown";
@@ -62,8 +63,8 @@ const AdminDashboard = ({
   const [data, setData] = useState<AdminDashboardData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
-  /** Status-strip filter shared by the strip and the Recent Requests list. */
-  const [statusFilter, setStatusFilter] = useState<AdminStatusFilter>("all");
+  /** Status shown in the Recent Requests modal; null while it is closed. */
+  const [modalFilter, setModalFilter] = useState<AdminStatusFilter | null>(null);
 
   const loadDashboard = useCallback(async () => {
     setIsLoading(true);
@@ -159,16 +160,24 @@ const AdminDashboard = ({
             <div className="admin-dashboard-layout">
               <AdminStatusStrip
                 requests={data.recent_requests}
-                activeFilter={statusFilter}
-                onFilterChange={setStatusFilter}
+                onOpenStatus={setModalFilter}
               />
+
+              {modalFilter && (
+                <AdminRecentRequestsModal
+                  requests={data.recent_requests}
+                  filter={modalFilter}
+                  onFilterChange={setModalFilter}
+                  onClose={() => setModalFilter(null)}
+                  onOpenRequest={onOpenRequest}
+                  onViewAll={onDocumentRequests}
+                />
+              )}
 
               <AdminStatsGrid stats={data.stats} group="highlights" />
 
               <AdminRecentRequests
                 requests={data.recent_requests}
-                statusFilter={statusFilter}
-                onClearFilter={() => setStatusFilter("all")}
                 onViewAll={onDocumentRequests}
                 onOpenRequest={onOpenRequest}
               />

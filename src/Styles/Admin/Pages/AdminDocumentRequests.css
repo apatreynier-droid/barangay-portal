@@ -119,66 +119,125 @@
   flex-direction: column;
 }
 
-.docreq-actions-label {
-  margin: 0 0 8px;
-  color: #94a3b8;
-  font-size: 11px;
-}
-
-.docreq-status-flow {
+.docreq-actions-header {
   display: flex;
-  flex-wrap: wrap;
   align-items: center;
-  gap: 6px;
-  margin-bottom: 18px;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 20px;
 }
 
-.docreq-flow-step-wrapper {
+.docreq-actions-card .docreq-actions-header h3 {
+  margin: 0;
+}
+
+.docreq-actions-progress {
+  flex-shrink: 0;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: #f1f5f9;
+  color: #475569;
+  font-size: 11.5px;
+  font-weight: 600;
+}
+
+/* Progress stepper: numbered markers joined by a track. Each step draws the
+   track segment to its left, so the first step has none. */
+.docreq-stepper {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  margin: 0 0 22px;
+  padding: 0;
+  list-style: none;
+}
+
+.docreq-step {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  text-align: center;
+}
+
+.docreq-step + .docreq-step::before {
+  content: "";
+  position: absolute;
+  top: 13px;
+  right: calc(50% + 18px);
+  left: calc(-50% + 18px);
+  height: 2px;
+  border-radius: 2px;
+  background: #e2e8f0;
+}
+
+.docreq-step.is-done::before,
+.docreq-step.is-current::before {
+  background: #2563eb;
+}
+
+.docreq-step-marker {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-}
-
-.docreq-flow-arrow {
-  color: #cbd5e1;
-  font-size: 12px;
-}
-
-.docreq-flow-step {
-  padding: 4px 12px;
-  border: 1px solid #e2e8f0;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: 2px solid #e2e8f0;
   border-radius: 999px;
-  background: #f8fafc;
+  background: #ffffff;
   color: #94a3b8;
-  font-size: 11px;
-  font-weight: 600;
-  font-family: inherit;
-  cursor: pointer;
-  transition:
-    background 0.2s ease,
-    color 0.2s ease;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1;
 }
 
-.docreq-flow-step:hover:not(:disabled) {
-  background: #eff6ff;
+.docreq-step.is-done .docreq-step-marker {
+  border-color: #2563eb;
+  background: #2563eb;
+  color: #ffffff;
+}
+
+.docreq-step.is-current .docreq-step-marker {
+  border-color: #2563eb;
+  background: #ffffff;
   color: #2563eb;
-  border-color: #bfdbfe;
+  box-shadow: 0 0 0 4px #dbeafe;
 }
 
-.docreq-flow-step.current {
-  background: #fef3c7;
-  color: #92400e;
-  border-color: #fde68a;
-  cursor: default;
+.docreq-step-label {
+  max-width: 100%;
+  color: #94a3b8;
+  font-size: 11.5px;
+  font-weight: 600;
+  line-height: 1.3;
 }
 
-.docreq-flow-step.done {
-  background: #ecfdf5;
-  color: #047857;
+.docreq-step.is-done .docreq-step-label {
+  color: #334155;
 }
 
-.docreq-flow-step:disabled {
-  cursor: default;
+.docreq-step.is-current .docreq-step-label {
+  color: #1d4ed8;
+  font-weight: 700;
+}
+
+/* Rejected: the flow stopped, so the whole stepper recedes. */
+.docreq-stepper.is-rejected {
+  opacity: 0.45;
+  filter: grayscale(1);
+}
+
+.docreq-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
 }
 
 .docreq-actions-field {
@@ -284,8 +343,21 @@
   margin-top: auto;
 }
 
+/* Main row: the forward action on the left, the quieter Reject on the right. */
+.docreq-actions-buttons--main {
+  flex-wrap: wrap;
+  align-items: center;
+  padding-top: 18px;
+  border-top: 1px solid #f1f5f9;
+}
+
 .docreq-approve-button {
-  padding: 9px 26px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 40px;
+  padding: 9px 20px;
   border: 0;
   border-radius: 9px;
   background: #2563eb;
@@ -294,11 +366,104 @@
   font-weight: 700;
   font-family: inherit;
   cursor: pointer;
-  transition: background 0.2s ease;
+  box-shadow: 0 1px 2px rgba(37, 99, 235, 0.25);
+  transition:
+    background 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.docreq-approve-button svg {
+  flex-shrink: 0;
+  transition: transform 0.18s ease;
 }
 
 .docreq-approve-button:hover:not(:disabled) {
   background: #1d4ed8;
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
+}
+
+.docreq-approve-button:hover:not(:disabled) svg {
+  transform: translateX(2px);
+}
+
+/* Reject sits back as an outline button so it never competes with the
+   forward action; the solid red is kept for the confirmation step. */
+.docreq-reject-outline-button {
+  min-height: 40px;
+  margin-left: auto;
+  padding: 9px 18px;
+  border: 1px solid #fecaca;
+  border-radius: 9px;
+  background: #ffffff;
+  color: #dc2626;
+  font-size: 13px;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease;
+}
+
+.docreq-reject-outline-button:hover:not(:disabled) {
+  border-color: #fca5a5;
+  background: #fef2f2;
+}
+
+.docreq-reject-outline-button:focus-visible,
+.docreq-secondary-button:focus-visible {
+  outline: 2px solid #b91c1c;
+  outline-offset: 2px;
+}
+
+.docreq-reject-outline-button:disabled,
+.docreq-secondary-button:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.docreq-secondary-button {
+  min-height: 40px;
+  padding: 9px 18px;
+  border: 1px solid #e2e8f0;
+  border-radius: 9px;
+  background: #ffffff;
+  color: #334155;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.docreq-secondary-button:hover:not(:disabled) {
+  background: #f8fafc;
+}
+
+.docreq-reject-confirm {
+  margin-top: auto;
+  padding: 14px 16px;
+  border: 1px solid #fecaca;
+  border-radius: 12px;
+  background: #fef2f2;
+}
+
+.docreq-reject-confirm p {
+  margin: 0 0 12px;
+  color: #7f1d1d;
+  font-size: 12.5px;
+  line-height: 1.5;
+}
+
+.docreq-reject-confirm .docreq-actions-buttons {
+  justify-content: flex-end;
+  margin-top: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .docreq-approve-button:hover:not(:disabled) svg {
+    transform: none;
+  }
 }
 
 .docreq-reject-button {
@@ -389,6 +554,18 @@
   font-size: 12px;
   font-weight: 600;
   margin-top: auto;
+}
+
+.docreq-actions-note--completed {
+  border-color: #bbf7d0;
+  background: #f0fdf4;
+  color: #166534;
+}
+
+.docreq-actions-note--rejected {
+  border-color: #fecaca;
+  background: #fef2f2;
+  color: #991b1b;
 }
 
 /* --------------------------- Resident attachment ---------------------------- */
@@ -761,6 +938,38 @@ button.docreq-attachment-thumb:focus-visible .docreq-attachment-thumb-overlay {
   .docreq-pickup-part--date,
   .docreq-pickup-part--time {
     flex-basis: 100%;
+  }
+
+  /* Five labels don't fit side by side on a phone: stack the stepper
+     vertically, with the track running down the left of the markers. */
+  .docreq-stepper {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+
+  .docreq-step {
+    flex-direction: row;
+    gap: 12px;
+    text-align: left;
+  }
+
+  .docreq-step + .docreq-step::before {
+    top: -14px;
+    right: auto;
+    left: 13px;
+    width: 2px;
+    height: 14px;
+  }
+
+  .docreq-step-label {
+    font-size: 12.5px;
+  }
+
+  /* Full-width actions; Reject drops below the main action. */
+  .docreq-approve-button,
+  .docreq-reject-outline-button {
+    flex: 1 1 100%;
+    margin-left: 0;
   }
 
   /* Comfortable tap target on phones. */
