@@ -18,6 +18,10 @@ class Settings:
     # No fallback: the password lives only in backend/.env (never in code).
     mysql_password: str = os.getenv("MYSQL_PASSWORD", "")
     mysql_database: str = os.getenv("MYSQL_DATABASE", "barangay_portal")
+    # TLS for hosted MySQL such as TiDB Cloud (set MYSQL_SSL=true). Leave
+    # MYSQL_SSL_CA empty to use the system/certifi CA bundle.
+    mysql_ssl: bool = os.getenv("MYSQL_SSL", "false").strip().lower() in {"1", "true", "yes"}
+    mysql_ssl_ca: str = os.getenv("MYSQL_SSL_CA", "").strip()
     access_token_days: int = int(os.getenv("ACCESS_TOKEN_DAYS", "7"))
     # -- Login rate limiting (in-memory, see app/rate_limit.py) ------------
     # Max CONSECUTIVE failed login attempts before login is blocked.

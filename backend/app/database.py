@@ -17,6 +17,19 @@ def create_connection(include_database: bool = True) -> MySQLConnection:
         "password": settings.mysql_password,
         "autocommit": False,
     }
+    if settings.mysql_ssl:
+        ca = settings.mysql_ssl_ca
+        if not ca:
+            try:
+                import certifi
+
+                ca = certifi.where()
+            except ImportError:
+                ca = ""
+        if ca:
+            config["ssl_ca"] = ca
+        config["ssl_disabled"] = False
+        config["tls_versions"] = ["TLSv1.2", "TLSv1.3"]
     if include_database:
         config["database"] = settings.mysql_database
 
