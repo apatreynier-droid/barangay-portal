@@ -9,7 +9,7 @@ user and password. From your computer:
 
     cd backend
     MYSQL_HOST=... MYSQL_PORT=4000 MYSQL_USER=... MYSQL_PASSWORD=... MYSQL_SSL=true \
-      python scripts/initialize_database.py
+      SCHEMA_FILE=scripts/tidb_schema.sql python scripts/initialize_database.py
     MYSQL_DATABASE=barangay_portal ... ADMIN_EMAIL=you@example.com ADMIN_PASSWORD='long-password' \
       python scripts/create_admin.py
 
