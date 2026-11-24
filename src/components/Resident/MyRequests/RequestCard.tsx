@@ -36,7 +36,7 @@ const STATUS_PROGRESS: Partial<Record<Request["status"], number>> = {
   Pending: 25,
   Approved: 42,
   Processing: 60,
-  "Ready for Pickup": 85,
+  "Ready for Pickup": 100,
   Completed: 100,
   Rejected: 0,
 };
