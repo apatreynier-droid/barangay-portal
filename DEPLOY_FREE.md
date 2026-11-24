@@ -25,3 +25,8 @@ Import the repo. Set env var VITE_API_BASE_URL to the Render URL
 
 Pothole AI detection is off online (torch is too large for the free tier);
 reports are still saved with detection "not_run".
+
+Performance: create the Render service in the same region as the TiDB cluster
+(Singapore for ap-southeast-1). A region cannot be changed afterwards, so it must be
+chosen when the service is created. Every request makes several database round trips,
+so a far-away region (e.g. Oregon) makes pages slow.
