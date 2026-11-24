@@ -9,5 +9,9 @@ python-multipart>=0.0.9,<1.0
 pandas>=2.2,<4.0
 # Reading pothole photos: rotation, GPS metadata and the annotated copy.
 pillow>=11.0,<14.0
-# Pothole detection itself needs requirements-ml.txt (large; see that file).
+# Pothole detection runs the exported ONNX model (app/ml/weights/best.onnx) with
+# ONNX Runtime + OpenCV: small enough for 512 MB hosts, no PyTorch needed.
+# requirements-ml.txt (PyTorch) is only for training or exporting a new model.
+onnxruntime>=1.20,<2.0
+opencv-python-headless>=4.10,<5.0
 cloudinary>=1.40,<2.0
