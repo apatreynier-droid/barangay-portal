@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import os
+import ssl
 from collections.abc import Generator
 
 import mysql.connector
@@ -7,6 +9,16 @@ from fastapi import HTTPException, status
 from mysql.connector import MySQLConnection
 
 from .config import settings
+
+
+def _system_ca_bundle() -> str:
+    """Path of the operating system's CA bundle ('' when none is found)."""
+    candidates = [
+        ssl.get_default_verify_paths().cafile,
+        "/etc/ssl/certs/ca-certificates.crt",  # Debian/Ubuntu (Render)
+        "/etc/pki/tls/certs/ca-bundle.crt",  # Fedora/RHEL
+    ]
+    return next((path for path in candidates if path and os.path.isfile(path)), "")
 
 
 def create_connection(include_database: bool = True) -> MySQLConnection:
@@ -19,6 +31,12 @@ def create_connection(include_database: bool = True) -> MySQLConnection:
     }
     if include_database:
         config["database"] = settings.mysql_database
+    if settings.mysql_ssl or settings.mysql_ssl_ca:
+        config["ssl_disabled"] = False
+        config["ssl_verify_cert"] = True
+        ca_file = settings.mysql_ssl_ca or _system_ca_bundle()
+        if ca_file:
+            config["ssl_ca"] = ca_file
 
     connection = mysql.connector.connect(**config)
     # Store and exchange timestamps in UTC so every layer (database, API,

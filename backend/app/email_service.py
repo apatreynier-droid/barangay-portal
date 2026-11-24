@@ -10,8 +10,12 @@ callers can show a friendly message.
 
 from __future__ import annotations
 
+import json
 import logging
+import re
 import smtplib
+import urllib.error
+import urllib.request
 from email.message import EmailMessage
 from email.utils import formataddr
 
@@ -147,6 +151,60 @@ def build_message(
     return message
 
 
+def _send_via_brevo(
+    *,
+    to_email: str,
+    subject: str,
+    text_body: str,
+    html_body: str | None,
+) -> None:
+    """Send through Brevo's HTTPS API (used when SMTP ports are blocked).
+
+    Inline ``cid:`` icons cannot be attached through the API, so those image
+    tags are dropped; the text around them is unchanged.
+    """
+    payload: dict[str, object] = {
+        "sender": {
+            "name": settings.smtp_from_name,
+            "email": settings.smtp_from_address,
+        },
+        "to": [{"email": to_email}],
+        "subject": subject,
+        "textContent": text_body,
+    }
+    if html_body:
+        payload["htmlContent"] = re.sub(
+            r"<img\b[^>]*\bsrc=[\"']cid:[^>]*>", "", html_body, flags=re.I
+        )
+
+    request = urllib.request.Request(
+        "https://api.brevo.com/v3/smtp/email",
+        data=json.dumps(payload).encode("utf-8"),
+        headers={
+            "api-key": settings.brevo_api_key,
+            "content-type": "application/json",
+            "accept": "application/json",
+        },
+        method="POST",
+    )
+    try:
+        with urllib.request.urlopen(
+            request, timeout=settings.smtp_timeout_seconds
+        ):
+            pass
+    except (urllib.error.URLError, OSError) as error:
+        status_code = getattr(error, "code", "n/a")
+        logger.error(
+            "Brevo delivery to %s failed - %s (HTTP %s).",
+            mask_email(to_email),
+            type(error).__name__,
+            status_code,
+        )
+        raise EmailDeliveryError("Could not send the email.") from error
+
+    logger.info("Email sent to %s via Brevo (subject=%r).", mask_email(to_email), subject)
+
+
 def send_email(
     *,
     to_email: str,
@@ -163,6 +221,15 @@ def send_email(
     if not settings.smtp_configured:
         logger.error("SMTP is not configured; message %r was not sent.", subject)
         raise EmailDeliveryError("SMTP is not configured.")
+
+    if settings.brevo_api_key:
+        _send_via_brevo(
+            to_email=to_email,
+            subject=subject,
+            text_body=text_body,
+            html_body=html_body,
+        )
+        return
 
     message = build_message(
         to_email=to_email,
