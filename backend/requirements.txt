@@ -10,3 +10,4 @@ pandas>=2.2,<4.0
 # Reading pothole photos: rotation, GPS metadata and the annotated copy.
 pillow>=11.0,<14.0
 # Pothole detection itself needs requirements-ml.txt (large; see that file).
+cloudinary>=1.40,<2.0

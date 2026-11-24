@@ -18,6 +18,16 @@ class Settings:
     # No fallback: the password lives only in backend/.env (never in code).
     mysql_password: str = os.getenv("MYSQL_PASSWORD", "")
     mysql_database: str = os.getenv("MYSQL_DATABASE", "barangay_portal")
+    # Hosted MySQL (TiDB Cloud, Aiven, ...) requires an encrypted connection.
+    # MYSQL_SSL=true uses the system CA bundle; MYSQL_SSL_CA may point to a
+    # specific CA file instead.
+    mysql_ssl: bool = os.getenv("MYSQL_SSL", "").strip().lower() in {
+        "1",
+        "true",
+        "yes",
+        "on",
+    }
+    mysql_ssl_ca: str = os.getenv("MYSQL_SSL_CA", "").strip()
     access_token_days: int = int(os.getenv("ACCESS_TOKEN_DAYS", "7"))
     # -- Login rate limiting (in-memory, see app/rate_limit.py) ------------
     # Max CONSECUTIVE failed login attempts before login is blocked.
@@ -87,6 +97,10 @@ class Settings:
     )
     # Keep SMTP calls short so requests cannot hang on a dead server.
     smtp_timeout_seconds: int = int(os.getenv("SMTP_TIMEOUT_SECONDS", "15"))
+    # Optional HTTPS email API (Brevo). Hosts such as Render's free tier block
+    # outbound SMTP ports, so set BREVO_API_KEY there; SMTP is then not used.
+    # The sender address (SMTP_FROM_EMAIL) must be verified in Brevo.
+    brevo_api_key: str = os.getenv("BREVO_API_KEY", "").strip()
     # -- Resident registration (see app/registration_emails.py) --------------
     # Every registration sends an email, so cap them per client IP.
     registration_ip_max_requests: int = int(
@@ -104,6 +118,9 @@ class Settings:
         os.getenv("REGISTRATION_EMAIL_MAX_ATTEMPTS", "6")
     )
     # -- Document request attachments (see app/attachments.py) -------------
+    # With CLOUDINARY_URL set, images are stored privately in Cloudinary
+    # instead of on disk (hosts with an ephemeral disk, e.g. Render free).
+    cloudinary_url: str = os.getenv("CLOUDINARY_URL", "").strip()
     # Persistent folder for uploaded resident images. Never served statically:
     # files are streamed only through the authenticated attachment endpoints.
     upload_dir: Path = Path(
@@ -180,6 +197,8 @@ class Settings:
     @property
     def smtp_configured(self) -> bool:
         """True when every value needed to send mail is present."""
+        if self.brevo_api_key and self.smtp_from_address:
+            return True
         return bool(
             self.smtp_host
             and self.smtp_username

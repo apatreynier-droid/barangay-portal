@@ -19,6 +19,11 @@ def create_connection(include_database: bool = True) -> MySQLConnection:
     }
     if include_database:
         config["database"] = settings.mysql_database
+    if settings.mysql_ssl or settings.mysql_ssl_ca:
+        config["ssl_disabled"] = False
+        config["ssl_verify_cert"] = True
+        if settings.mysql_ssl_ca:
+            config["ssl_ca"] = settings.mysql_ssl_ca
 
     connection = mysql.connector.connect(**config)
     # Store and exchange timestamps in UTC so every layer (database, API,

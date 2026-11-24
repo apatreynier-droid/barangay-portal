@@ -1,0 +1,36 @@
+# Render Blueprint: free-tier API. Secrets marked sync:false are entered in the
+# Render dashboard (never committed). See DEPLOY_FREE.md.
+services:
+  - type: web
+    name: barangay-portal-api
+    runtime: python
+    plan: free
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT --proxy-headers --forwarded-allow-ips='*'
+    healthCheckPath: /docs
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.8
+      - key: MYSQL_HOST
+        sync: false
+      - key: MYSQL_PORT
+        value: "4000"
+      - key: MYSQL_USER
+        sync: false
+      - key: MYSQL_PASSWORD
+        sync: false
+      - key: MYSQL_DATABASE
+        value: barangay_portal
+      - key: MYSQL_SSL
+        value: "true"
+      - key: CLOUDINARY_URL
+        sync: false
+      - key: BREVO_API_KEY
+        sync: false
+      - key: SMTP_FROM_EMAIL
+        sync: false
+      - key: FRONTEND_URL
+        sync: false
+      - key: CORS_ORIGINS
+        sync: false
