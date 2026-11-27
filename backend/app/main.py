@@ -54,7 +54,7 @@ app.add_middleware(
 )
 
 
-# Resident pothole reports and their administration (see app/potholes.py).
+# Resident pothole reports and their administration (see app/potholes/).
 app.include_router(pothole_router)
 
 

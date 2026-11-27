@@ -117,7 +117,7 @@ class Settings:
     request_attachment_max_bytes: int = int(
         os.getenv("REQUEST_ATTACHMENT_MAX_BYTES", str(5 * 1024 * 1024))
     )
-    # -- Pothole report photos (see app/potholes.py) ------------------------
+    # -- Pothole report photos (see app/potholes/) ------------------------
     # Stored under ``upload_dir / pothole_reports``. Matches MAX_IMAGE_MB on the
     # Resident Pothole Detection page (phone camera photos are often 4-8 MB).
     pothole_photo_max_bytes: int = int(

@@ -783,7 +783,7 @@ class AdminReportsResponse(BaseModel):
 
 
 # --------------------------------------------------------------------------- #
-#  Pothole reports (see app/potholes.py, migration 012)                       #
+#  Pothole reports (see app/potholes/, migration 012)                       #
 # --------------------------------------------------------------------------- #
 
 PotholeStatus = Literal[
