@@ -12,14 +12,8 @@ if str(BACKEND_DIR) not in sys.path:
 from app.database import create_connection  # noqa: E402
 
 
-# The schema lives in the sibling frontend `src/` folder; resolve it relative
-# to BACKEND_DIR so the project can be located anywhere.
-SCHEMA_PATH = (
-    BACKEND_DIR.parent
-    / "src"
-    / "db"
-    / "barangay_portal.sql"
-)
+# Resolved relative to BACKEND_DIR so the project can be located anywhere.
+SCHEMA_PATH = BACKEND_DIR / "db" / "barangay_portal.sql"
 
 
 def is_comment_only(statement: str) -> bool:

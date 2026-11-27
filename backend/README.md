@@ -1,15 +1,16 @@
 # Barangay Portal API
 
 This FastAPI service connects the portal to MySQL using the existing schema at
-`../react-app/src/db/barangay_portal.sql`. The schema contains no sample data.
+[db/barangay_portal.sql](db/barangay_portal.sql). The schema contains no sample data.
 
 ## 1. Configure MySQL
 
 Use a MySQL administrator account to import the schema. This creates the
-`barangay_portal` database and all tables:
+`barangay_portal` database and all tables. Run this in Command Prompt from the
+`backend` folder (PowerShell does not support `<`):
 
-```powershell
-mysql -u root -p < ..\react-app\src\db\barangay_portal.sql
+```bat
+mysql -u root -p < db\barangay_portal.sql
 ```
 
 Then create an application user with a strong password and grant it access:
@@ -34,7 +35,7 @@ python -m pip install -r requirements.txt
 ## 3. Apply schema migrations
 
 If you created the database from an older version of
-`react-app/src/db/barangay_portal.sql`, apply the registration-fields migration
+`db/barangay_portal.sql`, apply the registration-fields migration
 (idempotent — safe to run more than once):
 
 ```powershell
