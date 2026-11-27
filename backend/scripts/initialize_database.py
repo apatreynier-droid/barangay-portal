@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 import sys
 from pathlib import Path
 
@@ -13,7 +14,13 @@ from app.database import create_connection  # noqa: E402
 
 
 # Resolved relative to BACKEND_DIR so the project can be located anywhere.
-SCHEMA_PATH = BACKEND_DIR / "db" / "barangay_portal.sql"
+# Hosted MySQL such as TiDB needs scripts/tidb_schema.sql instead (keys inline):
+#   SCHEMA_FILE=scripts/tidb_schema.sql python scripts/initialize_database.py
+SCHEMA_PATH = (
+    Path(os.environ["SCHEMA_FILE"]).resolve()
+    if os.getenv("SCHEMA_FILE")
+    else BACKEND_DIR / "db" / "barangay_portal.sql"
+)
 
 
 def is_comment_only(statement: str) -> bool:

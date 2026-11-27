@@ -13,7 +13,7 @@ from ..activity_logs import record_activity_log
 from ..attachments import (
     build_attachment_response,
     delete_stored_file,
-    resolve_stored_path,
+    read_stored_bytes,
 )
 from ..database import get_db
 from ..dependencies import ADMINISTRATOR_ROLES, get_current_admin_portal_user
@@ -368,12 +368,14 @@ def retry_pothole_detection(
             detail="Detection already completed for this report.",
         )
 
-    path = resolve_stored_path(str(report["stored_filename"]), POTHOLE_PHOTOS_SUBDIR)
-    if path is None:
+    photo_bytes = read_stored_bytes(
+        str(report["stored_filename"]), POTHOLE_PHOTOS_SUBDIR
+    )
+    if photo_bytes is None:
         raise HTTPException(status_code=404, detail="The photo of this report was not found.")
     try:
-        decoded_photo = decode_photo(path.read_bytes())
-    except (InvalidPhoto, OSError) as error:
+        decoded_photo = decode_photo(photo_bytes)
+    except InvalidPhoto as error:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail="The stored photo could not be read.",

@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import os
+import ssl
 from collections.abc import Generator
 
 import mysql.connector
@@ -7,6 +9,23 @@ from fastapi import HTTPException, status
 from mysql.connector import MySQLConnection
 
 from .config import settings
+
+
+def _default_ca_bundle() -> str:
+    """The operating system's CA bundle, else certifi's ('' when neither exists)."""
+    candidates = [
+        ssl.get_default_verify_paths().cafile,
+        "/etc/ssl/certs/ca-certificates.crt",  # Debian/Ubuntu (Render)
+        "/etc/pki/tls/certs/ca-bundle.crt",  # Fedora/RHEL
+    ]
+    found = next((path for path in candidates if path and os.path.isfile(path)), "")
+    if found:
+        return found
+    try:
+        import certifi  # Windows has no CA bundle file
+    except ImportError:
+        return ""
+    return certifi.where()
 
 
 def create_connection(include_database: bool = True) -> MySQLConnection:
@@ -17,21 +36,15 @@ def create_connection(include_database: bool = True) -> MySQLConnection:
         "password": settings.mysql_password,
         "autocommit": False,
     }
-    if settings.mysql_ssl:
-        ca = settings.mysql_ssl_ca
-        if not ca:
-            try:
-                import certifi
-
-                ca = certifi.where()
-            except ImportError:
-                ca = ""
-        if ca:
-            config["ssl_ca"] = ca
-        config["ssl_disabled"] = False
-        config["tls_versions"] = ["TLSv1.2", "TLSv1.3"]
     if include_database:
         config["database"] = settings.mysql_database
+    if settings.mysql_ssl or settings.mysql_ssl_ca:
+        config["ssl_disabled"] = False
+        config["ssl_verify_cert"] = True
+        config["tls_versions"] = ["TLSv1.2", "TLSv1.3"]
+        ca_file = settings.mysql_ssl_ca or _default_ca_bundle()
+        if ca_file:
+            config["ssl_ca"] = ca_file
 
     connection = mysql.connector.connect(**config)
     # Store and exchange timestamps in UTC so every layer (database, API,

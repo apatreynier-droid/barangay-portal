@@ -33,6 +33,8 @@ logger = logging.getLogger(__name__)
 #: Used only if neither the environment nor model_info.json sets a threshold.
 FALLBACK_THRESHOLD = 0.25
 INFERENCE_IMAGE_SIZE = 640
+#: Boxes overlapping more than this are merged (Ultralytics default).
+NMS_IOU = 0.7
 MAX_DETECTIONS = 100
 #: Largest photo accepted for decoding (megapixels); stops decompression bombs.
 MAX_MEGAPIXELS = 120
@@ -95,6 +97,7 @@ class PotholeDetector:
     def __init__(self, weights_path: Path) -> None:
         self.weights_path = weights_path
         self._model = None
+        self._backend = "ultralytics"
         self._threshold = FALLBACK_THRESHOLD
         self._model_name = weights_path.stem
         self._load_lock = threading.Lock()
@@ -117,12 +120,133 @@ class PotholeDetector:
             return {}
         return info if isinstance(info, dict) else {}
 
+    def _apply_model_info(self) -> None:
+        info = self._read_model_info()
+        configured = settings.pothole_confidence_threshold
+        threshold = configured if configured is not None else info.get("confidence_threshold")
+        self._threshold = float(threshold) if threshold is not None else FALLBACK_THRESHOLD
+        self._model_name = str(info.get("name") or self.weights_path.stem)[:100]
+
+    def _load_onnx(self, onnx_path: Path) -> bool:
+        """Load the exported model with ONNX Runtime (small; no PyTorch needed).
+
+        Returns False when onnxruntime is not installed, so the caller can fall
+        back to the PyTorch weights.
+        """
+        try:
+            import onnxruntime as ort
+        except ImportError:
+            return False
+
+        options = ort.SessionOptions()
+        options.intra_op_num_threads = max(1, settings.pothole_inference_threads)
+        # Smaller memory footprint: matters on 512 MB hosts.
+        options.enable_cpu_mem_arena = False
+        options.enable_mem_pattern = False
+        try:
+            session = ort.InferenceSession(
+                str(onnx_path), sess_options=options, providers=["CPUExecutionProvider"]
+            )
+        except Exception as error:  # noqa: BLE001 - corrupt or incompatible file
+            logger.exception("Could not load the ONNX pothole model")
+            raise DetectionUnavailable("The pothole model could not be loaded.") from error
+
+        self._apply_model_info()
+        self._backend = "onnx"
+        self._model = session
+        logger.info(
+            "Pothole model %s loaded with ONNX Runtime (confidence threshold %.2f)",
+            self._model_name,
+            self._threshold,
+        )
+        return True
+
+    def _detect_onnx(self, image: Image.Image) -> list[tuple[float, list[float]]]:
+        """Letterbox, run the network and decode boxes (same as Ultralytics)."""
+        import numpy as np
+
+        size = INFERENCE_IMAGE_SIZE
+        width, height = image.size
+        ratio = min(size / height, size / width)
+        new_width, new_height = round(width * ratio), round(height * ratio)
+        # OpenCV's INTER_LINEAR, exactly as Ultralytics letterboxes (Pillow's
+        # resize smooths while shrinking, which shifts the confidences).
+        import cv2
+
+        resized = cv2.resize(
+            np.asarray(image), (new_width, new_height), interpolation=cv2.INTER_LINEAR
+        )
+        # Like Ultralytics for PyTorch models: pad only to a multiple of 32
+        # (not to a full square), so the confidences match the .pt weights.
+        pad_w, pad_h = ((size - new_width) % 32) / 2, ((size - new_height) % 32) / 2
+        top, bottom = round(pad_h - 0.1), round(pad_h + 0.1)
+        left, right = round(pad_w - 0.1), round(pad_w + 0.1)
+
+        canvas = np.full(
+            (new_height + top + bottom, new_width + left + right, 3), 114, dtype=np.uint8
+        )
+        canvas[top : top + new_height, left : left + new_width] = resized
+        tensor = canvas.transpose(2, 0, 1)[None].astype(np.float32) / 255.0
+
+        session = self._model
+        output = session.run(None, {session.get_inputs()[0].name: tensor})[0]
+        rows = output[0]
+        if rows.ndim == 2 and rows.shape[1] == 6:
+            # End-to-end export: (detections, [x1, y1, x2, y2, score, class]);
+            # the network already removed duplicates, so no NMS is needed.
+            keep = rows[:, 4] > self._threshold
+            rows = rows[keep]
+            scores = rows[:, 4]
+            boxes = rows[:, :4].copy()
+            apply_nms = False
+        else:
+            predictions = rows.T  # (anchors, 4 + classes) from a raw export
+            scores = predictions[:, 4:].max(axis=1)
+            keep = scores > self._threshold
+            predictions, scores = predictions[keep], scores[keep]
+            cx, cy, w, h = (predictions[:, i] for i in range(4))
+            boxes = np.stack([cx - w / 2, cy - h / 2, cx + w / 2, cy + h / 2], axis=1)
+            apply_nms = True
+        if len(scores) == 0:
+            return []
+
+        boxes[:, [0, 2]] -= left
+        boxes[:, [1, 3]] -= top
+        boxes /= ratio
+        boxes[:, [0, 2]] = boxes[:, [0, 2]].clip(0, width)
+        boxes[:, [1, 3]] = boxes[:, [1, 3]].clip(0, height)
+
+        order = scores.argsort()[::-1]
+        if not apply_nms:
+            return [
+                (float(scores[i]), boxes[i].tolist()) for i in order[:MAX_DETECTIONS]
+            ]
+
+        selected: list[int] = []
+        areas = (boxes[:, 2] - boxes[:, 0]) * (boxes[:, 3] - boxes[:, 1])
+        while len(order) and len(selected) < MAX_DETECTIONS:
+            best = order[0]
+            selected.append(int(best))
+            rest = order[1:]
+            if not len(rest):
+                break
+            inter_w = np.minimum(boxes[best, 2], boxes[rest, 2]) - np.maximum(boxes[best, 0], boxes[rest, 0])
+            inter_h = np.minimum(boxes[best, 3], boxes[rest, 3]) - np.maximum(boxes[best, 1], boxes[rest, 1])
+            inter = inter_w.clip(0) * inter_h.clip(0)
+            iou = inter / (areas[best] + areas[rest] - inter + 1e-9)
+            order = rest[iou <= NMS_IOU]
+        return [(float(scores[i]), boxes[i].tolist()) for i in selected]
+
     def _ensure_loaded(self):
         if self._model is not None:
             return self._model
 
         with self._load_lock:
             if self._model is not None:
+                return self._model
+
+            onnx_path = self.weights_path.with_suffix(".onnx")
+            if onnx_path.is_file() and self._load_onnx(onnx_path):
                 return self._model
 
             if not self.weights_path.is_file():
@@ -174,19 +298,22 @@ class PotholeDetector:
         if not self._inference_lock.acquire(timeout=INFERENCE_WAIT_SECONDS):
             raise DetectionFailed("The detector is busy.")
         try:
-            import numpy as np
+            if self._backend == "onnx":
+                pairs = self._detect_onnx(image)
+            else:
+                import numpy as np
 
-            # Ultralytics expects arrays in BGR channel order.
-            results = model.predict(
-                source=np.asarray(image)[:, :, ::-1],
-                imgsz=INFERENCE_IMAGE_SIZE,
-                conf=self._threshold,
-                max_det=MAX_DETECTIONS,
-                device="cpu",
-                verbose=False,
-            )
-            boxes = results[0].boxes
-            pairs = zip(boxes.conf.tolist(), boxes.xyxy.tolist())
+                # Ultralytics expects arrays in BGR channel order.
+                results = model.predict(
+                    source=np.asarray(image)[:, :, ::-1],
+                    imgsz=INFERENCE_IMAGE_SIZE,
+                    conf=self._threshold,
+                    max_det=MAX_DETECTIONS,
+                    device="cpu",
+                    verbose=False,
+                )
+                boxes = results[0].boxes
+                pairs = list(zip(boxes.conf.tolist(), boxes.xyxy.tolist()))
         except Exception as error:  # noqa: BLE001 - reported as a failed detection
             logger.exception("Pothole detection failed")
             raise DetectionFailed("The model could not process this photo.") from error

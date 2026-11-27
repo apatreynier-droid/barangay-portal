@@ -32,7 +32,7 @@ from urllib.parse import quote
 
 import mysql.connector
 from fastapi import HTTPException, UploadFile, status
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, Response
 from mysql.connector import MySQLConnection
 
 from .config import settings
@@ -162,6 +162,11 @@ def store_image_file(
     metadata stripping.
     """
     stored_filename = f"{uuid.uuid4().hex}{image.extension}"
+
+    if settings.cloudinary_url:
+        _cloudinary_upload(image, subdir, stored_filename)
+        return stored_filename
+
     path = upload_subdir(subdir) / stored_filename
 
     # "xb": never overwrite an existing file.
@@ -171,6 +176,72 @@ def store_image_file(
         os.fsync(handle.fileno())
 
     return stored_filename
+
+
+def _cloudinary_public_id(subdir: str, stored_filename: str) -> str:
+    return f"barangay_portal/{subdir}/{stored_filename.rsplit('.', 1)[0]}"
+
+
+def _cloudinary_upload(
+    image: ValidatedImage, subdir: str, stored_filename: str
+) -> None:
+    """Store the original bytes as a *private* Cloudinary asset.
+
+    Private assets have no public URL; they can only be fetched with a signed
+    request made by this server, so access still goes through the API's
+    authenticated endpoints.
+    """
+    import cloudinary.uploader  # imported lazily: only needed when enabled
+
+    try:
+        cloudinary.uploader.upload(
+            image.data,
+            public_id=_cloudinary_public_id(subdir, stored_filename),
+            type="private",
+            resource_type="image",
+            overwrite=False,
+        )
+    except Exception as error:  # SDK raises several types
+        logger.error("Cloudinary upload failed: %s", type(error).__name__)
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="The image could not be stored right now. Please try again.",
+        ) from error
+
+
+def read_stored_bytes(
+    stored_filename: str, subdir: str = REQUEST_ATTACHMENTS_SUBDIR
+) -> bytes | None:
+    """Return a stored image's bytes, or ``None`` when it does not exist."""
+    if not STORED_FILENAME_PATTERN.fullmatch(stored_filename or ""):
+        return None
+
+    if settings.cloudinary_url:
+        import urllib.request
+
+        import cloudinary.utils
+
+        extension = stored_filename.rpartition(".")[2]
+        public_id = _cloudinary_public_id(subdir, stored_filename)
+        url = cloudinary.utils.private_download_url(
+            public_id,
+            extension,
+            resource_type="image",
+            type="private",
+        )
+        try:
+            with urllib.request.urlopen(url, timeout=20) as response:
+                return response.read()
+        except OSError:
+            return None
+
+    path = resolve_stored_path(stored_filename, subdir)
+    if path is None:
+        return None
+    try:
+        return path.read_bytes()
+    except OSError:
+        return None
 
 
 def resolve_stored_path(
@@ -193,6 +264,19 @@ def delete_stored_file(
 ) -> None:
     """Best-effort removal (used for rollbacks and deleted requests)."""
     if not stored_filename or not STORED_FILENAME_PATTERN.fullmatch(stored_filename):
+        return
+
+    if settings.cloudinary_url:
+        try:
+            import cloudinary.uploader
+
+            cloudinary.uploader.destroy(
+                _cloudinary_public_id(subdir, stored_filename),
+                type="private",
+                resource_type="image",
+            )
+        except Exception:
+            logger.warning("Could not delete attachment file %s", stored_filename)
         return
 
     try:
@@ -304,18 +388,24 @@ def build_attachment_response(
     download: bool = False,
     subdir: str = REQUEST_ATTACHMENTS_SUBDIR,
     not_found_detail: str = "Attachment was not found.",
-) -> FileResponse:
+) -> Response:
     """Stream a stored image, or 404 when the row or file is missing.
 
     ``row`` needs ``stored_filename``, ``content_type`` and
     ``original_filename``.
     """
-    path = resolve_stored_path(str(row["stored_filename"]), subdir) if row else None
+    path = None
+    data = None
+    if row:
+        if settings.cloudinary_url:
+            data = read_stored_bytes(str(row["stored_filename"]), subdir)
+        else:
+            path = resolve_stored_path(str(row["stored_filename"]), subdir)
 
-    if row is None or path is None:
+    if row is None or (path is None and data is None):
         if row is not None:
             logger.error(
-                "Stored image %s is missing on disk (%s)",
+                "Stored image %s is missing (%s)",
                 row["stored_filename"],
                 subdir,
             )
@@ -324,15 +414,18 @@ def build_attachment_response(
             detail=not_found_detail,
         )
 
+    headers = {
+        "Content-Disposition": _content_disposition(
+            str(row["original_filename"]), download=download
+        ),
+        "X-Content-Type-Options": "nosniff",
+        "Content-Security-Policy": "default-src 'none'; sandbox",
+        "Cache-Control": "private, no-store",
+    }
+    if data is not None:
+        return Response(
+            content=data, media_type=str(row["content_type"]), headers=headers
+        )
     return FileResponse(
-        path,
-        media_type=str(row["content_type"]),
-        headers={
-            "Content-Disposition": _content_disposition(
-                str(row["original_filename"]), download=download
-            ),
-            "X-Content-Type-Options": "nosniff",
-            "Content-Security-Policy": "default-src 'none'; sandbox",
-            "Cache-Control": "private, no-store",
-        },
+        path, media_type=str(row["content_type"]), headers=headers
     )

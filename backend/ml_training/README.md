@@ -108,3 +108,15 @@ deployment; there is a paid Enterprise licence as an alternative.
 - The count covers potholes visible in one photo. Only an administrator can
   confirm how many unique road defects exist.
 - The model sees a pothole as a box. It does not measure size or depth.
+
+
+## Deployment: ONNX export
+
+Hosts with little memory (Render free, 512 MB) run `app/ml/weights/best.onnx`
+through ONNX Runtime instead of PyTorch. After promoting a new `best.pt`,
+re-export it (needs requirements-ml.txt) and commit the result:
+
+    python -c "from ultralytics import YOLO; YOLO('app/ml/weights/best.pt', task='detect').export(format='onnx', imgsz=640, opset=17, simplify=True, dynamic=True)"
+
+The detector prefers `best.onnx` when onnxruntime is installed and falls back to
+`best.pt` otherwise. The two give identical boxes and confidences.
