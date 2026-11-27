@@ -1254,7 +1254,7 @@ EVENT_REGISTERED = "registered"
 EVENT_APPROVED = "approved"
 EVENT_REJECTED = "rejected"
 
-#: Subjects agreed with the Barangay (checked by scripts/test_registration_approval.py).
+#: Subjects agreed with the Barangay (checked by tests/test_registration_approval.py).
 _REGISTRATION_SUBJECTS = {
     EVENT_REGISTERED: "Barangay Portal - Registration Successfully Received",
     EVENT_APPROVED: "Your Barangay Portal Account Has Been Approved!",

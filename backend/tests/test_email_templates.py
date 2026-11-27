@@ -2,7 +2,7 @@ r"""Offline checks for every email template (no database, no SMTP).
 
     cd backend
     .\.venv\Scripts\Activate.ps1
-    python scripts\test_email_templates.py
+    python tests\test_email_templates.py
 
 Verifies for each email: subject, dynamic data in both parts, status colors,
 working links, HTML escaping of untrusted values, Philippine-time dates,

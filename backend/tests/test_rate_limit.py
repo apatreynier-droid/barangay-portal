@@ -2,7 +2,7 @@
 
 Run from the backend directory:
 
-    .\\.venv\\Scripts\\python.exe scripts\\test_rate_limit.py
+    .\\.venv\\Scripts\\python.exe tests\\test_rate_limit.py
 
 The script exercises the limiter classes directly (with tiny windows so it
 finishes fast) and the real ``login`` endpoint function for the HTTP 429

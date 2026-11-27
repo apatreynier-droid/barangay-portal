@@ -2,7 +2,7 @@ r"""Checks for the Pandas analytics behind the Admin Dashboard and Reports.
 
     cd backend
     .\.venv\Scripts\Activate.ps1
-    python scripts\test_analytics.py
+    python tests\test_analytics.py
 
 What is covered
 ---------------

@@ -5,7 +5,7 @@ configured MySQL database:
 
     cd backend
     .\.venv\Scripts\Activate.ps1
-    python scripts\test_request_attachments.py
+    python tests\test_request_attachments.py
 
 Covers: a resident submits a request with an image -> the file is stored on
 disk and linked to the request ID in ``request_attachments`` -> the

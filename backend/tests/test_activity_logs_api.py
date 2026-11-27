@@ -6,7 +6,7 @@ Run from the backend folder with the API already listening on https://localhost:
     .\\.venv\\Scripts\\Activate.ps1
     python run_https.py
     # in a second terminal:
-    python scripts\\test_activity_logs_api.py
+    python tests\\test_activity_logs_api.py
 
 Verifies that signing in records an audit entry, that the admin-only
 ``GET /api/admin/activity-logs`` endpoint returns it (newest first), that the

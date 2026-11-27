@@ -6,7 +6,7 @@ migration 013, the installed model and the prepared dataset:
     cd backend
     .\.venv\Scripts\python.exe ml_training\prepare_dataset.py --zip <Potholes.zip>
     .\.venv\Scripts\python.exe run_https.py
-    .\.venv\Scripts\python.exe scripts\test_pothole_detection.py
+    .\.venv\Scripts\python.exe tests\test_pothole_detection.py
 
 The backend looks up place names for the probe coordinates unless backend/.env
 has an empty ``REVERSE_GEOCODE_URL=``. (Setting it to "" in PowerShell does not
@@ -33,7 +33,7 @@ import urllib.error
 from pathlib import Path
 
 BACKEND_DIR = Path(__file__).resolve().parents[1]
-for path in (BACKEND_DIR, BACKEND_DIR / "scripts"):
+for path in (BACKEND_DIR, BACKEND_DIR / "tests"):
     if str(path) not in sys.path:
         sys.path.insert(0, str(path))
 

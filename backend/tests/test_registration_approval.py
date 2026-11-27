@@ -1,7 +1,7 @@
 r"""End-to-end checks for resident registration approval and its emails.
 
     cd backend
-    .\.venv\Scripts\python.exe scripts\test_registration_approval.py
+    .\.venv\Scripts\python.exe tests\test_registration_approval.py
 
 Starts the real API in this process on its own port and runs it against the
 real database. ``smtplib.SMTP`` is replaced by a fake, so the whole mail path

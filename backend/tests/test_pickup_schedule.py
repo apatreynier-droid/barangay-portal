@@ -6,7 +6,7 @@ sent, then uses the configured MySQL database (migration 014 applied):
 
     cd backend
     .\.venv\Scripts\Activate.ps1
-    python scripts\test_pickup_schedule.py
+    python tests\test_pickup_schedule.py
 
 Covers:
 * "Mark as Ready for Pickup" with a date and time -> one Ready for Pickup

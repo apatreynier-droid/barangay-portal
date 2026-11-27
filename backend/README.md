@@ -89,7 +89,7 @@ once (idempotent), then run the end-to-end check with the backend running:
 
 ```powershell
 .\.venv\Scripts\python.exe scripts\apply_pothole_reports_migration.py
-.\.venv\Scripts\python.exe scripts\test_pothole_reports.py
+.\.venv\Scripts\python.exe tests\test_pothole_reports.py
 ```
 
 AI pothole detection needs migration `013` (it adds columns and the
@@ -101,7 +101,7 @@ How to train, measure, install and replace the model:
 
 ```powershell
 .\.venv\Scripts\python.exe scripts\apply_pothole_detection_migration.py
-.\.venv\Scripts\python.exe scripts\test_pothole_detection.py
+.\.venv\Scripts\python.exe tests\test_pothole_detection.py
 ```
 
 The pickup time on "Ready for Pickup" requests (Admin Document Requests →
@@ -111,7 +111,7 @@ Admin Actions → Pickup Schedule) needs migration `014`: one nullable
 
 ```powershell
 .\.venv\Scripts\python.exe scripts\apply_request_pickup_time_migration.py
-.\.venv\Scripts\python.exe scripts\test_pickup_schedule.py
+.\.venv\Scripts\python.exe tests\test_pickup_schedule.py
 ```
 
 Migration `015` adds three more requestable document types: Business Permit
@@ -270,12 +270,12 @@ Definitions used by the numbers:
 To add a metric, write a function in `app/analytics.py` that takes DataFrames
 (or a query helper's result) and returns plain dicts. Add its field to the
 response model in `app/schemas.py`, then add a check to
-`scripts/test_analytics.py`. That script verifies the analytics against plain
+`tests/test_analytics.py`. That script verifies the analytics against plain
 SQL, temporary pothole rows (rolled back) and the role rules. It starts its own
 API process on port 8013:
 
 ```powershell
-python scripts\test_analytics.py
+python tests\test_analytics.py
 ```
 
 ## Login rate limiting
@@ -349,7 +349,7 @@ one from the Approvals page. Each email can only be delivered once per event.
 | `REGISTRATION_EMAIL_WORKER_INTERVAL_SECONDS` | seconds between retry passes, 0 disables | 60 |
 | `REGISTRATION_EMAIL_MAX_ATTEMPTS` | automatic attempts per email | 6 |
 
-`scripts/test_registration_approval.py` tests the whole flow against the local
+`tests/test_registration_approval.py` tests the whole flow against the local
 database with a fake SMTP server, so it never sends real mail.
 
 ## SMTP email delivery (Forgot Password)
@@ -413,7 +413,7 @@ pickup dates and event times come from the database.
 # Render every email with SAMPLE data (nothing is sent) and open the gallery:
 python scripts\\preview_emails.py            # -> backend\email_previews\index.html
 # Offline checks: content, colors, links, escaping, PHT dates, Gmail-safe HTML:
-python scripts\\test_email_templates.py
+python tests\\test_email_templates.py
 ```
 
 **Lucide icons in emails.** Gmail strips inline `<svg>` and blocks `data:`
@@ -473,7 +473,7 @@ login limiter.
 5. Choose a new password and sign in with it. Opening the same link again must
    be refused ("already been used").
 6. Login protection is unchanged: 5 failed logins within 5 minutes temporarily
-   block that client/account for 15 minutes. `python scripts\\test_rate_limit.py`
+   block that client/account for 15 minutes. `python tests\\test_rate_limit.py`
    checks the limiter itself and the HTTP 429 paths.
 
 ## Request status email notifications
@@ -498,7 +498,7 @@ existing `requests.user_id -> users.id` relationship.
   delivery), `app/email_service.py` (`send_document_status_email` on top of the
   existing SMTP service), `app/email_templates.py` (per-status content).
 * **Verify with multiple residents:**
-  `\\.venv\Scripts\python.exe scripts\test_request_status_email.py`
+  `\\.venv\Scripts\python.exe tests\test_request_status_email.py`
   creates several residents, moves their requests through every status, and
   asserts each email was routed to that resident's own address only - plus
   duplicate-suppression, failure-logging, and non-notifiable-status checks.
@@ -526,7 +526,7 @@ Every notable action in the portal is written once to the append-only
   `app/main.py` (the call sites and the endpoint), `app/schemas.py`
   (`AdminActivityLogResponse`), `src/Pages/AdminLogs/` (page, toolbar, table).
 * **Verify:** start the API (`python run_https.py`) and run
-  `.\.venv\Scripts\python.exe scripts\test_activity_logs_api.py`. It signs in,
+  `.\.venv\Scripts\python.exe tests\test_activity_logs_api.py`. It signs in,
   checks the response shape, ordering, both server-side filters and the 401/403
   paths, then submits and processes a document request to prove every call site
   writes its own entry. Disposable accounts, requests, and the audit rows the
@@ -558,7 +558,7 @@ in the request details, can open a larger preview and download the original.
   Responses carry `nosniff`, a sandboxing CSP and `Cache-Control: private,
   no-store`.
 - **Tests:** with the API running, run
-  `.\.venv\Scripts\python.exe scripts\test_request_attachments.py`. It covers
+  `.\.venv\Scripts\python.exe tests\test_request_attachments.py`. It covers
   upload, storage, the database link, admin preview/download, access control,
   requests without images, invalid uploads, persistence in a freshly started
   backend process and deletion, then removes everything it created.

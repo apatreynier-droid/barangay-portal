@@ -6,7 +6,7 @@ Run from the backend folder with the API already listening on https://localhost:
     .\\.venv\\Scripts\\Activate.ps1
     python run_https.py
     # in a second terminal:
-    python scripts\\test_admin_notifications_api.py
+    python tests\\test_admin_notifications_api.py
 
 The script signs in as the administrator and then *acts like a resident*: it
 registers a throwaway account, submits, edits and deletes document requests,

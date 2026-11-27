@@ -6,7 +6,7 @@ configured MySQL database, after migration 012:
     cd backend
     .\.venv\Scripts\Activate.ps1
     python scripts\apply_pothole_reports_migration.py
-    python scripts\test_pothole_reports.py
+    python tests\test_pothole_reports.py
 
 Covers: residents submit reports (device GPS, manual map pin, no location)
 from different Puroks -> rows, coordinates and the original photo bytes are
@@ -36,7 +36,7 @@ from pathlib import Path
 from typing import Any
 
 BACKEND_DIR = Path(__file__).resolve().parents[1]
-for path in (BACKEND_DIR, BACKEND_DIR / "scripts"):
+for path in (BACKEND_DIR, BACKEND_DIR / "tests"):
     if str(path) not in sys.path:
         sys.path.insert(0, str(path))
 

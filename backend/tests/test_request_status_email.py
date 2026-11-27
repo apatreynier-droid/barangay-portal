@@ -4,7 +4,7 @@ Run from the backend folder:
 
     cd backend
     .\\.venv\\Scripts\\Activate.ps1
-    python scripts\\test_request_status_email.py
+    python tests\\test_request_status_email.py
 
 The script creates disposable resident accounts and document requests, then
 verifies that every status notification resolves to the request owner's

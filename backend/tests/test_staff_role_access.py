@@ -6,7 +6,7 @@ Run from the backend folder with the API already listening on https://localhost:
     .\\.venv\\Scripts\\Activate.ps1
     python run_https.py
     # in a second terminal:
-    python scripts\\test_staff_role_access.py
+    python tests\\test_staff_role_access.py
 
 Verifies the fixed role behaviour against the real database:
 

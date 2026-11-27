@@ -152,7 +152,7 @@ re-optimizes dependencies.
 | `backend/app/config.py` | Fallback defaults (used only when `.env` lacks a value) are now `https://localhost:5173`. |
 | `.env.example` (frontend, **new**) | Documents `VITE_API_BASE_URL` for production. |
 | `.gitignore` | Ignores `certs/`, `*.pem`, `*.key`, `*.crt`, `*.p12`, `*.pfx`. |
-| `backend/scripts/test_*.py` | Scripts that call the running server now use `https://localhost:8000` (override with `$env:API_BASE_URL`). Scripts that start their own private server on another port are unchanged. |
+| `backend/tests/test_*.py` | Scripts that call the running server now use `https://localhost:8000` (override with `$env:API_BASE_URL`). Scripts that start their own private server on another port are unchanged. |
 | `backend/README.md` | "Run the API" section now uses HTTPS. |
 
 **Not changed:** `src/Utils/Shared/api.ts`, all pages, components and styles,
@@ -183,9 +183,9 @@ Automated checks (they create test data and remove it afterwards):
 ```powershell
 cd C:\Barangay_project\barangay_portal_system\backend
 .\.venv\Scripts\Activate.ps1
-python scripts\test_request_attachments.py
-python scripts\test_staff_role_access.py
-python scripts\test_pothole_reports.py
+python tests\test_request_attachments.py
+python tests\test_staff_role_access.py
+python tests\test_pothole_reports.py
 ```
 
 Python on Windows trusts the mkcert CA from the Windows store after

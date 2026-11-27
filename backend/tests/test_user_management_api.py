@@ -6,7 +6,7 @@ Run from the backend folder with the API already listening on https://localhost:
     .\\.venv\\Scripts\\Activate.ps1
     python run_https.py
     # in a second terminal:
-    python scripts\\test_user_management_api.py
+    python tests\\test_user_management_api.py
 
 Verifies that ``GET/POST/PUT`` on ``/api/admin/staff`` and the status and
 password-reset endpoints work against the real database, that every action is
