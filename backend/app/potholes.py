@@ -137,13 +137,16 @@ STAFF_PERMITTED_STATUSES = frozenset({"under_maintenance", "resolved"})
 MAX_LOCATION_LENGTH = 255
 MAX_ROAD_LENGTH = 150
 MAX_NOTES_LENGTH = 1000
+
 #: Anything worse than this is not a usable position (it is not stored).
 MAX_ACCEPTED_ACCURACY_M = 100_000
 
 #: MySQL error number for a column that does not exist yet.
 COLUMN_MISSING_ERROR = 1054
+
 #: Statuses in which a report counts as an administrator-confirmed defect.
 CONFIRMED_STATUSES = ("verified", "under_maintenance", "resolved")
+
 #: Possible-duplicate search radius: the two GPS accuracy circles, within limits.
 MIN_NEARBY_RADIUS_M = 30.0
 MAX_NEARBY_RADIUS_M = 100.0
@@ -1252,6 +1255,7 @@ def retry_pothole_detection(
     cursor = connection.cursor(dictionary=True)
     try:
         with pothole_db_errors("save the detection results"):
+            
             # Conditional, so two people retrying at once store one result.
             cursor.execute(
                 """
@@ -1308,11 +1312,13 @@ def set_pothole_report_duplicate(
     connection: MySQLConnection = Depends(get_db),
     current_user: dict[str, object] = Depends(get_current_admin_portal_user),
 ) -> AdminPotholeReportDetailResponse:
+    
     """Mark (or unmark) a report as another photo of an earlier report's defect.
 
     Its AI count stays on record, but it adds nothing to the unique defect totals.
     The link is always to an original report, so duplicates never form chains.
     """
+    
     _require_administrator(current_user, "mark duplicate reports")
     target_id = payload.duplicate_of_report_id
     if target_id == report_id:
@@ -1324,6 +1330,7 @@ def set_pothole_report_duplicate(
     cursor = connection.cursor(dictionary=True)
     try:
         with pothole_db_errors("update the pothole report"):
+            
             # Locked in id order, so two opposite requests cannot deadlock.
             ids = [report_id] if target_id is None else sorted((report_id, target_id))
             placeholders = ", ".join(["%s"] * len(ids))
@@ -1342,6 +1349,7 @@ def set_pothole_report_duplicate(
 
             if target_id is None:
                 remark = "Unmarked as a duplicate report."
+                
                 # Back in the unique totals: a confirmed report needs a defect count.
                 cursor.execute(
                     """
@@ -1451,6 +1459,7 @@ def update_pothole_report_status(
     cursor = connection.cursor(dictionary=True)
     try:
         with pothole_db_errors("update the pothole report"):
+            
             # Locked so two people acting at once cannot both move the report.
             cursor.execute(
                 """

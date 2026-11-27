@@ -684,6 +684,7 @@ DASHBOARD_TOP_DOCUMENT_TYPES = 5
 
 
 def build_dashboard_analytics(connection: MySQLConnection) -> dict[str, object]:
+    
     """Every statistic shown on the Admin Dashboard, from live records."""
     today = manila_today()
     month_start = today.replace(day=1)
@@ -844,6 +845,7 @@ def build_dashboard_analytics(connection: MySQLConnection) -> dict[str, object]:
 
 
 def yearly_trend(rows: pd.DataFrame, current_year: int) -> list[dict[str, object]]:
+    
     """Requests per Manila calendar year with the year-over-year change."""
     if rows.empty:
         return []
@@ -877,6 +879,7 @@ def yearly_trend(rows: pd.DataFrame, current_year: int) -> list[dict[str, object
 
 
 def document_type_ranking(counts: pd.Series) -> list[dict[str, object]]:
+    
     """Document types by number of requests (most requested first)."""
     if counts.empty:
         return []
@@ -907,6 +910,7 @@ COMPARISON_LABELS: dict[str, str] = {
 def _load_period_requests(
     connection: MySQLConnection, report_range: ReportRange
 ) -> pd.DataFrame:
+    
     """Requests submitted in the period (also feeds the CSV export rows)."""
     frame = _fetch_frame(
         connection,
@@ -944,6 +948,7 @@ def _load_period_requests(
 def _load_completed_in_period(
     connection: MySQLConnection, report_range: ReportRange
 ) -> tuple[pd.DataFrame, pd.DataFrame]:
+    
     """Requests completed in the period and their status-history timestamps."""
     completed = _fetch_frame(
         connection,
@@ -1056,6 +1061,7 @@ def _road_key(value: object) -> str:
         return ""
     return " ".join(str(value).split()).casefold()
 
+# Pothole Data Analytics
 
 def pothole_analytics(
     connection: MySQLConnection, report_range: ReportRange, granularity: str
@@ -1169,6 +1175,7 @@ def pothole_analytics(
             for period, row in table.iterrows()
         ],
     }
+    #--------------------------------
 
 
 def _previous_period_counts(
@@ -1214,11 +1221,6 @@ def build_reports_analytics(
     granularity: str,
 ) -> dict[str, object]:
     """Everything the Admin Reports page shows for one date range.
-
-    Request figures cover the requests *submitted* in the range (their current
-    status says how they ended). Completion events and processing times cover
-    the requests *completed* in the range. Resident totals and the residents
-    per Purok are a current snapshot; registrations are counted by sign-up date.
     """
     if granularity not in GRANULARITY_FREQUENCIES:
         raise AnalyticsInputError("Unknown interval.")

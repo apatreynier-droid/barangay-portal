@@ -38,6 +38,7 @@ _last_lookup_at = 0.0
 
 
 def reverse_geocode(latitude: float | None, longitude: float | None) -> str | None:
+    
     """Best effort: a readable place name, or ``None`` if it is not available."""
     global _last_lookup_at
 
@@ -95,6 +96,7 @@ def _degrees(values: object, reference: object, negative_reference: str) -> floa
 
 
 def _gps_timestamp(gps: dict) -> datetime | None:
+    
     """The GPS clock reading (always UTC), if present and not in the future."""
     try:
         day = str(gps[29]).strip()
@@ -108,6 +110,7 @@ def _gps_timestamp(gps: dict) -> datetime | None:
 
 
 def read_photo_gps(data: bytes) -> PhotoGps | None:
+    
     """Coordinates from the photo's EXIF block, only if they are valid.
 
     Browsers and messaging apps often remove this metadata, so its absence is

@@ -67,7 +67,8 @@ type LocationMode = "gps" | "manual";
 
 // Leaflet is only downloaded when a map is actually shown.
 const LocationPickerMap = lazy(
-  () => import("../../../components/Resident/PotholeDetection/LocationPickerMap"),
+  () =>
+    import("../../../components/Resident/PotholeDetection/LocationPickerMap"),
 );
 
 const MapFallback = () => (
@@ -318,8 +319,8 @@ function PotholeDetection({ user, onLogout }: PotholeDetectionProps) {
             <div>
               <strong>Pin the spot on the map</strong>
               <span>
-                Tap the map where the pothole is. A pinned location is marked
-                as <em>manually selected</em>, not GPS.
+                Tap the map where the pothole is. A pinned location is marked as{" "}
+                <em>manually selected</em>, not GPS.
               </span>
             </div>
           </div>
