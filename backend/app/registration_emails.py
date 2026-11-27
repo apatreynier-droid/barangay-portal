@@ -5,7 +5,7 @@ row with the account change. Sending happens after the commit, so a mail
 failure never undoes the change; failed rows are retried by the background
 worker or an administrator.
 
-Guarantees relied on by the endpoints in ``app/main.py``:
+Guarantees relied on by the endpoints in ``app/routers/``:
 
 * One email per event: ``UNIQUE (user_id, event_type)`` means a repeated event
   cannot queue a second message. A rejected resident who applies again starts

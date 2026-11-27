@@ -22,7 +22,7 @@ sys.path.insert(0, str(BACKEND_DIR))
 from fastapi import HTTPException  # noqa: E402
 from starlette.requests import Request as StarletteRequest  # noqa: E402
 
-from app.main import login  # noqa: E402
+from app.routers.auth import login  # noqa: E402
 from app.rate_limit import (  # noqa: E402
     IPRateLimiter,
     LoginRateLimiter,

@@ -1,6 +1,6 @@
 """Pandas analytics for the Admin Dashboard and Admin Reports page.
 
-Route handlers in ``main.py`` call :func:`build_dashboard_analytics` /
+Route handlers in ``routers/admin_reports.py`` call :func:`build_dashboard_analytics` /
 :func:`build_reports_analytics` and wrap the returned dicts in schemas.
 
 * SQL handles simple counts and date filtering, so only rows of the selected

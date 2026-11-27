@@ -225,7 +225,7 @@ those, connect the computer and phone through the phone's hotspot instead.
 ## Dashboard and Reports analytics (Pandas)
 
 `app/analytics.py` is the analytics service behind `GET /api/admin/dashboard`
-and `GET /api/admin/reports`. The route handlers in `app/main.py` only
+and `GET /api/admin/reports`. The route handlers in `app/routers/admin_reports.py` only
 validate input and call `build_dashboard_analytics()` /
 `build_reports_analytics()`. Every figure comes from the live MySQL records
 through the request's normal `get_db` connection.
@@ -282,7 +282,7 @@ python tests\test_analytics.py
 
 Login protection is implemented in-memory in `app/rate_limit.py` (no Redis or
 external service needed) and wired into the `POST /api/auth/login` endpoint in
-`app/main.py`. Two limiters are active:
+`app/routers/auth.py`. Two limiters are active:
 
 1. **Consecutive failed attempts** (`LoginRateLimiter`, keyed by client IP +
    account email)
@@ -487,7 +487,7 @@ existing `requests.user_id -> users.id` relationship.
   (subject: *"Your Barangay Document is Ready for Pickup"*), Completed, Rejected.
   `Pending` (the initial status) does not send one.
 * **Trigger point:** the backend, inside
-  `PATCH /api/admin/document-requests/{id}` (`app/main.py`), *after* the status
+  `PATCH /api/admin/document-requests/{id}` (`app/routers/admin_requests.py`), *after* the status
   change is committed. An SMTP failure therefore never rolls the status back -
   it is logged server-side and recorded in `request_status_emails`, and the
   resident is never shown SMTP credentials or technical error details.
@@ -523,7 +523,7 @@ Every notable action in the portal is written once to the append-only
 * **Implementation:** `app/activity_logs.py` (`record_activity_log` resolves the
   actor from `user_id` and is deliberately best-effort - a logging failure is
   logged and swallowed so it can never break the action that produced it),
-  `app/main.py` (the call sites and the endpoint), `app/schemas.py`
+  `app/routers/` (the call sites; the endpoint is in `activity_logs.py`), `app/schemas.py`
   (`AdminActivityLogResponse`), `src/Pages/AdminLogs/` (page, toolbar, table).
 * **Verify:** start the API (`python run_https.py`) and run
   `.\.venv\Scripts\python.exe tests\test_activity_logs_api.py`. It signs in,
