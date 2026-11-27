@@ -180,7 +180,7 @@ listens on the network, see `vite.config.ts`) and open
 mkcert root CA and the IP must be inside the certificate; see
 [`../HTTPS_SETUP.md`](../HTTPS_SETUP.md) section 6. The frontend calls the API on
 the same protocol and host at port 8000 automatically
-(`src/Utils/Shared/api.ts`; override with `VITE_API_BASE_URL`). Add that origin
+(`src/Utils/Shared/api/client.ts`; override with `VITE_API_BASE_URL`). Add that origin
 to `CORS_ORIGINS` in `backend/.env`, for example:
 
 ```

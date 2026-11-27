@@ -17,7 +17,7 @@ Browser ──HTTPS──► Vite :5173   (pages, JS)
 ```
 
 The frontend works out the API address by itself
-(`src/Utils/Shared/api.ts`): it uses **the same protocol and host as the page**,
+(`src/Utils/Shared/api/client.ts`): it uses **the same protocol and host as the page**,
 on port 8000. So `https://localhost:5173` calls `https://localhost:8000`, and
 `https://192.168.1.25:5173` on a phone calls `https://192.168.1.25:8000`. No API
 URLs are hard-coded anywhere, which also rules out mixed-content errors.
@@ -155,7 +155,7 @@ re-optimizes dependencies.
 | `backend/tests/test_*.py` | Scripts that call the running server now use `https://localhost:8000` (override with `$env:API_BASE_URL`). Scripts that start their own private server on another port are unchanged. |
 | `backend/README.md` | "Run the API" section now uses HTTPS. |
 
-**Not changed:** `src/Utils/Shared/api.ts`, all pages, components and styles,
+**Not changed:** `src/Utils/Shared/api/`, all pages, components and styles,
 authentication, tokens, rate limits, database schema, API routes, SMTP, file
 uploads and pothole detection.
 
@@ -341,7 +341,7 @@ How each piece picks its values:
   and `.env.production` for `npm run build`. Create
   `barangay_portal_system/.env.production` containing only
   `VITE_API_BASE_URL=https://<your-domain>` when you deploy. Leave it unset
-  locally. `api.ts` already reads this variable, and nothing else changes.
+  locally. `api/client.ts` already reads this variable, and nothing else changes.
 - **Backend:** everything is in `backend/.env`. Keep one `.env` per machine:
   this PC's file has the local values, and the server gets its own copy with
   the production values. `.env` is git-ignored, so the two never collide.

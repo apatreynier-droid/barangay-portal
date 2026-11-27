@@ -1,32 +1,79 @@
-# React + TypeScript + Vite
+# Barangay Lagab Document Portal
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+A web portal for Barangay Lagab. Residents request documents and report
+potholes; barangay staff and administrators review and manage them.
 
-Currently, two official plugins are available:
+* **Frontend:** React, TypeScript and Vite
+* **Backend:** FastAPI (Python) with a MySQL database
+* **Pothole detection:** a YOLO model that counts potholes in uploaded photos
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## Folder structure
 
-## React Compiler
+```
+src/                  Frontend
+  Pages/              One folder per screen (Admin, Resident, sign-in pages)
+  components/         Parts used to build the screens
+  Styles/             CSS, arranged like Pages and components
+  Types/              TypeScript types
+  Utils/              Page logic and shared helpers
+    Shared/api/       Calls to the backend, one file per feature
+  Routes/             Which URL shows which page
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+backend/
+  app/                The API
+    main.py           Creates the app and registers the routers
+    routers/          API routes, one file per feature
+    potholes/         Pothole reports: routes, detection and location checks
+    ml/               Pothole detector and model weights
+    schemas.py        Request and response shapes
+  db/                 Database schema
+  scripts/            Setup tools and database migrations
+  tests/              Test scripts
+  ml_training/        Model training and evaluation
 
-## Expanding the Oxlint configuration
-
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
-
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
+certs/                Local HTTPS certificate (created on each computer)
+scripts/              Frontend tools (certificate generator)
 ```
 
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+## Setup
+
+1. **Database and backend:** follow [backend/README.md](backend/README.md).
+2. **HTTPS certificate:** follow [HTTPS_SETUP.md](HTTPS_SETUP.md).
+3. **Frontend packages:** run `npm install` in this folder.
+
+## Run
+
+Use two terminals.
+
+Backend:
+
+```powershell
+cd backend
+.\.venv\Scripts\Activate.ps1
+python run_https.py
+```
+
+Frontend:
+
+```powershell
+npm run dev
+```
+
+Then open <https://localhost:5173>.
+
+## Check your changes
+
+```powershell
+npm run build
+npm run lint
+```
+
+Backend tests are in `backend/tests/`. Run them from the `backend` folder, for
+example:
+
+```powershell
+.\.venv\Scripts\python.exe tests\test_rate_limit.py
+```
+
+Many of them use the database in `backend/.env` and some send email, so read the
+notes at the top of a test before running it.
